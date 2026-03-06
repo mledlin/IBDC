@@ -1,50 +1,38 @@
-# Welcome to your Expo app 👋
+# Welcome to the Intelligent Bicycle Dash Cam
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
-
-## Get started
+## Get started / Running the App
 
 1. Install dependencies
 
-   ```bash
-   npm install
-   ```
+```bash
+npm install
+```
 
 2. Start the app
 
-   ```bash
-   npx expo start
-   ```
+You will need an android or IOS operating system to run this application. Either start an emulator now on your pc or 
+have your phone ready. You may need to enable USB debugging (android)
 
-In the output, you'll find options to open the app in a
+For Android, you can open the Device Manager on Android Studio as one of many options; it works "out of the box".
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+For a physical device download the expo go app and use it to scan the QR code that will appear in your terminal.
 
 ```bash
-npm run reset-project
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Now select the menu option you wish.
 
-## Learn more
+In the event of any error: 
+   - Stop everything
+   - Restart the emulator
+   - Restart expo
 
-To learn more about developing your project with Expo, look at the following resources:
+# Program Structure
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+This application uses expo-router for navigation. App.tsx controls the first screen shown.
 
-## Join the community
+## app/(tabs)
 
-Join our community of developers creating universal apps.
+This is where all the screens live. Currently, there is a MainScreen and a Settings screen that are extremely basic. They have a simple text link to move between pages.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
