@@ -8,7 +8,12 @@ export default function MainScreen(){
         <Link href="/(tabs)/Settings" style={styles.link}>
           Go to Settings
         </Link>
+        
+        <Link href="/(tabs)/IncidentHistory" style={styles.link}>
+          Go to Incident History
+        </Link>
       </View>
+
   );
 }
 
