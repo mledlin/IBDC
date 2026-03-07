@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from "react-native";
-import { Link } from "expo-router";
+import { Link, router} from "expo-router";
 
 export default function IncidentHistory() {
     //Initializing list using state so we can add or update incidents later on 
@@ -31,9 +31,12 @@ export default function IncidentHistory() {
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.item}
-            //Pressing button just logs for now, but in the future we will
-            //access the reports
-            onPress={() => console.log(item.title)}
+            onPress={() => 
+                router.push({
+                    pathname: "/IncidentDetail",
+                    params: {id: item.id, title: item.title},
+                })
+            }
           >
             <Text style={styles.itemText}>{item.title}</Text>
           </TouchableOpacity>
