@@ -1,13 +1,10 @@
 import { View, Text, StyleSheet } from "react-native";
-import {Link} from "expo-router";
+
 
 export default function MainScreen(){
     return (
         <View style={styles.container}>
             <Text style={styles.text}>Settings Screen</Text>
-            <Link href="/(tabs)/MainScreen" style={styles.link}>
-                Go to Main Screen
-            </Link>
         </View>
     );
 }

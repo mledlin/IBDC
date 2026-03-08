@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from "react-native";
-import { Link, router} from "expo-router";
+import { router} from "expo-router";
 
 export default function IncidentHistory() {
     //Initializing list using state so we can add or update incidents later on 
@@ -43,10 +43,6 @@ export default function IncidentHistory() {
         )}
         contentContainerStyle={styles.list}
       />
-
-      <Link href="/(tabs)/MainScreen" style={styles.link}>
-        Go to Main Screen
-      </Link>
     </View>
   );
 }
