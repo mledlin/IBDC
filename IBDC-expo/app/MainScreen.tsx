@@ -16,10 +16,10 @@ export default function MainScreen(){
         <Text style={styles.buttonText}>Incident History</Text>
        </Pressable>
  
-        {//<Pressable style={styles.button} onPress={() => router.push("/rideSessions")}>
-        //<Text>PairDevice</Text>
-        //</Pressable>} uncomment out when this screen is added 
-        }
+        <Pressable style={styles.button} onPress={() => router.push("/rideSessions")}>
+        <Text style={styles.buttonText}>Ride Sessions</Text>
+        </Pressable>
+        
         <Pressable style={styles.button} onPress={() => router.push("/Settings")}>
         <Text style={styles.buttonText} >Settings</Text>
        </Pressable>
