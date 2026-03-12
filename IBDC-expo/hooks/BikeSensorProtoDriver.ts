@@ -87,10 +87,10 @@ function proto_testing_loop (socket?: net.Socket)
 @PARAM attempts: number of times a re-initialization should occur
  */
 function initialize(port: number = 8000, hostname: string = 'localhost', attempts?: number): net.Socket {
-    console.log("Attempting to connect to " + hostname + ":" + port);
+    //console.log("Attempting to connect to " + hostname + ":" + port);
     let comms = net.createConnection(port, hostname, () => {
         console.log('Connected');
-        if(send_status_update(comms)) {
+        if(send_device_status(comms)) {
             console.log('Sent status update to mobile application');
         } else {
             console.log('Message was not sent over the wire for some reason.');
@@ -103,7 +103,7 @@ function initialize(port: number = 8000, hostname: string = 'localhost', attempt
 
 // Send protobuf message to user phone and wait x time for a response
 // RETURNS true if message was sent over the wire. NO guarantees the message reaches the destination, only that it was sent
-function send_status_update(sock:net.Socket, wait?: number, ): boolean {
+function send_device_status(sock:net.Socket, wait?: number, ): boolean {
     protobuf.loadSync("../Resources/IBDC.proto", function (err, root) {
         if (err)
             throw err;
@@ -159,15 +159,31 @@ function main() {
     // 5. Repeat until bluetooth connection is dropped
     let connected:booleean = true;
     let messages: string[] = [];
+    const valid_messages: string[] = ['EventNotification', 'ImageChunk', 'DeviceStatus', ''];
     while (connected) {
-        console.log('Embedded Message Types:\n' +
-                    'EventNotification\n' +
-                    'ImageChunk\n' +
-                    'DeviceStatus\n');
-        const embeddedEventNotification =  readline.question('Enter an embedded message type or enter nothing to end the connection. ');
-        protobuf.roots;
+        // Read the bytes from over the wire and store them as a string in messages array
+        const mobile_listener: string = socket.read();
+        if (mobile_listener) { // If there is a data sent from the phone, add it to the message buffer
+            messages.push(mobile_listener);
+        }
 
+        // Prompt user to enter a valid sendable message
+        console.log('Embedded Message Types:\n' +
+            'EventNotification\n' +
+            'ImageChunk\n' +
+            'DeviceStatus\n');
+        const embeddedEventNotification: string = readline.question('Enter an embedded message type or enter nothing to end the connection.\n');
+        messages.push(embeddedEventNotification);
+        console.log();
+
+        console.log("Received messages:");
+        for (const message of messages) {
+            console.log(`Message -> ${message}`);
+        }
+        console.log();
     }
+        // Handle all the messages in the buffer
+    // Loop and do this forever until the connection is lost or indicated to stop via the console
 
 }
 
