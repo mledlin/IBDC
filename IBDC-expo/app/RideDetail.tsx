@@ -10,7 +10,7 @@ import Animated,
     SharedValue,
 } from "react-native-reanimated";
 
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 
 //define a contants that holds the phone's window width 
 const { width } = Dimensions.get('window');
@@ -34,9 +34,9 @@ interface CardProps {
 }
 
  const items: CardItem[]  = [
-    {id: '1', title: 'Incident 1', subtitle: "Reported at 10:20 a.m. on Mullberry Ave"},
-    {id: '2', title: 'Incident 2', subtitle: "reported at 11:30 a.m. on Hulkel Dr."},
-    {id: '3', title: 'Incident 3', subtitle: "reported at 12:50 a.m. on Winston St."},
+    {id: '1', title: 'Incident 1 PHOTO HERE', subtitle: "Reported at 10:20 a.m. on Mullberry Ave"},
+    {id: '2', title: 'Incident 2 PHOTO HERE', subtitle: "reported at 11:30 a.m. on Hulkel Dr."},
+    {id: '3', title: 'Incident 3 PHOTO HERE', subtitle: "reported at 12:50 a.m. on Winston St."},
 
   ];
 
@@ -56,10 +56,17 @@ interface CardProps {
         </Animated.View>
     );
   }
+  
+//here we can create view that goes over ride session details 
+//this can be called inside the RideDetail() scroll view. 
 function SessionDetailView(){
+     const { id, title } = useLocalSearchParams();
     return (
-        <View style={styles.rideContainer}>
-            
+        <View style={styles.container}>
+        <Text style={styles.cardTitle}>  {id} </Text>
+        <Text style={styles.cardTitle}> {title} </Text>
+        <Text style={styles.cardTitle}> GPS photo here</Text>
+        <Text style={styles.cardTitle}> details of ride here ...</Text>
         </View>
     )
 }
@@ -72,7 +79,7 @@ export default function RideDetail() {
  
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-        
+        <SessionDetailView/>
         {/* Header Section*/}
         <View style={styles.container}>
       <Text style={styles.heading}>Recent Incidents</Text>
@@ -96,7 +103,12 @@ export default function RideDetail() {
         item = {item}
         index = {index}
         scrollX={scrollX}
-        onPress={() => console.log('pressed', item.id)}
+        onPress={() => 
+            router.push({
+                        pathname: "/IncidentDetail",
+                        params: {id: item.id, title: item.title},
+                            })
+        }
         />
       )}
       />
