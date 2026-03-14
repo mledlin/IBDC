@@ -2,19 +2,23 @@ import { router } from "expo-router";
 import { useState } from "react";
 import { Text, View, StyleSheet, FlatList, TouchableOpacity } from "react-native";
 
-export default function RideSessions() {
+const handleBack = () => {
+    console.log('photo selceted');
+    router.back();
+}
+export default function ChoosePhoto() {
 
     const SessionLists = [
-      {id: 'Ride 1', title: 'January 5th'},
-      {id: 'Ride 2', title: 'January 6th'},
-      {id: 'Ride 3', title: 'January 7th'},
-      {id: 'Ride 4', title: 'January 8th'},
+      {id: 'PHOTO 1', title: 'Photo 1'},
+      {id: 'PHOTO 2', title: 'Photo 2'},
+      {id: 'PHOTO 3', title: 'Photo 3'},
+      {id: 'PHOTO 4', title: 'Photo 4'},
     ]
   
   
     return (
       <View style={styles.container}>
-        <Text style={styles.text}>Session History</Text>
+        <Text style={styles.text}>Choose the best photo</Text>
   
         <FlatList
           data={SessionLists}
@@ -22,12 +26,7 @@ export default function RideSessions() {
           renderItem={({ item }) => (
             <TouchableOpacity
               style={styles.item}
-              onPress={() => 
-                  router.push({
-                      pathname: "/RideDetail",
-                      params: {id: item.id, title: item.title},
-                  })
-              }
+              onPress={handleBack}
             >
               <Text style={styles.itemText}>{item.title}</Text>
             </TouchableOpacity>

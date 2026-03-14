@@ -8,7 +8,7 @@ export default function MainScreen(){
       <View style={styles.container}>
         <Text style={styles.text}>Main Screen</Text>
 
-       <Pressable style={styles.button} onPress={() => router.push("/pairDevice")}>
+       <Pressable style={styles.button} onPress={() => router.push("/PairDevice")}>
         <Text style={styles.buttonText}>Pair Device</Text>
        </Pressable>
 
@@ -16,7 +16,7 @@ export default function MainScreen(){
         <Text style={styles.buttonText}>Incident History</Text>
        </Pressable>
  
-        <Pressable style={styles.button} onPress={() => router.push("/rideSessions")}>
+        <Pressable style={styles.button} onPress={() => router.push("/RideSessions")}>
         <Text style={styles.buttonText}>Ride Sessions</Text>
         </Pressable>
         

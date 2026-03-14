@@ -1,6 +1,6 @@
 import { Text, View, StyleSheet, ActivityIndicator } from "react-native";
 
-export default function pairDevice() {
+export default function PairDevice() {
   return (
     <View style={styles.container}>
       <Text style={styles.helloWorldTitle}>Bluetooh Pairing here</Text>
