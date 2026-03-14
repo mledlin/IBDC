@@ -14,7 +14,7 @@ The integration branch used for development. Completed user story branches are m
 
 **User Story Branches**
 
-Each user story should be implemented in a dedicated branch created from the latest version of dev. Subtasks should be tracked here through commits rather than additional branches. Merging into the dev branch requires at least one team member to review and approve the pull request.
+Each user story should be implemented in a dedicated branch created from the latest version of dev. Subtasks should be tracked through additional branches. Merging into the dev branch requires at least one team member to review and approve the pull request.
 
 ## Development Workflow
 
