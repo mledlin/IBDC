@@ -1,10 +1,15 @@
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, Button, Alert } from "react-native";
 
+function showAlert(message: string) {
+    Alert.alert(message)
+}
 
 export default function Settings(){
     return (
         <View style={styles.container}>
             <Text style={styles.text}>Settings Screen</Text>
+            <Button onPress= {() => showAlert("Gracias")}
+             title={"Util"}/>
         </View>
     );
 }

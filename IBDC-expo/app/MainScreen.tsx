@@ -1,34 +1,13 @@
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { useRouter} from "expo-router";
 import {useState} from "react";
-import {deviceSettings} from "../hooks/DeviceStatus.ts"
-
-function DeviceStatusBar() {
-    const [version, setVersion] = useState('1.0');
-    const [battery, setBattery] = useState(3);
-    const [paired, setPaired] = useState(false);
-
-    function handleSetVersion() {
-        let deviceSettings: object = getDeviceSettings();
-        setVersion(deviceSettings.version);
-    }
-    function handleSetBattery() {
-        setBattery(deviceSettings.battery);
-    }
-    function handleSetPaired() {
-        setPaired(deviceSettings.paired);
-    }
-    return (
-        <Text> {version} {battery} {paired} </Text>
-    )
-}
+import * as device from "../hooks/DeviceStatus.ts"
 
 export default function MainScreen(){
   const router = useRouter();
   return (
       <View style={styles.container}>
         <Text style={styles.text}>Main Screen</Text>
-          <Text> {DeviceStatusBar()} </Text>
        <Pressable style={styles.button} onPress={() => router.push("/PairDevice")}>
         <Text style={styles.buttonText}>Pair Device</Text>
        </Pressable>
