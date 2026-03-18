@@ -88,7 +88,6 @@ export default function RideDetail() {
 
       <Animated.FlatList 
       data={items} 
-      renderItem={(item)=> item.id}
       horizontal
       snapToInterval={STEP}
       snapToAlignment="center"
