@@ -1,9 +1,8 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from "react-native";
-import { router} from "expo-router";
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput } from "react-native";
+import { router } from "expo-router";
 
 export default function IncidentHistory() {
-    //Initializing list using state so we can add or update incidents later on 
   const [incidents, setIncidents] = useState([
     { id: "1", title: "Incident 1" },
     { id: "2", title: "Incident 2" },
@@ -11,19 +10,40 @@ export default function IncidentHistory() {
     { id: "4", title: "Incident 4" },
   ]);
 
-  //Function that will allow new incidents to be added to the state in the future
-  const addIncident = (title : string) => {
+  const [incidentTitle, setIncidentTitle] = useState("");
+
+  const addIncident = () => {
+    if (!incidentTitle.trim()) return;
+
     const newIncident = {
       id: Date.now().toString(),
-      title: title,
+      title: incidentTitle,
     };
 
-    setIncidents((prevIncidents) => [...prevIncidents, newIncident]);
+    setIncidents((prev) => [newIncident, ...prev]);
+
+    router.push({
+      pathname: "/IncidentDetail",
+      params: { id: newIncident.id, title: newIncident.title },
+    });
+
+    setIncidentTitle("");
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.text}>Incident History</Text>
+
+      <TextInput
+        style={styles.input}
+        placeholder="Enter incident"
+        value={incidentTitle}
+        onChangeText={setIncidentTitle}
+      />
+
+      <TouchableOpacity style={styles.button} onPress={addIncident}>
+        <Text style={styles.buttonText}>Add</Text>
+      </TouchableOpacity>
 
       <FlatList
         data={incidents}
@@ -31,11 +51,11 @@ export default function IncidentHistory() {
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.item}
-            onPress={() => 
-                router.push({
-                    pathname: "/IncidentDetail",
-                    params: {id: item.id, title: item.title},
-                })
+            onPress={() =>
+              router.push({
+                pathname: "/IncidentDetail",
+                params: { id: item.id, title: item.title },
+              })
             }
           >
             <Text style={styles.itemText}>{item.title}</Text>
@@ -60,6 +80,24 @@ const styles = StyleSheet.create({
     color: "black",
     marginBottom: 20,
     textAlign: "center",
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 6,
+    padding: 10,
+    marginBottom: 10,
+  },
+  button: {
+    backgroundColor: "#007AFF",
+    padding: 10,
+    borderRadius: 6,
+    alignItems: "center",
+    marginBottom: 15,
+  },
+  buttonText: {
+    color: "white",
+    fontWeight: "bold",
   },
   list: {
     paddingBottom: 20,
