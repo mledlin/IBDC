@@ -1,6 +1,12 @@
+import React, { useState } from "react";
 import { Text, View, StyleSheet, ActivityIndicator } from "react-native";
+import BluetoothDeviceModal from "@/components/ui/BluetoothDeviceModal";
 
 export default function PairDevice() {
+  const [modalVisable, setModalVisable] = useState(false);
+  //add some pretend devices here 
+  //add a method here to handle the selected devices from the modal
+  //make a pair button in view. 
   return (
     <View style={styles.container}>
       <Text style={styles.helloWorldTitle}>Bluetooh Pairing here</Text>
