@@ -101,11 +101,12 @@ function GenerateGPSDisplay() {
     return (
         <MapView
             provider = {PROVIDER_GOOGLE}
-            style = {{flex: 1}}
+            style={{ height: 300, width: "100%" , zoom: 200}}
+            interactive={false}
             loadingEnabled={true}
             initialRegion={{
-                latitude: 37.78825,
-                longitude: -122.4324,
+                latitude: 33.4172,
+                longitude: -111.9365,
                 latitudeDelta: 0.0922,
                 longitudeDelta: 0.0421,
             }}
