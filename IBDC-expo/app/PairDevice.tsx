@@ -1,16 +1,31 @@
 import React, { useState } from "react";
-import { Text, View, StyleSheet, ActivityIndicator } from "react-native";
+import { Text, View, StyleSheet, Alert, Pressable } from "react-native";
 import BluetoothDeviceModal from "@/components/ui/BluetoothDeviceModal";
 
 export default function PairDevice() {
   const [modalVisable, setModalVisable] = useState(false);
-  //add some pretend devices here 
-  //add a method here to handle the selected devices from the modal
-  //make a pair button in view. 
+  const [devices, setDevices] = useState([
+    {id: "Pretend BT ID#1", name: "IBDC Device"},
+    {id: "Pretend BT ID#2", name: null },
+  ]);
+ const handleSelectDevice = (device: {id: string; name: string | null }) => {
+  setModalVisable(false);
+  Alert.alert("Selected Device", `${device.name || "Unnamed Device"}\n${device.id}`);
+ };
+  
   return (
     <View style={styles.container}>
-      <Text style={styles.helloWorldTitle}>Bluetooh Pairing here</Text>
-      <ActivityIndicator size = {"large"}/>
+      <Text>Bluetooth Menu</Text>
+      <Pressable style={styles.button} onPress={() => setModalVisable(true)}>
+      <Text style={styles.buttonText}>Pair Device</Text>
+      </Pressable>
+  
+      <BluetoothDeviceModal
+      visible={modalVisable}
+      devices={devices}
+      onClose={()=> setModalVisable(false)}
+      onSelectDevice={handleSelectDevice}
+      />
     </View>
   );
 }
@@ -21,6 +36,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    padding: 20,
   },
   //defining your own style
   helloWorldTitle: {
@@ -29,5 +45,15 @@ const styles = StyleSheet.create({
   image: {
     width: 200,
     height: 200,
+  },
+    button: {
+    padding: 40,
+    backgroundColor: "blue", 
+    marginBottom: 15, 
+    borderRadius: 30
+  },
+  buttonText:{
+    fontWeight: "bold",
+    color: "white",
   },
 });

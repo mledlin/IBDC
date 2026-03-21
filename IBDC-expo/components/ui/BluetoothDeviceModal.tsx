@@ -41,8 +41,8 @@ export default function BluetoothDeviceModal({ visible, devices, onClose, onSele
                     )}
                     />
                 )}
-                <Pressable onPress={onClose}>
-                    <Text>Close</Text>
+                <Pressable style={styles.closeButton} onPress={onClose}>
+                    <Text style={styles.closeButtonText}>Close</Text>
                 </Pressable>
             </View>
             </View>
@@ -53,7 +53,7 @@ export default function BluetoothDeviceModal({ visible, devices, onClose, onSele
 const styles = StyleSheet.create({
     overlay:{
         flex: 1, 
-        backgroundColor: "black", 
+        backgroundColor: "transparent", 
         justifyContent: "center", 
         alignItems: "center",
         padding: 20,
@@ -83,6 +83,17 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12, 
         borderBottomWidth: 1, 
         borderBottomColor: "#e5e5e5",
+    },
+    closeButton: {
+        marginTop: 16, 
+        backgroundColor: "#f16868", 
+        paddingVertical: 12, 
+        borderRadius: 10, 
+        alignItems: "center",
+    }, 
+    closeButtonText: {
+        color: "white",
+        fontWeight: "600",
     },
    
 })

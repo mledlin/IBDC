@@ -11,7 +11,7 @@ export default function MainScreen(){
        <Pressable style={styles.button} onPress={() => router.push("/PairDevice")}>
         <Text style={styles.buttonText}>Pair Device</Text>
        </Pressable>
-
+      
        <Pressable style={styles.button} onPress={() => router.push("/IncidentHistory")}>
         <Text style={styles.buttonText}>Incident History</Text>
        </Pressable>
