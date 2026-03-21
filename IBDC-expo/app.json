@@ -9,7 +9,8 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.anonymous.IBDC-expo"
     },
     "android": {
       "adaptiveIcon": {
@@ -39,11 +40,20 @@
           }
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      [
+      "expo-location",
+      {
+        "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location.",
+        "androidGoogleMapsApiKey": "process.env.AIzaSyC0E7_hURFBpfnrPHN8ALlQvIS1SUtqLz8",
+        "iosGoogleMapsApiKey": "process.env.AIzaSyC0E7_hURFBpfnrPHN8ALlQvIS1SUtqLz8"
+      }
+      ],
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+
   }
 }
