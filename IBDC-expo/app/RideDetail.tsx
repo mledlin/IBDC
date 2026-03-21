@@ -1,6 +1,25 @@
 import React from "react";
 import { View, Text, StyleSheet, Dimensions, Pressable, ScrollView } from "react-native";
+import MapView from 'react-native-maps';
+import {PROVIDER_GOOGLE} from 'react-native-maps'
+/**
+ *  US#30-UpdatedUI - Task #32 Add UI elements to ride session detail screen to display data and get input from user.
+ *  To Dos:
+ *      1. Allow the user to input details about a ride session into a text box
+ *      2. Allow a GPS 'snapshot' to be displayed
+ *      Questions:
+ *      - What should the GPS photo show? The location where the ride was started? Static location based on initial connection?
+ *      - What should the detail of the ride show? For now, accepting an object that can be changed easily makes sense.
+ *      - Will our application run in the background or foreground/active? Depending on the choice, position accuracy and
+ *          permission clearance changes.
+ *      Assumptions:
+ *      - I'm assuming the GPS location will be stored somewhere in the program. The localSearchParam id can be used
+ *          to link the GPS location to the ride in which the details are being viewed. (Each incident within the
+ *          ride will have its own GPS location as well.)
+ */
+//import * as Location from "expo-location" I don't think this is needed here. This is logic for getting the location.
 import Animated,
+
 {
     useSharedValue, 
     useAnimatedScrollHandler, 
@@ -12,7 +31,7 @@ import Animated,
 
 import { router, useLocalSearchParams } from "expo-router";
 
-//define a contants that holds the phone's window width 
+//define a constant that holds the phone's window width
 const { width } = Dimensions.get('window');
 //resize the card to be 3/4 the width of the screen
 const CARD_WIDTH = width * 0.75;
@@ -20,7 +39,7 @@ const CARD_GAP = 16;
 const STEP = CARD_GAP + CARD_WIDTH;
 const SIDE_PEEK = (width - CARD_WIDTH)/2;
 
-//types for typescript
+//types for TypeScript
 interface CardItem {
     id: string; 
     title: string;
@@ -40,6 +59,8 @@ interface CardProps {
 
   ];
 
+
+
   function Card({ item, index, scrollX, onPress }: CardProps) {
     const animatedStyle = useAnimatedStyle(() => {
         const inputRange =[(index -1) * STEP, index * STEP, (index + 1)* STEP];
@@ -56,6 +77,7 @@ interface CardProps {
         </Animated.View>
     );
   }
+
   
 //here we can create view that goes over ride session details 
 //this can be called inside the RideDetail() scroll view. 
@@ -71,14 +93,38 @@ function SessionDetailView(){
     )
 }
 
+
+/**
+ * @constructor
+ */
+function GenerateGPSDisplay() {
+    return (
+        <MapView
+            provider = {PROVIDER_GOOGLE}
+            style={{ height: 300, width: "100%" , zoom: 200}}
+            interactive={false}
+            loadingEnabled={true}
+            initialRegion={{
+                latitude: 33.4172,
+                longitude: -111.9365,
+                latitudeDelta: 0.0922,
+                longitudeDelta: 0.0421,
+            }}
+        />
+    )
+}
+
 export default function RideDetail() {
   const scrollX = useSharedValue<number>(0);
   const scrollHandler = useAnimatedScrollHandler((e)=>{
     scrollX.value = e.contentOffset.x;
   });
+    console.log(GenerateGPSDisplay);
+    console.log(MapView);
  
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+        <GenerateGPSDisplay/>
         <SessionDetailView/>
         {/* Header Section*/}
         <View style={styles.container}>
@@ -188,4 +234,8 @@ const styles = StyleSheet.create({
     shadowRadius: 8, 
     elevation: 3,
   },
+  map:{
+        width:"100%",
+        height:"100%",
+  }
 });
