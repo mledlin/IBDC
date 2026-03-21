@@ -12,7 +12,7 @@ export default function AppLayout() {
         }}
         >
        <Stack.Screen name="MainScreen" options={{title: 'Home'}}/>
-        <Stack.Screen name="IncidentHistory" options={{title: 'Histroy'}}/>
+        <Stack.Screen name="IncidentHistory" options={{title: 'History'}}/>
         <Stack.Screen name="IncidentDetail" options={{title: 'Incident Details'}}/>
         <Stack.Screen name="PairDevice" options={{title: 'Pair'}}/>
         <Stack.Screen name="RideSessions" options={{title: 'Ride Sessions'}}/>
