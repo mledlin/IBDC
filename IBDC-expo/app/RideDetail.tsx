@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet, Dimensions, Pressable, ScrollView } from "react-native";
+import { View, Text, StyleSheet, Dimensions, Pressable, ScrollView, Image } from "react-native";
 import MapView from 'react-native-maps';
 import {PROVIDER_GOOGLE} from 'react-native-maps'
 /**
@@ -17,7 +17,7 @@ import {PROVIDER_GOOGLE} from 'react-native-maps'
  *          to link the GPS location to the ride in which the details are being viewed. (Each incident within the
  *          ride will have its own GPS location as well.)
  */
-//import * as Location from "expo-location" I don't think this is needed here. This is logic for getting the location.
+//import * as Location from "expo-location" I don't think this is needed here. This is logic for getting the location at time of an event.
 import Animated,
 
 {
@@ -39,11 +39,15 @@ const CARD_GAP = 16;
 const STEP = CARD_GAP + CARD_WIDTH;
 const SIDE_PEEK = (width - CARD_WIDTH)/2;
 
+// Change to dynamic implementation later
+const image = {uri: 'https://images.pexels.com/photos/36041762/pexels-photo-36041762.jpeg'}
+
 //types for TypeScript
 interface CardItem {
     id: string; 
     title: string;
     subtitle: string;
+    image: string;
 }
 interface CardProps {
     item: CardItem;
@@ -53,15 +57,15 @@ interface CardProps {
 }
 
  const items: CardItem[]  = [
-    {id: '1', title: 'Incident 1 PHOTO HERE', subtitle: "Reported at 10:20 a.m. on Mullberry Ave"},
-    {id: '2', title: 'Incident 2 PHOTO HERE', subtitle: "reported at 11:30 a.m. on Hulkel Dr."},
-    {id: '3', title: 'Incident 3 PHOTO HERE', subtitle: "reported at 12:50 a.m. on Winston St."},
+    {id: '1', title: 'Accident location ', subtitle: "Reported at 10:20 a.m. on Mullberry Ave"  },
+    {id: '2', title: 'Accident location', subtitle: "reported at 11:30 a.m. on Hulkel Dr."},
+    {id: '3', title: 'Accident location', subtitle: "reported at 12:50 a.m. on Winston St."},
 
   ];
 
 
 
-  function Card({ item, index, scrollX, onPress }: CardProps) {
+  function Card({ item, index, scrollX, onPress, image }: CardProps) {
     const animatedStyle = useAnimatedStyle(() => {
         const inputRange =[(index -1) * STEP, index * STEP, (index + 1)* STEP];
         const scale = interpolate(scrollX.value, inputRange, [0.88, 1, 0.88], Extrapolation.CLAMP);
@@ -70,9 +74,11 @@ interface CardProps {
     });
     return (
         <Animated.View style={[styles.card, animatedStyle]}>
-            <Pressable style={styles.cardInner} onPress={onPress}>
+            <Pressable style={styles.cardInner}onPress={onPress}>
                 <Text style={styles.cardTitle}>{item.title}</Text>
                 <Text style={styles.cardSubtitle}>{item.subtitle}</Text>
+                <Image source={image} style={styles.image} height={styles.card.height * 0.60} width={styles.card.width * 0.88}>
+                </Image>
             </Pressable>
         </Animated.View>
     );
@@ -125,15 +131,11 @@ export default function RideDetail() {
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
         <GenerateGPSDisplay/>
-        <SessionDetailView/>
         {/* Header Section*/}
         <View style={styles.container}>
-      <Text style={styles.heading}>Recent Incidents</Text>
-      <Text style={styles.subheading}>Tap a card to view details</Text>
       </View>
-
       <Animated.FlatList 
-      data={items} 
+      data={items}
       horizontal
       snapToInterval={STEP}
       snapToAlignment="center"
@@ -148,6 +150,7 @@ export default function RideDetail() {
         item = {item}
         index = {index}
         scrollX={scrollX}
+        image = {image}
         onPress={() => 
             router.push({
                         pathname: "/IncidentDetail",
@@ -181,7 +184,7 @@ const styles = StyleSheet.create({
     },
     card: {
         width: CARD_WIDTH,
-        height: 180, 
+        height: 350,
         borderRadius: 18, 
         backgroundColor: '#fff',
         shadowColor: '#000', 
