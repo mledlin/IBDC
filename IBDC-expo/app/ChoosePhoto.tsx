@@ -1,13 +1,42 @@
 import { router } from "expo-router";
 import { useState } from "react";
-import { Text, View, StyleSheet, FlatList, TouchableOpacity } from "react-native";
+import { Alert, Text, View, StyleSheet, FlatList, Image, Button, TouchableOpacity } from "react-native";
+import * as ImagePicker from 'expo-image-picker'
 
+
+export default function ChoosePhoto() {
+const [image, setImage] = useState<string | null> (null);
 const handleBack = () => {
-    console.log('photo selceted');
+    console.log('photo selected');
     router.back();
 }
-export default function ChoosePhoto() {
 
+const openGallery = async() => {
+  const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+  if(!permission.granted){
+    Alert.alert("Permission required", "Need gallery access");
+    return;
+  }
+  const result = await ImagePicker.launchImageLibraryAsync({
+    allowsEditing: true,
+    aspect: [4,3],
+    quality: 1,
+  });
+
+  if(!result.canceled) { 
+    setImage(result.assets[0].uri);
+  }
+}; 
+const handleUpload = () => {
+  Alert.alert("Upload Photo", "Upload a new picture?",
+    [
+      {text: "Cancel", style: "cancel"},
+      {text: "Yes", onPress: openGallery},
+    ]
+
+  );
+};
     const SessionLists = [
       {id: 'PHOTO 1', title: 'Photo 1'},
       {id: 'PHOTO 2', title: 'Photo 2'},
@@ -19,7 +48,8 @@ export default function ChoosePhoto() {
     return (
       <View style={styles.container}>
         <Text style={styles.text}>Choose the best photo</Text>
-  
+        <Button title = "Upload New Picture" onPress = {handleUpload} />
+        {image && <Image source = {{ uri: image }} style = {styles.image} />}
         <FlatList
           data={SessionLists}
           keyExtractor={(item) => item.id}
@@ -53,6 +83,12 @@ export default function ChoosePhoto() {
     },
     list: {
       paddingBottom: 20,
+    },
+    image: {
+      width: 250,
+      height: 250,
+      alignSelf: "center",
+      marginVertical: 20,
     },
     item: {
       backgroundColor: "#f2f2f2",
