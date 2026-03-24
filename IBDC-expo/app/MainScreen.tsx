@@ -1,6 +1,47 @@
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 
+type ConnectedStatus = 'connected' | 'disconnected' | 'pairing';
+
+//Information that represents the IBDC device for main screen representation. 
+interface DeviceInfo {
+  name: string 
+  status: ConnectedStatus;
+  battery: number;
+  storage: {used: number; total: number };
+  firmwareVersion: string;
+  lastSynced: string;
+}
+
+//mock device for demonstration. Will need to be removed for final product
+const demoDevice: DeviceInfo = {
+name: 'IBDC Proto X',
+status: 'connected',
+battery: 78, 
+storage: {used: 3.4, total: 8},
+firmwareVersion: 'v1.0',
+lastSynced: '2 min ago',
+};
+
+//function to display the battery level of device on the screen 
+function BateryBar({ level }: { level : number}) {
+  const color = level > 50 ? 'green' : level > 20 ? '#ffd166' : '#ff6b6b'
+  return(
+    <View style={styles.batteryWrapper}>
+      <View>
+      </View>
+      <Text>{level}%</Text>
+    </View>
+  )
+}
+
+//function to dispay the storage level of device on the screen 
+function StroageBar({used, total}: {used: number, total: number}){
+
+}
+
+//function for pair status of the device on the screen 
+
 export default function MainScreen(){
   const router = useRouter();
   
@@ -55,6 +96,11 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: "blue", 
     marginBottom: 15, 
-    borderRadius: 10
-  }
+    borderRadius: 10,
+  }, 
+  batteryWrapper: {
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 8,
+  },
 });
