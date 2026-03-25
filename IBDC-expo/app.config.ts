@@ -58,11 +58,18 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
             "expo-location",
             {
                 locationAlwaysAndWhenInUsePermission:
-                    "Allow $(PRODUCT_NAME) to use your location.",
+                    "Allow IBDC to use your location.",
                 androidGoogleMapsApiKey:
                     process.env.GOOGLE_MAPS_API_KEY,
                 iosGoogleMapsApiKey:
-                    process.env.GOOGLE_MAPS_API_KEY
+                    process.env.GOOGLE_MAPS_API_KEY,
+                isIosBackgroundLocationEnabled:
+                    true,
+                isAndroidBackgroundLocationEnabled:
+                    true,
+
+
+
             },
         ],
     ],
