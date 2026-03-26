@@ -15,14 +15,16 @@
 // separate and be assigned to sessions based on timestamps. Further work on a session
 // type/object is needed first.
 
+import {Session} from "@/domain/Session";
+
 export type Incident = {
     imageFiles: IncidentImage[];
     selectedImageId: String | null;
     gpsLocation: GpsCoordinates | null;
     gpsTimestamp: Date | null;
-    licensePlate: string;
-    riderNotes: string;
-//  session: Session;
+    licensePlate: string | null;
+    riderNotes: string | null;
+    session: Session | null;
 };
 
 // This type/struct will hold GPS longitude/latitude
@@ -46,7 +48,7 @@ export function isIncidentComplete(incident: Incident): boolean {
         incident.selectedImageId !== null &&
         incident.gpsLocation !== null &&
         incident.gpsTimestamp !== null &&
-        incident.licensePlate.trim().length > 0 &&
-        incident.riderNotes.trim().length > 0
+            incident.licensePlate !== null && incident.licensePlate.trim().length > 0 &&
+            incident.riderNotes !== null && incident.riderNotes.trim().length > 0
     );
 }

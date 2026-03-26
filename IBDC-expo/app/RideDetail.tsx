@@ -8,73 +8,40 @@ import {
 } from "react-native";
 import {useRouter} from "expo-router";
 
-// Temp pasted here from incident.ts on branch US#79-Define_Domain_Data
-export type Incident = {
-    imageFiles: IncidentImage[];
-    selectedImageId: String | null;
-    gpsLocation: GpsCoordinates | null;
-    gpsTimestamp: Date | null;
-    licensePlate: string;
-    riderNotes: string;
-//  session: Session;
-};
+// Used only for demo purposes.
+import {defaultSession} from "@/domain/mockData"
 
-// This type/struct will hold GPS longitude/latitude
-export type GpsCoordinates = {
-    latitude: number;
-    longitude: number;
-};
 
-// The incident will have an array of these.
-export type IncidentImage = {
-    id: string;
-    fileName: string;
-    uri: string;
-};
-
-// Using array here until it can retrieve this data from a database.
-const incidents: Incident[] = [
-    {
-        imageFiles: [],
-        selectedImageId: null,
-        gpsLocation: {
-            latitude: 111.111,
-            longitude: -111.111,
-        },
-        gpsTimestamp: new Date("2026-03-24T08:00:00"),
-        licensePlate: "111111",
-        riderNotes: "No bike lane. Guy passed without moving over.",
-    },
-    {
-        imageFiles: [],
-        selectedImageId: null,
-        gpsLocation: null,
-        gpsTimestamp: new Date("2026-03-24T08:45:12"),
-        licensePlate: "222222",
-        riderNotes: "Road rage. This guy almost hit me last week to!",
-    },
-    {
-        imageFiles: [],
-        selectedImageId: null,
-        gpsLocation: null,
-        gpsTimestamp: new Date("2026-03-24T17:00:00"),
-        licensePlate: "ABCDEF",
-        riderNotes: "Stopped in bike lane.",
-    },
-];
-
-// TODO swap this with a real session when created.
-const mockSession = {
-    date: "Monday, March 24",
-    startTime: "8:00 AM",
-    incidents,
-};
-
-// This will need to take in a session id so it knows what to show. For now, it shows only static mock data.
 export default function SessionDetailsScreen() {
     const router = useRouter();
 
+    //TODO Remove and pass in session as argument when opening this screen!
+    const sessionData = defaultSession;
+
     // I wish Java had this!
+    function formatDateOnly(timestamp: Date | null): string {
+        if (!timestamp) {
+            return "No Date";
+        }
+
+        return timestamp.toLocaleDateString([], {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+        });
+    }
+
+    function formatTimeOnly(timestamp: Date | null): string {
+        if (!timestamp) {
+            return "No Time";
+        }
+
+        return timestamp.toLocaleTimeString([], {
+            hour: "numeric",
+            minute: "2-digit",
+        });
+    }
+
     function formatIncidentTime(timestamp: Date | null): string {
         if (!timestamp) {
             return "No Time";
@@ -96,13 +63,17 @@ export default function SessionDetailsScreen() {
 
             <View style={styles.detailsBox}>
                 <Text style={styles.detailsLabel}>Date</Text>
-                <Text style={styles.detailsValue}>{mockSession.date}</Text>
+                <Text style={styles.detailsValue}>
+                    {formatDateOnly(sessionData.startDateStamp)}
+                </Text>
 
                 <Text style={styles.detailsLabel}>Start Time</Text>
-                <Text style={styles.detailsValue}>{mockSession.startTime}</Text>
+                <Text style={styles.detailsValue}>
+                    {formatTimeOnly(sessionData.startDateStamp)}
+                </Text>
 
                 <Text style={styles.detailsLabel}>Number of Incidents</Text>
-                <Text style={styles.detailsValue}>{mockSession.incidents.length}</Text>
+                <Text style={styles.detailsValue}>{sessionData.incidents.length}</Text>
             </View>
 
 
@@ -110,8 +81,8 @@ export default function SessionDetailsScreen() {
 
 
             <View style={styles.incidentsBox}>
-                {mockSession.incidents.length === 0 ? (<Text style={styles.noIncidents}>No incidents</Text>) : (
-                    mockSession.incidents.map((incident, index) => (
+                {sessionData.incidents.length === 0 ? (<Text style={styles.noIncidents}>No incidents</Text>) : (
+                    sessionData.incidents.map((incident, index) => (
 
                         <TouchableOpacity
                             key={index}
