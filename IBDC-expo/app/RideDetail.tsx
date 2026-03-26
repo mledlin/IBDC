@@ -1,191 +1,195 @@
 import React from "react";
-import { View, Text, StyleSheet, Dimensions, Pressable, ScrollView } from "react-native";
-import Animated,
-{
-    useSharedValue, 
-    useAnimatedScrollHandler, 
-    useAnimatedStyle, 
-    interpolate,
-    Extrapolation,
-    SharedValue,
-} from "react-native-reanimated";
+import {
+    View,
+    Text,
+    StyleSheet,
+    TouchableOpacity,
+    ScrollView, Alert,
+} from "react-native";
+import {useRouter} from "expo-router";
 
-import { router, useLocalSearchParams } from "expo-router";
+// Temp pasted here from incident.ts on branch US#79-Define_Domain_Data
+export type Incident = {
+    imageFiles: IncidentImage[];
+    selectedImageId: String | null;
+    gpsLocation: GpsCoordinates | null;
+    gpsTimestamp: Date | null;
+    licensePlate: string;
+    riderNotes: string;
+//  session: Session;
+};
 
-//define a contants that holds the phone's window width 
-const { width } = Dimensions.get('window');
-//resize the card to be 3/4 the width of the screen
-const CARD_WIDTH = width * 0.75;
-const CARD_GAP = 16; 
-const STEP = CARD_GAP + CARD_WIDTH;
-const SIDE_PEEK = (width - CARD_WIDTH)/2;
+// This type/struct will hold GPS longitude/latitude
+export type GpsCoordinates = {
+    latitude: number;
+    longitude: number;
+};
 
-//types for typescript
-interface CardItem {
-    id: string; 
-    title: string;
-    subtitle: string;
-}
-interface CardProps {
-    item: CardItem;
-    index: number;
-    scrollX: SharedValue<number>;
-    onPress: () => void;
-}
+// The incident will have an array of these.
+export type IncidentImage = {
+    id: string;
+    fileName: string;
+    uri: string;
+};
 
- const items: CardItem[]  = [
-    {id: '1', title: 'Incident 1 PHOTO HERE', subtitle: "Reported at 10:20 a.m. on Mullberry Ave"},
-    {id: '2', title: 'Incident 2 PHOTO HERE', subtitle: "reported at 11:30 a.m. on Hulkel Dr."},
-    {id: '3', title: 'Incident 3 PHOTO HERE', subtitle: "reported at 12:50 a.m. on Winston St."},
+// Using array here until it can retrieve this data from a database.
+const incidents: Incident[] = [
+    {
+        imageFiles: [],
+        selectedImageId: null,
+        gpsLocation: {
+            latitude: 111.111,
+            longitude: -111.111,
+        },
+        gpsTimestamp: new Date("2026-03-24T08:00:00"),
+        licensePlate: "111111",
+        riderNotes: "No bike lane. Guy passed without moving over.",
+    },
+    {
+        imageFiles: [],
+        selectedImageId: null,
+        gpsLocation: null,
+        gpsTimestamp: new Date("2026-03-24T08:45:12"),
+        licensePlate: "222222",
+        riderNotes: "Road rage. This guy almost hit me last week to!",
+    },
+    {
+        imageFiles: [],
+        selectedImageId: null,
+        gpsLocation: null,
+        gpsTimestamp: new Date("2026-03-24T17:00:00"),
+        licensePlate: "ABCDEF",
+        riderNotes: "Stopped in bike lane.",
+    },
+];
 
-  ];
+// TODO swap this with a real session when created.
+const mockSession = {
+    date: "Monday, March 24",
+    startTime: "8:00 AM",
+    incidents,
+};
 
-  function Card({ item, index, scrollX, onPress }: CardProps) {
-    const animatedStyle = useAnimatedStyle(() => {
-        const inputRange =[(index -1) * STEP, index * STEP, (index + 1)* STEP];
-        const scale = interpolate(scrollX.value, inputRange, [0.88, 1, 0.88], Extrapolation.CLAMP);
-        const opacity = interpolate(scrollX.value, inputRange, [0.55, 1, 0.55], Extrapolation.CLAMP);
-        return {transform: [{scale}], opacity };
-    });
-    return (
-        <Animated.View style={[styles.card, animatedStyle]}>
-            <Pressable style={styles.cardInner} onPress={onPress}>
-                <Text style={styles.cardTitle}>{item.title}</Text>
-                <Text style={styles.cardSubtitle}>{item.subtitle}</Text>
-            </Pressable>
-        </Animated.View>
-    );
-  }
-  
-//here we can create view that goes over ride session details 
-//this can be called inside the RideDetail() scroll view. 
-function SessionDetailView(){
-     const { id, title } = useLocalSearchParams();
-    return (
-        <View style={styles.container}>
-        <Text style={styles.cardTitle}>  {id} </Text>
-        <Text style={styles.cardTitle}> {title} </Text>
-        <Text style={styles.cardTitle}> GPS photo here</Text>
-        <Text style={styles.cardTitle}> details of ride here ...</Text>
-        </View>
-    )
-}
+// This will need to take in a session id so it knows what to show. For now, it shows only static mock data.
+export default function SessionDetailsScreen() {
+    const router = useRouter();
 
-export default function RideDetail() {
-  const scrollX = useSharedValue<number>(0);
-  const scrollHandler = useAnimatedScrollHandler((e)=>{
-    scrollX.value = e.contentOffset.x;
-  });
- 
-  return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-        <SessionDetailView/>
-        {/* Header Section*/}
-        <View style={styles.container}>
-      <Text style={styles.heading}>Recent Incidents</Text>
-      <Text style={styles.subheading}>Tap a card to view details</Text>
-      </View>
-
-      <Animated.FlatList 
-      data={items} 
-      horizontal
-      snapToInterval={STEP}
-      snapToAlignment="center"
-      decelerationRate="fast"
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{paddingHorizontal: SIDE_PEEK}}
-      ItemSeparatorComponent={() => <View style={{width: CARD_GAP}} />}
-      onScroll={scrollHandler}
-      scrollEventThrottle={16}
-      renderItem={({item, index}) => (
-        <Card
-        item = {item}
-        index = {index}
-        scrollX={scrollX}
-        onPress={() => 
-            router.push({
-                        pathname: "/IncidentDetail",
-                        params: {id: item.id, title: item.title},
-                            })
+    // I wish Java had this!
+    function formatIncidentTime(timestamp: Date | null): string {
+        if (!timestamp) {
+            return "No Time";
         }
-        />
-      )}
-      />
-    </ScrollView>
-  );
+
+        return timestamp.toLocaleTimeString([], {
+            hour: "numeric",
+            minute: "2-digit",
+        });
+    }
+
+    function openIncident(index: number) {
+        Alert.alert("Open incident page placeholder", "Attempting to load incident index: " + index + ".");
+    }
+
+    return (
+        <ScrollView contentContainerStyle={styles.container}>
+            <Text style={styles.title}>Ride Session</Text>
+
+            <View style={styles.detailsBox}>
+                <Text style={styles.detailsLabel}>Date</Text>
+                <Text style={styles.detailsValue}>{mockSession.date}</Text>
+
+                <Text style={styles.detailsLabel}>Start Time</Text>
+                <Text style={styles.detailsValue}>{mockSession.startTime}</Text>
+
+                <Text style={styles.detailsLabel}>Number of Incidents</Text>
+                <Text style={styles.detailsValue}>{mockSession.incidents.length}</Text>
+            </View>
+
+
+            <Text style={styles.sectionTitle}>Incident List</Text>
+
+
+            <View style={styles.incidentsBox}>
+                {mockSession.incidents.length === 0 ? (<Text style={styles.noIncidents}>No incidents</Text>) : (
+                    mockSession.incidents.map((incident, index) => (
+
+                        <TouchableOpacity
+                            key={index}
+                            style={styles.incidentRow}
+                            onPress={() => openIncident(index)}>
+
+                            <Text style={styles.incidentText}>
+                                Incident {index} - {formatIncidentTime(incident.gpsTimestamp)}
+                            </Text>
+                        </TouchableOpacity>
+
+                    ))
+                )}
+            </View>
+        </ScrollView>
+    );
 }
 
 const styles = StyleSheet.create({
-    screen:{
-        flex:1,
-        backgroundColor: '#f2f2f7'
+    container: {
+        padding: 16,
+        backgroundColor: "#ffffff",
+        flexGrow: 1,
+        paddingBottom: 32,
     },
-    content: {
-        paddingBottom: 40,
+
+    title: {
+        fontSize: 24,
+        fontWeight: "bold",
+        marginBottom: 16,
     },
-    heading: {
-        fontSize: 26, 
-        fontWeight: '700',
-        color: '1c1c1e'
+
+    detailsBox: {
+        borderWidth: 2,
+        borderColor: "#000000",
+        borderRadius: 8,
+        padding: 16,
+        marginBottom: 20,
     },
-    subheading: {
-        fontSize: 15, 
-        color: '#8e8e93', 
-        marginTop: 4,
+
+    detailsLabel: {
+        fontSize: 14,
+        color: "#000000",
+        marginTop: 8,
     },
-    card: {
-        width: CARD_WIDTH,
-        height: 180, 
-        borderRadius: 18, 
-        backgroundColor: '#fff',
-        shadowColor: '#000', 
-        shadowOffset:{ width: 0, height: 8},
-        shadowOpacity: 0.1, 
-        shadowRadius: 12,
-        elevation: 6,
+
+    detailsValue: {
+        fontSize: 18,
+        color: "#000000",
+        marginTop: 2,
     },
-    cardInner: { 
-        flex:1, 
-        padding: 24, 
-        justifyContent: 'center',
+
+    sectionTitle: {
+        fontSize: 20,
+        marginBottom: 12,
     },
-    cardTitle:{
-        fontSize: 20, 
-        fontWeight: '700',
-        color: '#1c1c1e', 
-        marginBottom: 8,
+
+    incidentsBox: {
+        borderWidth: 1,
+        borderColor: "#000000",
+        borderRadius: 8,
+        marginBottom: 24,
     },
-    cardSubtitle:{
-        fontSize: 14, 
-        color: "#8e8e93",
+
+    incidentRow: {
+        padding: 14,
+        borderBottomWidth: 1,
+        borderBottomColor: "#000000",
     },
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#ffffff",
-    padding: 20,
-  },
-  header: {
-    fontSize: 28,
-    fontWeight: "bold",
-    marginBottom: 20,
-  },
-  text: {
-    fontSize: 18,
-    marginBottom: 10,
-    color: "black",
-  },
-  rideContainer:{
-    marginHorizontal: 24,
-    backgroundColor: "#fff", 
-    borderRadius: 16,
-    padding: 20, 
-    marginBottom: 28, 
-    shadowColor: "#000", 
-    shadowOffset: {width: 0, height: 2}, 
-    shadowOpacity: 0.07, 
-    shadowRadius: 8, 
-    elevation: 3,
-  },
+
+    incidentText: {
+        fontSize: 16,
+        color: "#000000",
+    },
+
+    noIncidents: {
+        padding: 14,
+        fontSize: 16,
+        color: "#000000",
+    },
 });
