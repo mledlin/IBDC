@@ -88,6 +88,8 @@ The following is a code snippet that should request permissions based on the OS 
 
 ```Typescript
 import { Platform, PermissionsAndroid } from 'react-native';
+import * as Location from 'expo-location';
+
 
 export async function requestBlePermissions() {
   if (Platform.OS === 'ios') {
@@ -111,6 +113,20 @@ export async function requestBlePermissions() {
   );
 
   return result === PermissionsAndroid.RESULTS.GRANTED;
+}
+
+/**
+ * Requests location services from the user
+ * RETURNS true if location access was granted
+ */
+export async function requestLocationServices(): boolean {
+    let errorMessage:string =  "Permission to access location was denied";
+    let {status} = await Location.requestForegroundPermissionsAsync();
+    
+    if (status !== 'granted') 
+        return false;
+    else 
+        return true;
 }
 ```
 Note: Android manifest and IOS Info.plist files are not required as app.json covers them completely.

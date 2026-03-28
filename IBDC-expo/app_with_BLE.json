@@ -59,6 +59,11 @@
           "isBackgroundEnabled": false,
           "modes": ["central"],
           "bluetoothAlwaysPermission": "Enable IDBC to connect to nearby Bluetooth devices."
+        },
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Intelligent Bicycle Dash Camera to use your location.",
+          "isAndroidBackgroundLocationEnabled": true,
         }
       ]
     ],

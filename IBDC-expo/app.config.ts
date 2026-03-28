@@ -67,9 +67,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
                     true,
                 isAndroidBackgroundLocationEnabled:
                     true,
-
-
-
             },
         ],
     ],
