@@ -2,8 +2,12 @@ import React from "react";
 import { Modal, View, Text, FlatList, Pressable, StyleSheet, } from "react-native";
 
 type BluetoothDevice = {
-    id: string; 
-    name: string | null;
+     id: string;
+    name: string;
+     battery: number;
+    storage: { used: number; total: number };
+    firmwareVersion: string;
+    lastSynced: string;
 }
 
 type BluetoothDeviceModalProps = {
@@ -35,8 +39,8 @@ export default function BluetoothDeviceModal({ visible, devices, onClose, onSele
                         style={styles.deviceItem}
                         onPress={() => onSelectDevice(item)}
                         >
-                            <Text> {item.name || "Unknown Device"}</Text>
-                            <Text>{item.id}</Text>
+                            <Text style={styles.deviceName}>{item.name || "Unknown Device"}</Text>
+                            <Text style={styles.deviceId}>{item.id}</Text>
                         </Pressable>
                     )}
                     />
@@ -79,21 +83,34 @@ const styles = StyleSheet.create({
         marginVertical: 20,
     },
     deviceItem: {
-        paddingVertical: 14, 
-        paddingHorizontal: 12, 
-        borderBottomWidth: 1, 
-        borderBottomColor: "#e5e5e5",
+        paddingVertical: 14,
+        paddingHorizontal: 12,
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: "#e5e7eb",
+        backgroundColor: "#f8fafc",
+        marginBottom: 10,
     },
     closeButton: {
-        marginTop: 16, 
-        backgroundColor: "#f16868", 
-        paddingVertical: 12, 
-        borderRadius: 10, 
+        marginTop: 16,
+        backgroundColor: "#dc2626",
+        paddingVertical: 12,
+        borderRadius: 12,
         alignItems: "center",
-    }, 
+    },
     closeButtonText: {
         color: "white",
         fontWeight: "600",
+    },
+    deviceName: { 
+        fontSize: 15,
+        fontWeight: "700",
+        color: "#111827",
+    },
+    deviceId: {
+        fontSize: 12,
+        color: "#6b7280",
+        marginTop: 2,
     },
    
 })

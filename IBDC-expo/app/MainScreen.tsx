@@ -3,6 +3,8 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import React, { useState } from "react";
 import { Ionicons } from '@expo/vector-icons';
+import { useDevice } from "@/context/DeviceContext";
+
 
 type ConnectedStatus = 'connected' | 'disconnected' | 'pairing';
 
@@ -40,7 +42,7 @@ function BatteryBar({ level }: { level : number}) {
 
 //function to display the Storage level of device on the screen 
 function StorageBar({ level }: { level : number}) {
-  const color = level < 20 ? '#ff6b6b' : level < 30 ? '#ffd166' : 'green'
+  const color = level > 90 ? '#ff6b6b' : level > 70 ? '#ffd166' : 'green'
   return(
     <View style={styles.batteryWrapper}>
       <View style={styles.batteryOter}>
@@ -77,17 +79,14 @@ function getStatusText(status: ConnectedStatus) {
   }
 }
 
-//function to dispay the storage level of device on the screen 
-function StroageBar({used, total}: {used: number, total: number}){
-
-}
 
 //function for pair status of the device on the screen 
 
 export default function MainScreen(){
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [device] = useState<DeviceInfo>(demoDevice);
+  const {device}= useDevice();
+  const currentDevice = device ?? demoDevice;
   return (
     <View style={[styles.safe, {paddingTop: insets.top }]}>
       <ScrollView 
@@ -99,7 +98,7 @@ export default function MainScreen(){
         <View style={[styles.statCard]}>
           <View style={styles.statHeader}>
             <Ionicons name="bluetooth" size={18} color={'#2563eb'}/>
-            <Text style={styles.statTitle}>{getStatusText(device.status)}</Text>
+            <Text style={styles.statTitle}>{getStatusText(currentDevice.status)}</Text>
           </View>
             <Pressable 
             style={styles.button} 
@@ -114,8 +113,8 @@ export default function MainScreen(){
             <Ionicons name="battery-half-outline" size={18} color={'#111827'}/>
             <Text style={styles.statTitle}>Battery</Text>
             </View>
-            <Text style={[styles.statBigNumber]}>{device.battery}%</Text>
-            <BatteryBar level={device.battery} />
+            <Text style={[styles.statBigNumber]}>{currentDevice.battery}%</Text>
+            <BatteryBar level={currentDevice.battery} />
         </View>
 
          <View style={styles.statCard}>
@@ -123,8 +122,8 @@ export default function MainScreen(){
         <Ionicons name="server-outline" size={18} color={'#111827'}/>
         <Text style={styles.statTitle}>Device storage</Text>
         </View>
-         <Text style={[styles.statBigNumber]}>{(device.storage.used/device.storage.total)*100}%</Text>
-            <StorageBar level={(device.storage.used/device.storage.total)*100} />
+         <Text style={[styles.statBigNumber]}>{(currentDevice.storage.used/currentDevice.storage.total)*100}%</Text>
+            <StorageBar level={(currentDevice.storage.used/currentDevice.storage.total)*100} />
         </View>
       </View>
 
@@ -136,7 +135,7 @@ export default function MainScreen(){
         resizeMode = "contain" 
         />
         <Text style={styles.batteryText}>
-          Firmware {device.firmwareVersion} • Synced {device.lastSynced}
+          Firmware {currentDevice.firmwareVersion} • Synced {currentDevice.lastSynced}
         </Text>
       </View>
      
