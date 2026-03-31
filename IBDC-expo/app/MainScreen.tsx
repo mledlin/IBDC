@@ -38,6 +38,45 @@ function BatteryBar({ level }: { level : number}) {
   )
 }
 
+//function to display the Storage level of device on the screen 
+function StorageBar({ level }: { level : number}) {
+  const color = level < 20 ? '#ff6b6b' : level < 30 ? '#ffd166' : 'green'
+  return(
+    <View style={styles.batteryWrapper}>
+      <View style={styles.batteryOter}>
+        <View style={[styles.batteryFill, { width: `${level}%` as any, backgroundColor: color}]} />
+      </View>
+    </View>
+  )
+}
+
+
+//function to get status of connection
+function getStatusColor(status: ConnectedStatus) {
+  switch (status) {
+    case "connected":
+      return "#16a341";
+    case "pairing":
+      return "#d97706"; 
+    case "disconnected":
+      return "#6b7280";
+  }
+}
+
+//allow the connected style to change the apperace 
+function getStatusText(status: ConnectedStatus) {
+  switch (status) {
+    case "connected":
+      return "Connectted";
+    case "pairing":
+      return "Pairing";
+    case "disconnected":
+      return "Disconnected";
+    default:
+      return "Unknown";
+  }
+}
+
 //function to dispay the storage level of device on the screen 
 function StroageBar({used, total}: {used: number, total: number}){
 
@@ -51,60 +90,79 @@ export default function MainScreen(){
   const [device] = useState<DeviceInfo>(demoDevice);
   return (
     <View style={[styles.safe, {paddingTop: insets.top }]}>
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+      style={styles.scroll} 
+      contentContainerStyle={styles.content} 
+      showsVerticalScrollIndicator={false}
+      >
       <View style={styles.statsRow}>
-        <View style={[styles.statCard, styles.scroll]}>
+        <View style={[styles.statCard]}>
           <View style={styles.statHeader}>
-            <Ionicons name="bluetooth" size={16} color={'blue'}/>
-            <Text style={styles.statTitle}>Device</Text>
+            <Ionicons name="bluetooth" size={18} color={'#2563eb'}/>
+            <Text style={styles.statTitle}>{getStatusText(device.status)}</Text>
           </View>
-            <Pressable style={styles.button} onPress={() => router.push("/PairDevice")}>
+            <Pressable 
+            style={styles.button} 
+            onPress={() => router.push("/PairDevice")}
+            >
             <Text style={styles.buttonText}>Pair Device</Text>
             </Pressable>
           </View>
 
-        <View style={[styles.statCard, styles.scroll]}>
+        <View style={styles.statCard}>
           <View style={styles.statHeader}>
-            <Ionicons name="battery-half-outline" size={16} color={'black'}/>
-            <Text style={styles.statTitle}>Device Battery</Text>
+            <Ionicons name="battery-half-outline" size={18} color={'#111827'}/>
+            <Text style={styles.statTitle}>Battery</Text>
             </View>
             <Text style={[styles.statBigNumber]}>{device.battery}%</Text>
             <BatteryBar level={device.battery} />
         </View>
 
-         <View style={[styles.statCard, styles.scroll]}>
+         <View style={styles.statCard}>
           <View style={styles.statHeader}>
-        <Ionicons name="server-outline" size={16} color={'red'}/>
+        <Ionicons name="server-outline" size={18} color={'#111827'}/>
         <Text style={styles.statTitle}>Device storage</Text>
         </View>
+         <Text style={[styles.statBigNumber]}>{(device.storage.used/device.storage.total)*100}%</Text>
+            <StorageBar level={(device.storage.used/device.storage.total)*100} />
         </View>
       </View>
+
       <View style={styles.imageCard}>
-        <View style={styles.imageGlow}>
+        <Text style={styles.batteryText}>IBDC</Text>
         <Image
         source={require('../assets/images/device-placeholder.png')} 
         style ={styles.productImage}
         resizeMode = "contain" 
         />
-        </View>
+        <Text style={styles.batteryText}>
+          Firmware {device.firmwareVersion} • Synced {device.lastSynced}
+        </Text>
       </View>
-      <View style={styles.container}>
-        
-
+     
+      <View style={styles.actionsRow}>
+        <Pressable style={styles.actionButtonSmall} 
+          onPress={() => router.push("/IncidentHistory")}
+        >
+          <Ionicons name = "warning-outline" size ={18} color="white" />
+          <Text style={styles.actionButtonSmallText}>Incident{"\n"}History</Text>
+       </Pressable>
       
-       <Pressable style={styles.button} onPress={() => router.push("/IncidentHistory")}>
-        <Text style={styles.buttonText}>Incident History</Text>
-       </Pressable>
- 
-        <Pressable style={styles.button} onPress={() => router.push("/RideSessions")}>
-        <Text style={styles.buttonText}>Ride Sessions</Text>
-        </Pressable>
-        
-        <Pressable style={styles.button} onPress={() => router.push("/Settings")}>
-        <Text style={styles.buttonText} >Settings</Text>
+       <Pressable 
+        style={styles.actionButtonSmall} 
+        onPress={() => router.push("/RideSessions")}>
+          <Ionicons  name="bicycle-outline" size={18} color="white" />
+        <Text style={styles.actionButtonSmallText}>Ride Sessions</Text>
        </Pressable>
 
+       <Pressable style={styles.actionButtonSmall} 
+       onPress={() => router.push("/Settings")}>
+        <Ionicons name="settings-outline" size={18} color="white"/>
+        <Text style={styles.actionButtonSmallText} >Settings</Text>
+       </Pressable>
+        
       </View>
+      
       </ScrollView>
     </View>
 
@@ -134,7 +192,7 @@ const styles = StyleSheet.create({
   },
   button: {
     padding: 20,
-    backgroundColor: "#5e7ac9", 
+    backgroundColor: "#4f6ef7", 
     marginBottom: 15, 
     borderRadius: 10,
   }, 
@@ -160,7 +218,7 @@ const styles = StyleSheet.create({
   },
   safe: {
     flex: 1, 
-    backgroundColor: "white",
+    backgroundColor: "#f8fafc",
   },
   scroll: {
     flex: 1,
@@ -174,11 +232,17 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   statCard: {
-    backgroundColor: 'rgb(227, 233, 238)', 
-    borderRadius: 20, 
-    borderWidth: 5, 
-    borderColor: 'grey', 
-    padding: 9,
+    backgroundColor: '#ffffff', 
+    borderRadius: 18, 
+    borderWidth: 1, 
+    borderColor: "#e5e7eb", 
+    padding: 12,
+
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
   statHeader: {
     flexDirection: 'row', 
@@ -198,14 +262,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   imageCard: {
-    backgroundColor: 'grey', 
-    borderRadius: 24, 
-    borderWidth: 1, 
-    borderColor: 'grey', 
-    padding: 20,
-    alignItems: 'center', 
-    marginBottom: 14, 
-    overflow: 'hidden',
+    backgroundColor: "#eff6ff",
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    alignItems: 'center',
+    paddingTop: 18,
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+    marginBottom: 18,
+
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
   imageGlow:{
     position: 'absolute', 
@@ -218,9 +289,35 @@ const styles = StyleSheet.create({
   },
   productImage: { 
     width: '100%', 
-    height: 170, 
+    height: 260, 
     marginBottom: 16,
   },
-
-
+  actionsRow: {
+  flexDirection: "row",
+  gap: 10,
+  marginTop: 4,
+  },
+  actionButtonSmall: {
+    flex: 1,
+    backgroundColor: "#4f6ef7",
+    borderRadius: 16,
+    minHeight: 82,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  },
+  actionButtonSmallText: {
+    color: "white",
+    fontWeight: "700",
+    fontSize: 13,
+    marginTop: 6,
+    textAlign: "center",
+    lineHeight: 16,
+  },
 });
