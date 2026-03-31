@@ -123,3 +123,21 @@ This application uses expo-router for navigation. App.tsx controls the first scr
 
 This is where all the screens live. Currently, there is a MainScreen and a Settings screen that are extremely basic. They have a simple text link to move between pages.
 
+# How to use mock data!
+
+- Mock data is stored in /domain/mockData.ts
+- The following are the available mock data structures.
+
+  1. defaultSession - 1 single session with 2 incidents.
+  2. defaultIncident - 1 single incident
+  3. fullMockHistory - 18 sessions with incidents in all stages
+  4. emptyMockSessions - 18 sessions with no incidents
+
+
+- Use this line:
+```Typescript
+import {SOMETHING} from "@/domain/mockData"
+```
+- Instead of "SOMETHING", type the variable you want based on the data you want.
+- Use the variable however you wish. Review RideDetails.tsx for a real example.
+- Let me know if you have any questions!
