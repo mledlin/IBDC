@@ -13,7 +13,7 @@ const handleBack = () => {
     console.log('photo selected');
     router.back();
 }
-export default function ChoosePhoto() {
+export function ChoosePhoto() {
 //mock data filling in for database
     const photoList = [
       {id: 'PHOTO 1', title: 'Photo 1', image: require("@/assets/images/example.jpg"),},
