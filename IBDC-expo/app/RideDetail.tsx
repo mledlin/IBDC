@@ -90,7 +90,7 @@ export default function SessionDetailsScreen() {
                             onPress={() => openIncident(index)}>
 
                             <Text style={styles.incidentText}>
-                                Incident {index} - {formatIncidentTime(incident.gpsTimestamp)}
+                                Incident {index + 1} - {formatIncidentTime(incident.gpsTimestamp)}
                             </Text>
                         </TouchableOpacity>
 
