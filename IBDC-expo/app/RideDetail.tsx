@@ -102,13 +102,6 @@ export default function SessionDetailsScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        padding: 16,
-        backgroundColor: "#ffffff",
-        flexGrow: 1,
-        paddingBottom: 32,
-    },
-
     title: {
         fontSize: 24,
         fontWeight: "bold",
@@ -163,4 +156,37 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: "#000000",
     },
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#ffffff",
+    padding: 20,
+  },
+  header: {
+    fontSize: 28,
+    fontWeight: "bold",
+    marginBottom: 20,
+  },
+  text: {
+    fontSize: 18,
+    marginBottom: 10,
+    color: "black",
+  },
+  rideContainer:{
+    marginHorizontal: 24,
+    backgroundColor: "#fff", 
+    borderRadius: 16,
+    padding: 20, 
+    marginBottom: 28, 
+    shadowColor: "#000", 
+    shadowOffset: {width: 0, height: 2}, 
+    shadowOpacity: 0.07, 
+    shadowRadius: 8, 
+    elevation: 3,
+  },
+  map:{
+        width:"100%",
+        height:"100%",
+  }
 });

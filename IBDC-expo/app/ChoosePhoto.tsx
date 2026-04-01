@@ -1,13 +1,19 @@
 import { router } from "expo-router";
 import { useState } from "react";
+import { Alert, Text, View, StyleSheet, FlatList, Image, Button, TouchableOpacity } from "react-native";
+import * as ImagePicker from 'expo-image-picker'
+
+
+export default function ChoosePhoto() {
+const [image, setImage] = useState<string | null> (null);
 import { Text, View, StyleSheet, FlatList, TouchableOpacity, Image, Dimensions } from "react-native";
 const{ width} = Dimensions.get("window");
 const card_fit = width - 40;
 const handleBack = () => {
-    console.log('photo selceted');
+    console.log('photo selected');
     router.back();
 }
-export default function ChoosePhoto() {
+export function ChoosePhoto() {
 //mock data filling in for database
     const photoList = [
       {id: 'PHOTO 1', title: 'Photo 1', image: require("@/assets/images/example.jpg"),},
@@ -20,7 +26,8 @@ export default function ChoosePhoto() {
     return (
       <View style={styles.container}>
         <Text style={styles.text}>Choose the best photo</Text>
-  
+        <Button title = "Upload New Picture" onPress = {handleUpload} />
+        {image && <Image source = {{ uri: image }} style = {styles.image} />}
         <FlatList
           data={photoList}
           keyExtractor={(item) => item.id}
@@ -84,3 +91,4 @@ export default function ChoosePhoto() {
         alignItems: "center",
       },
   });
+}

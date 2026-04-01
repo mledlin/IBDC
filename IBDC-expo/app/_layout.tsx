@@ -1,10 +1,11 @@
 import { Stack } from "expo-router";
-import { useEffect } from "react";
+import { DeviceProvider } from "@/context/DeviceContext";
 
 export default function AppLayout() {
     
 
     return (
+        <DeviceProvider>
         <Stack
         screenOptions={{
            headerStyle: {backgroundColor: 'red'},
@@ -19,5 +20,6 @@ export default function AppLayout() {
         <Stack.Screen name="RideDetail" options={{title: 'Ride Details'}}/>
         <Stack.Screen name="Settings" options={{title: 'Settings'}}/>
     </Stack>
+    </DeviceProvider>
     );
 }
