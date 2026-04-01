@@ -69,7 +69,7 @@ function getStatusColor(status: ConnectedStatus) {
 function getStatusText(status: ConnectedStatus) {
   switch (status) {
     case "connected":
-      return "Connectted";
+      return "Connected";
     case "pairing":
       return "Pairing";
     case "disconnected":
