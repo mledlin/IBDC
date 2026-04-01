@@ -102,13 +102,6 @@ export default function SessionDetailsScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        padding: 16,
-        backgroundColor: "#ffffff",
-        flexGrow: 1,
-        paddingBottom: 32,
-    },
-
     title: {
         fontSize: 24,
         fontWeight: "bold",
