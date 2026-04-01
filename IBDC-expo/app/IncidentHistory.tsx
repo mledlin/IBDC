@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image} from "react-native";
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, TextInput} from "react-native";
 import { router} from "expo-router";
 
 export default function IncidentHistory() {
