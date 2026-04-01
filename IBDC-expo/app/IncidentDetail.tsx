@@ -5,7 +5,7 @@ import { useLocalSearchParams, useRouter} from "expo-router";
 export default function IncidentDetail() {
   const router = useRouter();
   const { id, session_id, lat, long, license_plate, created_time, best_image_id } = useLocalSearchParams();
-  //Mock image 
+  //Mock image, we can pass the same image once db is in and we can reliably retrieve image paths
   const thumbnailSource = require("@/assets/images/example.jpg")
   const incidentImages = [
     { id: "1", file_path: "image_1.jpg"},
