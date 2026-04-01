@@ -1,19 +1,20 @@
 import { router } from "expo-router";
 import { useState } from "react";
-import { Text, View, StyleSheet, FlatList, TouchableOpacity } from "react-native";
-
+import { Text, View, StyleSheet, FlatList, TouchableOpacity, Image, Dimensions } from "react-native";
+const{ width} = Dimensions.get("window");
+const card_fit = width - 40;
 const handleBack = () => {
     console.log('photo selceted');
     router.back();
 }
 export default function ChoosePhoto() {
-
-    const SessionLists = [
-      {id: 'PHOTO 1', title: 'Photo 1'},
-      {id: 'PHOTO 2', title: 'Photo 2'},
-      {id: 'PHOTO 3', title: 'Photo 3'},
-      {id: 'PHOTO 4', title: 'Photo 4'},
-    ]
+//mock data filling in for database
+    const photoList = [
+      {id: 'PHOTO 1', title: 'Photo 1', image: require("@/assets/images/example.jpg"),},
+      {id: 'PHOTO 2', title: 'Photo 2', image: require("@/assets/images/example2.jpg"),},
+      {id: 'PHOTO 3', title: 'Photo 3', image: require("@/assets/images/example3.jpg"),},
+      {id: 'PHOTO 4', title: 'Photo 4', image: require("@/assets/images/example4.jpg"),},
+    ];
   
   
     return (
@@ -21,15 +22,22 @@ export default function ChoosePhoto() {
         <Text style={styles.text}>Choose the best photo</Text>
   
         <FlatList
-          data={SessionLists}
+          data={photoList}
           keyExtractor={(item) => item.id}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          snapToAlignment="center"
+          decelerationRate="fast"
           renderItem={({ item }) => (
+            <View style = {styles.cardWrap}>
             <TouchableOpacity
-              style={styles.item}
-              onPress={handleBack}
-            >
+              style={styles.card}
+              onPress={handleBack}>
+                <Image source = {item.image} style = {styles.image} resizeMode = "cover" />
               <Text style={styles.itemText}>{item.title}</Text>
             </TouchableOpacity>
+            </View>
           )} 
           contentContainerStyle={styles.list}
         />
@@ -54,22 +62,25 @@ export default function ChoosePhoto() {
     list: {
       paddingBottom: 20,
     },
-    item: {
-      backgroundColor: "#f2f2f2",
-      padding: 15,
-      borderRadius: 8,
-      marginBottom: 10,
-    },
     itemText: {
       fontSize: 18,
       color: "black",
     },
-    link: {
-      fontSize: 18,
-      color: "blue",
-      textDecorationLine: "underline",
-      textAlign: "center",
-      marginTop: 10,
-      marginBottom: 20,
-    },
+    card: {
+      width: card_fit,
+      backgroundColor: "#ffffff",
+      borderRadius: 12,
+      padding: 15,
+      alignItems: "center",
+      },
+      image: {
+        width: "100%",
+        height: 300,
+        borderRadius: 10,
+        marginBottom: 12,
+      },
+      cardWrap: {
+        width,
+        alignItems: "center",
+      },
   });
