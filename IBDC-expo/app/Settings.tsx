@@ -14,6 +14,30 @@ export default function SettingsPage() {
     const [settingTwo, setting2] = useState(false);
     const [settingThree, setting3] = useState(false);
 
+    const dataOptions = [
+        "15 days",
+        "30 days",
+        "45 days",
+        "60 days",
+        "90 days",
+        "120 days",
+        "Forever",
+    ];
+
+    const [dataIndex, setDataIndex] = useState(0);
+
+    const handlePrevOption = () => {
+        if (dataIndex > 0) {
+            setDataIndex(dataIndex - 1);
+        }
+    };
+
+    const handleNextOption = () => {
+        if (dataIndex < dataOptions.length - 1) {
+            setDataIndex(dataIndex + 1);
+        }
+    };
+
     const handleAddMockIncident = () => {
         Alert.alert("Add Mock Incident", "Just for show for now!");
     };
@@ -24,7 +48,6 @@ export default function SettingsPage() {
 
     return (
         <View style={styles.container}>
-
             <Text style={styles.title}>SETTINGS</Text>
 
             <View style={styles.settingsToggle}>
@@ -40,6 +63,40 @@ export default function SettingsPage() {
             <View style={styles.settingsToggle}>
                 <Switch value={settingThree} onValueChange={setting3}/>
                 <Text style={styles.settingLabel}>Unknown Setting 3</Text>
+            </View>
+
+            <View style={styles.retentionSection}>
+                <Text style={styles.retentionLabel}>Data Retention</Text>
+
+                <View style={styles.retentionSelector}>
+                    <TouchableOpacity
+                        onPress={handlePrevOption}
+                        style={styles.arrowButton}>
+                        <Text
+                            style={[
+                                styles.arrowText,
+                                dataIndex === 0 && styles.disabledArrowText,
+                            ]}>
+                            {"\u25C0"}
+                        </Text>
+                    </TouchableOpacity>
+
+                    <Text style={styles.retentionValue}>
+                        {dataOptions[dataIndex]}
+                    </Text>
+
+                    <TouchableOpacity
+                        onPress={handleNextOption}
+                        style={styles.arrowButton}>
+                        <Text
+                            style={[
+                                styles.arrowText,
+                                dataIndex === dataOptions.length - 1 && styles.disabledArrowText,
+                            ]}>
+                            {"\u25B6"}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
             </View>
 
             <TouchableOpacity style={styles.addMockButton} onPress={handleAddMockIncident}>
@@ -74,6 +131,38 @@ const styles = StyleSheet.create({
     },
     settingLabel: {
         marginLeft: 16,
+        fontSize: 18,
+        color: "#333333",
+    },
+    retentionSection: {
+        marginTop: 8,
+        marginBottom: 24,
+    },
+    retentionLabel: {
+        fontSize: 18,
+        color: "#333333",
+        marginBottom: 12,
+    },
+    retentionSelector: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    arrowButton: {
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+    },
+    arrowText: {
+        fontSize: 24,
+        fontWeight: "bold",
+        color: "#333333",
+    },
+    disabledArrowText: {
+        color: "#aaaaaa",
+    },
+    retentionValue: {
+        minWidth: 120,
+        textAlign: "center",
         fontSize: 18,
         color: "#333333",
     },
