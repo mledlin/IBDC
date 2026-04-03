@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
   },
   safe: {
     flex: 1, 
-    backgroundColor: "#f8fafc",
+    backgroundColor: "#c7c2c256",
   },
   scroll: {
     flex: 1,
@@ -234,14 +234,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff', 
     borderRadius: 18, 
     borderWidth: 1, 
-    borderColor: "#e5e7eb", 
+    borderColor: "#ffffff", 
     padding: 12,
 
     shadowColor: "#000",
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.08,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    elevation: 5,
   },
   statHeader: {
     flexDirection: 'row', 
@@ -261,10 +261,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   imageCard: {
-    backgroundColor: "#eff6ff",
+    backgroundColor: "#ffffff",
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: "#f3f2f7",
     alignItems: 'center',
     paddingTop: 18,
     paddingHorizontal: 16,
@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
+    elevation: 5,
   },
   imageGlow:{
     position: 'absolute', 
@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
+    elevation: 5,
   },
   actionButtonSmallText: {
     color: "white",

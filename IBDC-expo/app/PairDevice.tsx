@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    backgroundColor: COLORS.primaryRed,
+    backgroundColor: COLORS.darkBlue,
     paddingHorizontal: 16,
     paddingVertical: 18,
   },
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "flex-start",
     padding: 16,
   },
   //defining your own style
