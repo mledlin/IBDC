@@ -139,28 +139,33 @@ export default function MainScreen(){
         </Text>
       </View>
      
-      <View style={styles.actionsRow}>
-        <Pressable style={styles.actionButtonSmall} 
-          onPress={() => router.push("/IncidentHistory")}
-        >
-          <Ionicons name = "warning-outline" size ={18} color="white" />
-          <Text style={styles.actionButtonSmallText}>Incident{"\n"}History</Text>
-       </Pressable>
-      
-       <Pressable 
-        style={styles.actionButtonSmall} 
-        onPress={() => router.push("/RideSessions")}>
-          <Ionicons  name="bicycle-outline" size={18} color="white" />
-        <Text style={styles.actionButtonSmallText}>Ride Sessions</Text>
-       </Pressable>
+   <View style={styles.actionsCard}>
+  <View style={styles.actionsRow}>
+    <Pressable
+      style={styles.actionButtonSmall}
+      onPress={() => router.push("/example")}
+    >
+      <Ionicons name="warning-outline" size={18} color="white" />
+      <Text style={styles.actionButtonSmallText}>Incident{"\n"}History</Text>
+    </Pressable>
 
-       <Pressable style={styles.actionButtonSmall} 
-       onPress={() => router.push("/Settings")}>
-        <Ionicons name="settings-outline" size={18} color="white"/>
-        <Text style={styles.actionButtonSmallText} >Settings</Text>
-       </Pressable>
-        
-      </View>
+    <Pressable
+      style={styles.actionButtonSmall}
+      onPress={() => router.push("/RideSessions")}
+    >
+      <Ionicons name="bicycle-outline" size={18} color="white" />
+      <Text style={styles.actionButtonSmallText}>Ride Sessions</Text>
+    </Pressable>
+
+    <Pressable
+      style={styles.actionButtonSmall}
+      onPress={() => router.push("/Settings")}
+    >
+      <Ionicons name="settings-outline" size={18} color="white" />
+      <Text style={styles.actionButtonSmallText}>Settings</Text>
+    </Pressable>
+  </View>
+</View>
       
       </ScrollView>
     </View>
@@ -175,6 +180,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#ffffff",
   },
+  actionsCard: {
+  backgroundColor: "#ffffff",
+  borderRadius: 24,
+  borderWidth: 1,
+  borderColor: "#f3f2f7",
+  padding: 14,
+  marginTop: 4,
+
+  shadowColor: "#000",
+  shadowOpacity: 0.06,
+  shadowRadius: 10,
+  shadowOffset: { width: 0, height: 4 },
+  elevation: 5,
+},
   text: {
     fontSize: 28,
     fontWeight: "bold",
@@ -191,7 +210,7 @@ const styles = StyleSheet.create({
   },
   button: {
     padding: 20,
-    backgroundColor: "#4f6ef7", 
+    backgroundColor: "#1e3a8a", 
     marginBottom: 15, 
     borderRadius: 10,
   }, 
@@ -217,7 +236,7 @@ const styles = StyleSheet.create({
   },
   safe: {
     flex: 1, 
-    backgroundColor: "#c7c2c256",
+    backgroundColor: "#215097",
   },
   scroll: {
     flex: 1,
@@ -298,7 +317,7 @@ const styles = StyleSheet.create({
   },
   actionButtonSmall: {
     flex: 1,
-    backgroundColor: "#4f6ef7",
+    backgroundColor: "#1e3a8a",
     borderRadius: 16,
     minHeight: 82,
     paddingVertical: 12,
