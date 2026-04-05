@@ -1,76 +1,143 @@
-import { router } from "expo-router";
-import { useState } from "react";
-import { Text, View, StyleSheet, FlatList, TouchableOpacity } from "react-native";
+import React from "react";
+import {
+    View,
+    Text,
+    StyleSheet,
+    ScrollView,
+    TouchableOpacity,
+} from "react-native";
+import {fullMockHistory} from "@/domain/mockData";
 
-export default function RideSessions() {
-    // Comment
-    const SessionLists = [
-      {id: 'Ride 1', title: 'January 5th'},
-      {id: 'Ride 2', title: 'January 6th'},
-      {id: 'Ride 3', title: 'January 7th'},
-      {id: 'Ride 4', title: 'January 8th'},
-    ]
-  
-  
+const sessionData = fullMockHistory;
+
+export default function RideSessionsScreen() {
     return (
-      <View style={styles.container}>
-        <Text style={styles.text}>Session History</Text>
-  
-        <FlatList
-          data={SessionLists}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.item}
-              onPress={() => 
-                  router.push({
-                      pathname: "/RideDetail",
-                      params: {id: item.id, title: item.title},
-                  })
-              }
-            >
-              <Text style={styles.itemText}>{item.title}</Text>
-            </TouchableOpacity>
-          )} 
-          contentContainerStyle={styles.list}
-        />
-      </View>
+        <View style={styles.container}>
+            <ScrollView contentContainerStyle={styles.scrollContainer}>
+
+                <View style={styles.screen}>
+
+                    <View style={styles.headerBox}>
+                        <Text style={styles.headerText}>Ride Sessions</Text>
+                    </View>
+
+                    {sessionData.map((session, index) => {
+                        const hasIncidents = session.incidents.length > 0;
+
+                        const formattedDateTime = session.startDateStamp
+                            ? session.startDateStamp.toLocaleDateString() +
+                            " - " +
+                            session.startDateStamp.toLocaleTimeString([], {
+                                hour: "numeric",
+                                minute: "2-digit",
+                            })
+                            : "Unknown date - Unknown time";
+
+                        return (
+                            <View key={index} style={styles.sessionCard}>
+                                <Text style={styles.dateText}>{formattedDateTime}</Text>
+
+                                {hasIncidents ? (
+                                    <TouchableOpacity style={styles.incidentButton}>
+                                        <Text style={styles.incidentText}>
+                                            {session.incidents.length > 1
+                                                ? "ACTION\nREQUIRED"
+                                                : "Incident"}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ) : (
+                                    <View style={styles.noIncidentContainer}>
+                                        <Text style={styles.noIncidentText}>
+                                            No Incidents!
+                                        </Text>
+                                    </View>
+                                )}
+
+
+                            </View>
+
+                        );
+                    })}
+
+                </View>
+
+            </ScrollView>
+        </View>
     );
-  }
-  
-  const styles = StyleSheet.create({
+}
+
+const styles = StyleSheet.create({
     container: {
-      flex: 1,
-      backgroundColor: "#ffffff",
-      paddingTop: 60,
-      paddingHorizontal: 20,
+        flex: 1,
+        backgroundColor: "white",
     },
-    text: {
-      fontSize: 28,
-      fontWeight: "bold",
-      color: "black",
-      marginBottom: 20,
-      textAlign: "center",
+    scrollContainer: {
+        paddingVertical: 10,
+        alignItems: "center",
     },
-    list: {
-      paddingBottom: 20,
+    screen: {
+        width: "100%",
+        alignItems: "center",
     },
-    item: {
-      backgroundColor: "#f2f2f2",
-      padding: 15,
-      borderRadius: 8,
-      marginBottom: 10,
+    headerBox: {
+        width: "95%",
+        backgroundColor: "blue",
+        borderWidth: 2,
+        borderColor: "black",
+        borderRadius: 18,
+        paddingVertical: 28,
+        alignItems: "center",
+        justifyContent: "center",
+        marginBottom: 12,
     },
-    itemText: {
-      fontSize: 18,
-      color: "black",
+    headerText: {
+        color: "white",
+        fontSize: 22,
+        fontWeight: "500",
     },
-    link: {
-      fontSize: 18,
-      color: "blue",
-      textDecorationLine: "underline",
-      textAlign: "center",
-      marginTop: 10,
-      marginBottom: 20,
+    sessionCard: {
+        width: "82%",
+        backgroundColor: "grey",
+        borderWidth: 2,
+        borderColor: "black",
+        minHeight: 190,
+        marginBottom: 12,
+        paddingTop: 10,
+        alignItems: "center",
     },
-  });
+    dateText: {
+        fontSize: 16,
+        color: "black",
+        marginBottom: 12,
+    },
+    incidentButton: {
+        marginTop: 6,
+        width: 210,
+        height: 120,
+        backgroundColor: "blue",
+        borderWidth: 2,
+        borderColor: "black",
+        borderRadius: 22,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    incidentText: {
+        fontSize: 24,
+        color: "white",
+        textAlign: "center",
+        fontWeight: "400",
+        lineHeight: 34,
+    },
+    noIncidentContainer: {
+        flex: 1,
+        width: "100%",
+        alignItems: "center",
+        justifyContent: "center",
+        paddingBottom: 30,
+    },
+    noIncidentText: {
+        color: "black",
+        fontSize: 24,
+        fontWeight: "400",
+    },
+});
