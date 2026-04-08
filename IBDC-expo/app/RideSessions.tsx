@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useRef, useState} from "react";
 import {
     View,
     Text,
@@ -6,22 +6,41 @@ import {
     ScrollView,
     TouchableOpacity,
 } from "react-native";
-import {fullMockHistory} from "@/domain/mockData";
+import {fullMockHistory} from "@/domain/mockData"
 
-const sessionData = fullMockHistory;
+const SESSIONS_PER_PAGE = 5;
 
 export default function RideSessionsScreen() {
+    const [currentPage, setCurrentPage] = useState(0);
+
+    const startIndex = currentPage * SESSIONS_PER_PAGE;
+    const endIndex = startIndex + SESSIONS_PER_PAGE;
+    const visibleSessions = fullMockHistory.slice(startIndex, endIndex);
+
+    const hasNextPage = endIndex < fullMockHistory.length;
+    const hasPreviousPage = currentPage > 0;
+
+    function handleNextPage() {
+        if (hasNextPage) {
+            setCurrentPage(currentPage + 1);
+        }
+    }
+
+    function handlePreviousPage() {
+        if (hasPreviousPage) {
+            setCurrentPage(currentPage - 1);
+        }
+    }
+
     return (
         <View style={styles.container}>
             <ScrollView contentContainerStyle={styles.scrollContainer}>
-
                 <View style={styles.screen}>
-
                     <View style={styles.headerBox}>
                         <Text style={styles.headerText}>Ride Sessions</Text>
                     </View>
 
-                    {sessionData.map((session, index) => {
+                    {visibleSessions.map((session, index) => {
                         const hasIncidents = session.incidents.length > 0;
 
                         const formattedDateTime = session.startDateStamp
@@ -34,7 +53,7 @@ export default function RideSessionsScreen() {
                             : "Unknown date - Unknown time";
 
                         return (
-                            <View key={index} style={styles.sessionCard}>
+                            <View key={startIndex + index} style={styles.sessionCard}>
                                 <Text style={styles.dateText}>{formattedDateTime}</Text>
 
                                 {hasIncidents ? (
@@ -52,15 +71,32 @@ export default function RideSessionsScreen() {
                                         </Text>
                                     </View>
                                 )}
-
-
                             </View>
-
                         );
                     })}
 
-                </View>
+                    <View style={styles.paginationContainer}>
+                        {hasPreviousPage && (
+                            <TouchableOpacity
+                                style={styles.pageButton}
+                                onPress={handlePreviousPage}>
+                                <Text style={styles.pageButtonText}>
+                                    Newer Sessions
+                                </Text>
+                            </TouchableOpacity>
+                        )}
 
+                        {hasNextPage && (
+                            <TouchableOpacity
+                                style={styles.pageButton}
+                                onPress={handleNextPage}>
+                                <Text style={styles.pageButtonText}>
+                                    Load Next Page
+                                </Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                </View>
             </ScrollView>
         </View>
     );
@@ -139,5 +175,26 @@ const styles = StyleSheet.create({
         color: "black",
         fontSize: 24,
         fontWeight: "400",
+    },
+    paginationContainer: {
+        width: "82%",
+        marginTop: 8,
+        marginBottom: 20,
+        alignItems: "center",
+    },
+    pageButton: {
+        width: "100%",
+        backgroundColor: "blue",
+        borderWidth: 2,
+        borderColor: "black",
+        borderRadius: 12,
+        paddingVertical: 14,
+        alignItems: "center",
+        marginBottom: 10,
+    },
+    pageButtonText: {
+        color: "white",
+        fontSize: 18,
+        fontWeight: "500",
     },
 });

@@ -15,13 +15,11 @@ export default function SettingsPage() {
     const [settingThree, setting3] = useState(false);
 
     const dataOptions = [
-        "15 days",
-        "30 days",
-        "45 days",
-        "60 days",
-        "90 days",
-        "120 days",
-        "Forever",
+        "10",
+        "25",
+        "50",
+        "100",
+        "All",
     ];
 
     const [dataIndex, setDataIndex] = useState(0);
@@ -66,7 +64,7 @@ export default function SettingsPage() {
             </View>
 
             <View style={styles.retentionSection}>
-                <Text style={styles.retentionLabel}>Data Retention</Text>
+                <Text style={styles.retentionLabel}>Sessions Per Page</Text>
 
                 <View style={styles.retentionSelector}>
                     <TouchableOpacity
