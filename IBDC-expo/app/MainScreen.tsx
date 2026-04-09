@@ -143,7 +143,7 @@ export default function MainScreen(){
   <View style={styles.actionsRow}>
     <Pressable
       style={styles.actionButtonSmall}
-      onPress={() => router.push("/example")}
+      onPress={() => router.push("/IncidentHistory")}
     >
       <Ionicons name="warning-outline" size={18} color="white" />
       <Text style={styles.actionButtonSmallText}>Incident{"\n"}History</Text>
