@@ -5,83 +5,135 @@ import {
     StyleSheet,
     ScrollView,
     TouchableOpacity,
+    Image,
 } from "react-native";
-import {fullMockHistory} from "@/domain/mockData"
 
+import {fullMockHistory} from "@/domain/mockData";
+import {isIncidentComplete} from "@/domain/Incident";
+
+// This should be loaded from saved settings but for now its just a const.
 const SESSIONS_PER_PAGE = 5;
 
-export default function RideSessionsScreen() {
+export default function RideSession() {
     const [currentPage, setCurrentPage] = useState(0);
+    const scrollViewRef = useRef<ScrollView>(null);
 
+    // Determine what to show
     const startIndex = currentPage * SESSIONS_PER_PAGE;
     const endIndex = startIndex + SESSIONS_PER_PAGE;
     const visibleSessions = fullMockHistory.slice(startIndex, endIndex);
 
+    // guardrails
     const hasNextPage = endIndex < fullMockHistory.length;
     const hasPreviousPage = currentPage > 0;
+
+    // auto scroll to top on page load!
+    function scrollToTop() {
+        scrollViewRef.current?.scrollTo({y: 0, animated: true});
+    }
 
     function handleNextPage() {
         if (hasNextPage) {
             setCurrentPage(currentPage + 1);
+            scrollToTop();
         }
     }
 
     function handlePreviousPage() {
         if (hasPreviousPage) {
             setCurrentPage(currentPage - 1);
+            scrollToTop();
         }
     }
 
+    function handleIncidentPress(incident: any) {
+        // TODO
+    }
+
     return (
-        <View style={styles.container}>
-            <ScrollView contentContainerStyle={styles.scrollContainer}>
-                <View style={styles.screen}>
+        <View style={styles.screenBackground}>
+            <ScrollView
+                ref={scrollViewRef}
+                contentContainerStyle={styles.scrollContainer}>
+                <View style={styles.display}>
                     <View style={styles.headerBox}>
                         <Text style={styles.headerText}>Ride Sessions</Text>
                     </View>
 
                     {visibleSessions.map((session, index) => {
-                        const hasIncidents = session.incidents.length > 0;
-
                         const formattedDateTime = session.startDateStamp
                             ? session.startDateStamp.toLocaleDateString() +
                             " - " +
                             session.startDateStamp.toLocaleTimeString([], {
                                 hour: "numeric",
                                 minute: "2-digit",
-                            })
-                            : "Unknown date - Unknown time";
+                            }) : "Unknown date - Unknown time";
 
                         return (
                             <View key={startIndex + index} style={styles.sessionCard}>
                                 <Text style={styles.dateText}>{formattedDateTime}</Text>
 
-                                {hasIncidents ? (
-                                    <TouchableOpacity style={styles.incidentButton}>
-                                        <Text style={styles.incidentText}>
-                                            {session.incidents.length > 1
-                                                ? "ACTION\nREQUIRED"
-                                                : "Incident"}
-                                        </Text>
-                                    </TouchableOpacity>
-                                ) : (
-                                    <View style={styles.noIncidentContainer}>
-                                        <Text style={styles.noIncidentText}>
-                                            No Incidents!
-                                        </Text>
-                                    </View>
-                                )}
+                                {session.incidents.length === 0 ?
+                                    (
+                                        <View style={styles.noIncidentContainer}>
+                                            <Text style={styles.noIncidentText}>
+                                                No Incidents!
+                                            </Text>
+                                        </View>
+                                    ) : (
+                                        <ScrollView horizontal
+                                                    contentContainerStyle={styles.incidentRow}>
+                                            {session.incidents.map((incident, incidentIndex) => {
+
+                                                const selectedImage =
+                                                    incident.imageFiles.find((image: any) =>
+                                                        image.id === incident.selectedImageId
+                                                    ) || null;
+
+                                                return (
+                                                    <TouchableOpacity
+                                                        key={incidentIndex}
+                                                        style={styles.incidentCard}
+                                                        onPress={() => handleIncidentPress(incident)}>
+
+                                                        {isIncidentComplete(incident) ?
+                                                            (
+                                                                selectedImage ? (
+                                                                    <Image
+                                                                        source={selectedImage.uri}
+                                                                        style={styles.incidentImage}
+                                                                        resizeMode="cover"
+                                                                    />
+                                                                ) : (
+                                                                    <View style={styles.incidentCard}>
+                                                                        <Text style={styles.incidentCard}>
+                                                                            No Image
+                                                                        </Text>
+                                                                    </View>
+                                                                )
+                                                            ) : (
+                                                                <View style={styles.actionRequiredBox}>
+                                                                    <Text style={styles.actionRequiredText}>
+                                                                        Action Required
+                                                                    </Text>
+                                                                </View>
+                                                            )}
+                                                    </TouchableOpacity>
+                                                );
+                                            })}
+                                        </ScrollView>
+                                    )}
                             </View>
                         );
                     })}
 
-                    <View style={styles.paginationContainer}>
+                    <View style={styles.pageChangeContainer}>
                         {hasPreviousPage && (
                             <TouchableOpacity
                                 style={styles.pageButton}
                                 onPress={handlePreviousPage}>
                                 <Text style={styles.pageButtonText}>
-                                    Newer Sessions
+                                    Go Back
                                 </Text>
                             </TouchableOpacity>
                         )}
@@ -103,7 +155,7 @@ export default function RideSessionsScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: {
+    screenBackground: {
         flex: 1,
         backgroundColor: "white",
     },
@@ -111,7 +163,7 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         alignItems: "center",
     },
-    screen: {
+    display: {
         width: "100%",
         alignItems: "center",
     },
@@ -121,63 +173,78 @@ const styles = StyleSheet.create({
         borderWidth: 2,
         borderColor: "black",
         borderRadius: 18,
-        paddingVertical: 28,
+        paddingVertical: 15,
         alignItems: "center",
         justifyContent: "center",
-        marginBottom: 12,
+        marginBottom: 15,
     },
     headerText: {
         color: "white",
-        fontSize: 22,
-        fontWeight: "500",
+        fontSize: 28,
     },
     sessionCard: {
-        width: "82%",
-        backgroundColor: "grey",
+        width: "80%",
+        backgroundColor: "lightgrey",
         borderWidth: 2,
         borderColor: "black",
-        minHeight: 190,
-        marginBottom: 12,
+        minHeight: 220,
+        marginBottom: 10,
         paddingTop: 10,
+        paddingBottom: 10,
         alignItems: "center",
     },
     dateText: {
         fontSize: 16,
         color: "black",
-        marginBottom: 12,
-    },
-    incidentButton: {
-        marginTop: 6,
-        width: 210,
-        height: 120,
-        backgroundColor: "blue",
-        borderWidth: 2,
-        borderColor: "black",
-        borderRadius: 22,
-        alignItems: "center",
-        justifyContent: "center",
-    },
-    incidentText: {
-        fontSize: 24,
-        color: "white",
-        textAlign: "center",
-        fontWeight: "400",
-        lineHeight: 34,
+        marginBottom: 10,
+        fontWeight: "bold",
     },
     noIncidentContainer: {
         flex: 1,
         width: "100%",
         alignItems: "center",
         justifyContent: "center",
-        paddingBottom: 30,
+        paddingBottom: 20,
     },
     noIncidentText: {
         color: "black",
         fontSize: 24,
         fontWeight: "400",
     },
-    paginationContainer: {
-        width: "82%",
+    incidentRow: {
+        paddingHorizontal: 10,
+        alignItems: "center",
+    },
+    incidentCard: {
+        width: 160,
+        height: 150,
+        marginHorizontal: 8,
+        borderWidth: 2,
+        borderColor: "black",
+        backgroundColor: "white",
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    incidentImage: {
+        width: "95%",
+        height: "95%",
+    },
+    actionRequiredBox: {
+        flex: 1,
+        width: "100%",
+        justifyContent: "center",
+        alignItems: "center",
+        paddingHorizontal: 10,
+        backgroundColor: "black",
+    },
+    actionRequiredText: {
+        color: "white",
+        fontSize: 20,
+        fontWeight: "bold",
+        textAlign: "center",
+    },
+    pageChangeContainer: {
+        width: "80%",
         marginTop: 8,
         marginBottom: 20,
         alignItems: "center",

@@ -315,9 +315,30 @@ export function createFullMockHistory(): Session[] {
             session: session1,
         },
         {
+            imageFiles: [
+                {
+                    id: "s1i2img1",
+                    fileName: "example.jpg",
+                    uri: require("@/assets/images/example.jpg"),
+                },
+            ],
+            selectedImageId: "s1i2img1",
+            gpsLocation: {
+                latitude: 111.112,
+                longitude: -111.112,
+            },
+            gpsTimestamp: new Date("2026-03-24T09:10:00"),
+            licensePlate: "ABC123",
+            riderNotes: "Driver cut into the bike lane.",
+            session: session1,
+        },
+        {
             imageFiles: [],
             selectedImageId: null,
-            gpsLocation: null,
+            gpsLocation: {
+                latitude: 111.113,
+                longitude: -111.113,
+            },
             gpsTimestamp: new Date("2026-03-24T17:00:00"),
             licensePlate: "",
             riderNotes: "Stopped in bike lane.",
@@ -335,7 +356,35 @@ export function createFullMockHistory(): Session[] {
         lastGPSTime: new Date("2026-03-23T18:55:00"),
         startDateStamp: new Date("2026-03-23T18:10:00"),
     };
-    session2.incidents = [];
+    session2.incidents = [
+        {
+            imageFiles: [
+                {
+                    id: "s2i1img1",
+                    fileName: "example2.jpg",
+                    uri: require("@/assets/images/example2.jpg"),
+                },
+            ],
+            selectedImageId: "s2i1img1",
+            gpsLocation: {
+                latitude: 111.121,
+                longitude: -111.121,
+            },
+            gpsTimestamp: new Date("2026-03-23T18:22:00"),
+            licensePlate: "TUC555",
+            riderNotes: "Vehicle passed too closely.",
+            session: session2,
+        },
+        {
+            imageFiles: [],
+            selectedImageId: null,
+            gpsLocation: null,
+            gpsTimestamp: null,
+            licensePlate: null,
+            riderNotes: null,
+            session: session2,
+        },
+    ];
     sessions.push(session2);
 
     const session3: Session = {
@@ -369,7 +418,65 @@ export function createFullMockHistory(): Session[] {
         lastGPSTime: new Date("2026-03-21T07:20:00"),
         startDateStamp: new Date("2026-03-21T06:45:00"),
     };
-    session4.incidents = [];
+    session4.incidents = [
+        {
+            imageFiles: [
+                {
+                    id: "s4i1img1",
+                    fileName: "example3.jpg",
+                    uri: require("@/assets/images/example3.jpg"),
+                },
+            ],
+            selectedImageId: "s4i1img1",
+            gpsLocation: {
+                latitude: 111.131,
+                longitude: -111.131,
+            },
+            gpsTimestamp: new Date("2026-03-21T06:58:00"),
+            licensePlate: "GOOD44",
+            riderNotes: "Car blocked lane during pickup.",
+            session: session4,
+        },
+        {
+            imageFiles: [],
+            selectedImageId: null,
+            gpsLocation: {
+                latitude: 111.132,
+                longitude: -111.132,
+            },
+            gpsTimestamp: new Date("2026-03-21T07:05:00"),
+            licensePlate: "BIKE22",
+            riderNotes: null,
+            session: session4,
+        },
+        {
+            imageFiles: [],
+            selectedImageId: null,
+            gpsLocation: null,
+            gpsTimestamp: null,
+            licensePlate: "",
+            riderNotes: "",
+            session: session4,
+        },
+        {
+            imageFiles: [
+                {
+                    id: "s4i4img1",
+                    fileName: "example4.jpg",
+                    uri: require("@/assets/images/example4.jpg"),
+                },
+            ],
+            selectedImageId: null,
+            gpsLocation: {
+                latitude: 111.134,
+                longitude: -111.134,
+            },
+            gpsTimestamp: new Date("2026-03-21T07:15:00"),
+            licensePlate: "LATE77",
+            riderNotes: "Opened door into bike lane.",
+            session: session4,
+        },
+    ];
     sessions.push(session4);
 
     const session5: Session = {
@@ -398,6 +505,45 @@ export function createFullMockHistory(): Session[] {
             gpsTimestamp: new Date("2026-03-20T18:02:00"),
             licensePlate: "JKL789",
             riderNotes: "",
+            session: session5,
+        },
+        {
+            imageFiles: [
+                {
+                    id: "s5i3img1",
+                    fileName: "example.jpg",
+                    uri: require("@/assets/images/example.jpg"),
+                },
+            ],
+            selectedImageId: "s5i3img1",
+            gpsLocation: {
+                latitude: 111.141,
+                longitude: -111.141,
+            },
+            gpsTimestamp: new Date("2026-03-20T18:05:00"),
+            licensePlate: "CLEAR5",
+            riderNotes: "Merged into lane without signaling.",
+            session: session5,
+        },
+        {
+            imageFiles: [],
+            selectedImageId: null,
+            gpsLocation: {
+                latitude: 111.142,
+                longitude: -111.142,
+            },
+            gpsTimestamp: null,
+            licensePlate: "MISS55",
+            riderNotes: "Too close while passing.",
+            session: session5,
+        },
+        {
+            imageFiles: [],
+            selectedImageId: null,
+            gpsLocation: null,
+            gpsTimestamp: null,
+            licensePlate: null,
+            riderNotes: "Only partial report entered.",
             session: session5,
         },
     ];
@@ -434,6 +580,36 @@ export function createFullMockHistory(): Session[] {
             riderNotes: "Driver honked aggressively while passing.",
             session: session7,
         },
+        {
+            imageFiles: [
+                {
+                    id: "s7i2img1",
+                    fileName: "example2.jpg",
+                    uri: require("@/assets/images/example2.jpg"),
+                },
+            ],
+            selectedImageId: "s7i2img1",
+            gpsLocation: {
+                latitude: 111.151,
+                longitude: -111.151,
+            },
+            gpsTimestamp: new Date("2026-03-17T12:44:00"),
+            licensePlate: "PASS77",
+            riderNotes: "Close pass captured clearly.",
+            session: session7,
+        },
+        {
+            imageFiles: [],
+            selectedImageId: null,
+            gpsLocation: {
+                latitude: 111.152,
+                longitude: -111.152,
+            },
+            gpsTimestamp: new Date("2026-03-17T12:49:00"),
+            licensePlate: "",
+            riderNotes: "",
+            session: session7,
+        },
     ];
     sessions.push(session7);
 
@@ -446,7 +622,17 @@ export function createFullMockHistory(): Session[] {
         lastGPSTime: new Date("2026-03-16T07:45:00"),
         startDateStamp: new Date("2026-03-16T07:10:00"),
     };
-    session8.incidents = [];
+    session8.incidents = [
+        {
+            imageFiles: [],
+            selectedImageId: null,
+            gpsLocation: null,
+            gpsTimestamp: null,
+            licensePlate: null,
+            riderNotes: null,
+            session: session8,
+        },
+    ];
     sessions.push(session8);
 
     const session9: Session = {
@@ -465,6 +651,72 @@ export function createFullMockHistory(): Session[] {
             gpsLocation: null,
             gpsTimestamp: new Date("2026-03-15T19:15:00"),
             licensePlate: "",
+            riderNotes: "",
+            session: session9,
+        },
+        {
+            imageFiles: [
+                {
+                    id: "s9i2img1",
+                    fileName: "example3.jpg",
+                    uri: require("@/assets/images/example3.jpg"),
+                },
+            ],
+            selectedImageId: "s9i2img1",
+            gpsLocation: {
+                latitude: 111.161,
+                longitude: -111.161,
+            },
+            gpsTimestamp: new Date("2026-03-15T19:20:00"),
+            licensePlate: "NIGHT9",
+            riderNotes: "Car drifted into shoulder.",
+            session: session9,
+        },
+        {
+            imageFiles: [],
+            selectedImageId: null,
+            gpsLocation: {
+                latitude: 111.162,
+                longitude: -111.162,
+            },
+            gpsTimestamp: new Date("2026-03-15T19:28:00"),
+            licensePlate: "SIDE01",
+            riderNotes: null,
+            session: session9,
+        },
+        {
+            imageFiles: [],
+            selectedImageId: null,
+            gpsLocation: null,
+            gpsTimestamp: null,
+            licensePlate: "",
+            riderNotes: "Need to finish details later.",
+            session: session9,
+        },
+        {
+            imageFiles: [
+                {
+                    id: "s9i5img1",
+                    fileName: "example4.jpg",
+                    uri: require("@/assets/images/example4.jpg"),
+                },
+            ],
+            selectedImageId: "s9i5img1",
+            gpsLocation: {
+                latitude: 111.163,
+                longitude: -111.163,
+            },
+            gpsTimestamp: new Date("2026-03-15T19:35:00"),
+            licensePlate: "DONE09",
+            riderNotes: "Complete incident record.",
+            session: session9,
+        },
+        {
+            imageFiles: [],
+            selectedImageId: null,
+            gpsLocation: null,
+            gpsTimestamp: new Date("2026-03-15T19:38:00"),
+            licensePlate: null,
             riderNotes: "",
             session: session9,
         },
@@ -511,6 +763,24 @@ export function createFullMockHistory(): Session[] {
             riderNotes: "Driver turned right in front of me.",
             session: session11,
         },
+        {
+            imageFiles: [
+                {
+                    id: "s11i3img1",
+                    fileName: "example.jpg",
+                    uri: require("@/assets/images/example.jpg"),
+                },
+            ],
+            selectedImageId: "s11i3img1",
+            gpsLocation: {
+                latitude: 111.171,
+                longitude: -111.171,
+            },
+            gpsTimestamp: new Date("2026-03-12T09:06:00"),
+            licensePlate: "OK1111",
+            riderNotes: "Complete record with image.",
+            session: session11,
+        },
     ];
     sessions.push(session11);
 
@@ -523,7 +793,29 @@ export function createFullMockHistory(): Session[] {
         lastGPSTime: new Date("2026-03-11T18:35:00"),
         startDateStamp: new Date("2026-03-11T17:50:00"),
     };
-    session12.incidents = [];
+    session12.incidents = [
+        {
+            imageFiles: [],
+            selectedImageId: null,
+            gpsLocation: {
+                latitude: 111.181,
+                longitude: -111.181,
+            },
+            gpsTimestamp: new Date("2026-03-11T18:00:00"),
+            licensePlate: "HALF12",
+            riderNotes: "",
+            session: session12,
+        },
+        {
+            imageFiles: [],
+            selectedImageId: null,
+            gpsLocation: null,
+            gpsTimestamp: null,
+            licensePlate: null,
+            riderNotes: null,
+            session: session12,
+        },
+    ];
     sessions.push(session12);
 
     const session13: Session = {
@@ -557,6 +849,45 @@ export function createFullMockHistory(): Session[] {
             riderNotes: "",
             session: session14,
         },
+        {
+            imageFiles: [
+                {
+                    id: "s14i2img1",
+                    fileName: "example2.jpg",
+                    uri: require("@/assets/images/example2.jpg"),
+                },
+            ],
+            selectedImageId: "s14i2img1",
+            gpsLocation: {
+                latitude: 111.191,
+                longitude: -111.191,
+            },
+            gpsTimestamp: new Date("2026-03-09T13:36:00"),
+            licensePlate: "GOOD14",
+            riderNotes: "Complete incident entry.",
+            session: session14,
+        },
+        {
+            imageFiles: [],
+            selectedImageId: null,
+            gpsLocation: null,
+            gpsTimestamp: null,
+            licensePlate: "",
+            riderNotes: "Need to add GPS later.",
+            session: session14,
+        },
+        {
+            imageFiles: [],
+            selectedImageId: null,
+            gpsLocation: {
+                latitude: 111.193,
+                longitude: -111.193,
+            },
+            gpsTimestamp: new Date("2026-03-09T13:41:00"),
+            licensePlate: null,
+            riderNotes: null,
+            session: session14,
+        },
     ];
     sessions.push(session14);
 
@@ -569,7 +900,17 @@ export function createFullMockHistory(): Session[] {
         lastGPSTime: new Date("2026-03-08T10:20:00"),
         startDateStamp: new Date("2026-03-08T09:45:00"),
     };
-    session15.incidents = [];
+    session15.incidents = [
+        {
+            imageFiles: [],
+            selectedImageId: null,
+            gpsLocation: null,
+            gpsTimestamp: null,
+            licensePlate: "",
+            riderNotes: "",
+            session: session15,
+        },
+    ];
     sessions.push(session15);
 
     const session16: Session = {
@@ -589,6 +930,81 @@ export function createFullMockHistory(): Session[] {
             gpsTimestamp: new Date("2026-03-07T18:40:00"),
             licensePlate: "",
             riderNotes: "Stopped across crosswalk and bike access area.",
+            session: session16,
+        },
+        {
+            imageFiles: [
+                {
+                    id: "s16i2img1",
+                    fileName: "example3.jpg",
+                    uri: require("@/assets/images/example3.jpg"),
+                },
+            ],
+            selectedImageId: "s16i2img1",
+            gpsLocation: {
+                latitude: 111.201,
+                longitude: -111.201,
+            },
+            gpsTimestamp: new Date("2026-03-07T18:46:00"),
+            licensePlate: "WALK16",
+            riderNotes: "Complete record.",
+            session: session16,
+        },
+        {
+            imageFiles: [],
+            selectedImageId: null,
+            gpsLocation: {
+                latitude: 111.202,
+                longitude: -111.202,
+            },
+            gpsTimestamp: new Date("2026-03-07T18:52:00"),
+            licensePlate: "MISS16",
+            riderNotes: "",
+            session: session16,
+        },
+        {
+            imageFiles: [],
+            selectedImageId: null,
+            gpsLocation: null,
+            gpsTimestamp: null,
+            licensePlate: null,
+            riderNotes: "Only note saved.",
+            session: session16,
+        },
+        {
+            imageFiles: [
+                {
+                    id: "s16i5img1",
+                    fileName: "example4.jpg",
+                    uri: require("@/assets/images/example4.jpg"),
+                },
+            ],
+            selectedImageId: null,
+            gpsLocation: {
+                latitude: 111.203,
+                longitude: -111.203,
+            },
+            gpsTimestamp: new Date("2026-03-07T19:00:00"),
+            licensePlate: "PIC160",
+            riderNotes: "Image saved but not selected.",
+            session: session16,
+        },
+        {
+            imageFiles: [
+                {
+                    id: "s16i6img1",
+                    fileName: "example.jpg",
+                    uri: require("@/assets/images/example.jpg"),
+                },
+            ],
+            selectedImageId: "s16i6img1",
+            gpsLocation: {
+                latitude: 111.204,
+                longitude: -111.204,
+            },
+            gpsTimestamp: new Date("2026-03-07T19:03:00"),
+            licensePlate: "FULL16",
+            riderNotes: "Another complete incident.",
             session: session16,
         },
     ];
@@ -623,6 +1039,24 @@ export function createFullMockHistory(): Session[] {
             gpsTimestamp: new Date("2026-03-05T17:05:00"),
             licensePlate: "END999",
             riderNotes: "",
+            session: session18,
+        },
+        {
+            imageFiles: [
+                {
+                    id: "s18i2img1",
+                    fileName: "example2.jpg",
+                    uri: require("@/assets/images/example2.jpg"),
+                },
+            ],
+            selectedImageId: "s18i2img1",
+            gpsLocation: {
+                latitude: 111.211,
+                longitude: -111.211,
+            },
+            gpsTimestamp: new Date("2026-03-05T17:10:00"),
+            licensePlate: "LAST18",
+            riderNotes: "Complete final mock incident.",
             session: session18,
         },
     ];
