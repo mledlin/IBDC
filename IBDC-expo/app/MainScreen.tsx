@@ -88,82 +88,75 @@ export default function MainScreen(){
   const {device}= useDevice();
   const currentDevice = device ?? demoDevice;
   return (
-    <View style={[styles.safe, {paddingTop: insets.top }]}>
-      <ScrollView 
-      style={styles.scroll} 
-      contentContainerStyle={styles.content} 
-      showsVerticalScrollIndicator={false}
-      >
-      <View style={styles.statsRow}>
-        <View style={[styles.statCard]}>
-          <View style={styles.statHeader}>
-            <Ionicons name="bluetooth" size={18} color={'#2563eb'}/>
-            <Text style={styles.statTitle}>{getStatusText(currentDevice.status)}</Text>
-          </View>
-            <Pressable 
-            style={styles.button} 
-            onPress={() => router.push("/PairDevice")}
-            >
-            <Text style={styles.buttonText}>Pair Device</Text>
-            </Pressable>
-          </View>
-
-        <View style={styles.statCard}>
-          <View style={styles.statHeader}>
-            <Ionicons name="battery-half-outline" size={18} color={'#111827'}/>
-            <Text style={styles.statTitle}>Battery</Text>
-            </View>
-            <Text style={[styles.statBigNumber]}>{currentDevice.battery}%</Text>
-            <BatteryBar level={currentDevice.battery} />
-        </View>
-
-         <View style={styles.statCard}>
-          <View style={styles.statHeader}>
-        <Ionicons name="server-outline" size={18} color={'#111827'}/>
-        <Text style={styles.statTitle}>Device storage</Text>
-        </View>
-         <Text style={[styles.statBigNumber]}>{(currentDevice.storage.used/currentDevice.storage.total)*100}%</Text>
-            <StorageBar level={(currentDevice.storage.used/currentDevice.storage.total)*100} />
-        </View>
-      </View>
-
-      <View style={styles.imageCard}>
-        <Text style={styles.batteryText}>IBDC</Text>
-        <Image
-        source={require('../assets/images/device-placeholder.png')} 
-        style ={styles.productImage}
-        resizeMode = "contain" 
-        />
-        <Text style={styles.batteryText}>
-          Firmware {currentDevice.firmwareVersion} • Synced {currentDevice.lastSynced}
-        </Text>
-      </View>
-     
-      <View style={styles.actionsRow}>
-        <Pressable style={styles.actionButtonSmall} 
-          onPress={() => router.push("/IncidentHistory")}
+      <View style={[styles.safe, {paddingTop: insets.top }]}>
+        <ScrollView
+            style={styles.scroll}
+            contentContainerStyle={styles.content}
+            showsVerticalScrollIndicator={false}
         >
-          <Ionicons name = "warning-outline" size ={18} color="white" />
-          <Text style={styles.actionButtonSmallText}>Incident{"\n"}History</Text>
-       </Pressable>
-      
-       <Pressable 
-        style={styles.actionButtonSmall} 
-        onPress={() => router.push("/RideSessions")}>
-          <Ionicons  name="bicycle-outline" size={18} color="white" />
-        <Text style={styles.actionButtonSmallText}>Ride Sessions</Text>
-       </Pressable>
+          <View style={styles.statsRow}>
+            <View style={[styles.statCard]}>
+              <View style={styles.statHeader}>
+                <Ionicons name="bluetooth" size={18} color={'#2563eb'}/>
+                <Text style={styles.statTitle}>{getStatusText(currentDevice.status)}</Text>
+              </View>
+              <Pressable
+                  style={styles.button}
+                  onPress={() => router.push("/PairDevice")}
+              >
+                <Text style={styles.buttonText}>Pair Device</Text>
+              </Pressable>
+            </View>
 
-       <Pressable style={styles.actionButtonSmall} 
-       onPress={() => router.push("/Settings")}>
-        <Ionicons name="settings-outline" size={18} color="white"/>
-        <Text style={styles.actionButtonSmallText} >Settings</Text>
-       </Pressable>
-        
+            <View style={styles.statCard}>
+              <View style={styles.statHeader}>
+                <Ionicons name="battery-half-outline" size={18} color={'#111827'}/>
+                <Text style={styles.statTitle}>Battery</Text>
+              </View>
+              <Text style={[styles.statBigNumber]}>{currentDevice.battery}%</Text>
+              <BatteryBar level={currentDevice.battery} />
+            </View>
+
+            <View style={styles.statCard}>
+              <View style={styles.statHeader}>
+                <Ionicons name="server-outline" size={18} color={'#111827'}/>
+                <Text style={styles.statTitle}>Device storage</Text>
+              </View>
+              <Text style={[styles.statBigNumber]}>{(currentDevice.storage.used/currentDevice.storage.total)*100}%</Text>
+              <StorageBar level={(currentDevice.storage.used/currentDevice.storage.total)*100} />
+            </View>
+          </View>
+
+          <View style={styles.imageCard}>
+            <Text style={styles.batteryText}>IBDC</Text>
+            <Image
+                source={require('../assets/images/device-placeholder.png')}
+                style ={styles.productImage}
+                resizeMode = "contain"
+            />
+            <Text style={styles.batteryText}>
+              Firmware {currentDevice.firmwareVersion} • Synced {currentDevice.lastSynced}
+            </Text>
+          </View>
+
+          <View style={styles.actionsRow}>
+            <Pressable
+                style={styles.actionButtonSmall}
+                onPress={() => router.push("/RideSessions")}>
+              <Ionicons  name="bicycle-outline" size={18} color="white" />
+              <Text style={styles.actionButtonSmallText}>Ride Sessions</Text>
+            </Pressable>
+
+            <Pressable style={styles.actionButtonSmall}
+                       onPress={() => router.push("/Settings")}>
+              <Ionicons name="settings-outline" size={18} color="white"/>
+              <Text style={styles.actionButtonSmallText} >Settings</Text>
+            </Pressable>
+
+          </View>
+
+        </ScrollView>
       </View>
-      
-      </ScrollView>
-    </View>
 
   );
 }

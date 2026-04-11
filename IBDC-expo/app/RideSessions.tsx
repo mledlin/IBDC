@@ -1,4 +1,4 @@
-import React, {useRef, useState} from "react";
+import React, {useMemo, useRef, useState} from "react";
 import {
     View,
     Text,
@@ -11,23 +11,43 @@ import {
 import {fullMockHistory} from "@/domain/mockData";
 import {isIncidentComplete} from "@/domain/Incident";
 
-// This should be loaded from saved settings but for now its just a const.
 const SESSIONS_PER_PAGE = 5;
 
-export default function RideSession() {
+export default function RideSession({navigation}: any) {
     const [currentPage, setCurrentPage] = useState(0);
+    const [showFilters, setShowFilters] = useState(false);
+    const [filterHasIncidents, setfilterHasIncidents] = useState(false);
+    const [filterActionRequired, setFilterActionRequired] = useState(false);
+
     const scrollViewRef = useRef<ScrollView>(null);
 
-    // Determine what to show
+    function sessionHasActionRequired(session: any): boolean {
+        return session.incidents.some((incident: any) => !isIncidentComplete(incident));
+    }
+
+    const filteredSessions = useMemo(() => {
+        return fullMockHistory.filter((session) => {
+            if (!filterHasIncidents && !filterActionRequired) {
+                return true;
+            }
+
+            const matchesHasIncidents =
+                filterHasIncidents && session.incidents.length > 0;
+
+            const matchesActionRequired =
+                filterActionRequired && sessionHasActionRequired(session);
+
+            return matchesHasIncidents || matchesActionRequired;
+        });
+    }, [filterHasIncidents, filterActionRequired]);
+
     const startIndex = currentPage * SESSIONS_PER_PAGE;
     const endIndex = startIndex + SESSIONS_PER_PAGE;
-    const visibleSessions = fullMockHistory.slice(startIndex, endIndex);
+    const visibleSessions = filteredSessions.slice(startIndex, endIndex);
 
-    // guardrails
-    const hasNextPage = endIndex < fullMockHistory.length;
+    const hasNextPage = endIndex < filteredSessions.length;
     const hasPreviousPage = currentPage > 0;
 
-    // auto scroll to top on page load!
     function scrollToTop() {
         scrollViewRef.current?.scrollTo({y: 0, animated: true});
     }
@@ -50,15 +70,84 @@ export default function RideSession() {
         // TODO
     }
 
+    function handleToggleFilters() {
+        setShowFilters(!showFilters);
+    }
+
+    function handleToggleNoIncidents() {
+        setCurrentPage(0);
+        setfilterHasIncidents(!filterHasIncidents);
+    }
+
+    function handleToggleActionRequired() {
+        setCurrentPage(0);
+        setFilterActionRequired(!filterActionRequired);
+    }
+
+    function handleClearAllFilters() {
+        setfilterHasIncidents(false);
+        setFilterActionRequired(false);
+        setShowFilters(false);
+        setCurrentPage(0);
+        scrollToTop();
+    }
+
     return (
         <View style={styles.screenBackground}>
             <ScrollView
                 ref={scrollViewRef}
                 contentContainerStyle={styles.scrollContainer}>
                 <View style={styles.display}>
-                    <View style={styles.headerBox}>
+                    <View
+                        style={[
+                            styles.headerBox,
+                            showFilters && styles.compactHeaderBox,
+                        ]}>
                         <Text style={styles.headerText}>Ride Sessions</Text>
+
+                        <TouchableOpacity
+                            style={styles.filterButton}
+                            onPress={handleToggleFilters}>
+                            <Text style={styles.filterButtonText}>Filter</Text>
+                        </TouchableOpacity>
                     </View>
+
+                    {showFilters && (
+                        <View style={styles.filterPanel}>
+                            <View style={styles.filterButtonRow}>
+                                <TouchableOpacity
+                                    style={[
+                                        styles.filterOptionButton,
+                                        filterHasIncidents && styles.activeFilterOptionButton,
+                                    ]}
+                                    onPress={handleToggleNoIncidents}>
+                                    <Text style={styles.filterOptionButtonText}>
+                                        Only Show with Incidents
+                                    </Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={[
+                                        styles.filterOptionButton,
+                                        filterActionRequired &&
+                                        styles.activeFilterOptionButton,
+                                    ]}
+                                    onPress={handleToggleActionRequired}>
+                                    <Text style={styles.filterOptionButtonText}>
+                                        Show Action Required
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
+
+                            <TouchableOpacity
+                                style={styles.clearFiltersButton}
+                                onPress={handleClearAllFilters}>
+                                <Text style={styles.clearFiltersButtonText}>
+                                    Clear All Filters
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
 
                     {visibleSessions.map((session, index) => {
                         const formattedDateTime = session.startDateStamp
@@ -67,62 +156,62 @@ export default function RideSession() {
                             session.startDateStamp.toLocaleTimeString([], {
                                 hour: "numeric",
                                 minute: "2-digit",
-                            }) : "Unknown date - Unknown time";
+                            })
+                            : "Unknown date - Unknown time";
 
                         return (
                             <View key={startIndex + index} style={styles.sessionCard}>
                                 <Text style={styles.dateText}>{formattedDateTime}</Text>
 
-                                {session.incidents.length === 0 ?
-                                    (
-                                        <View style={styles.noIncidentContainer}>
-                                            <Text style={styles.noIncidentText}>
-                                                No Incidents!
-                                            </Text>
-                                        </View>
-                                    ) : (
-                                        <ScrollView horizontal
-                                                    contentContainerStyle={styles.incidentRow}>
-                                            {session.incidents.map((incident, incidentIndex) => {
-
-                                                const selectedImage =
-                                                    incident.imageFiles.find((image: any) =>
+                                {session.incidents.length === 0 ? (
+                                    <View style={styles.noIncidentContainer}>
+                                        <Text style={styles.noIncidentText}>
+                                            No Incidents!
+                                        </Text>
+                                    </View>
+                                ) : (
+                                    <ScrollView
+                                        horizontal
+                                        showsHorizontalScrollIndicator={true}
+                                        contentContainerStyle={styles.incidentRow}>
+                                        {session.incidents.map((incident, incidentIndex) => {
+                                            const selectedImage =
+                                                incident.imageFiles.find(
+                                                    (image: any) =>
                                                         image.id === incident.selectedImageId
-                                                    ) || null;
+                                                ) || null;
 
-                                                return (
-                                                    <TouchableOpacity
-                                                        key={incidentIndex}
-                                                        style={styles.incidentCard}
-                                                        onPress={() => handleIncidentPress(incident)}>
-
-                                                        {isIncidentComplete(incident) ?
-                                                            (
-                                                                selectedImage ? (
-                                                                    <Image
-                                                                        source={selectedImage.uri}
-                                                                        style={styles.incidentImage}
-                                                                        resizeMode="cover"
-                                                                    />
-                                                                ) : (
-                                                                    <View style={styles.incidentCard}>
-                                                                        <Text style={styles.incidentCard}>
-                                                                            No Image
-                                                                        </Text>
-                                                                    </View>
-                                                                )
-                                                            ) : (
-                                                                <View style={styles.actionRequiredBox}>
-                                                                    <Text style={styles.actionRequiredText}>
-                                                                        Action Required
-                                                                    </Text>
-                                                                </View>
-                                                            )}
-                                                    </TouchableOpacity>
-                                                );
-                                            })}
-                                        </ScrollView>
-                                    )}
+                                            return (
+                                                <TouchableOpacity
+                                                    key={incidentIndex}
+                                                    style={styles.incidentCard}
+                                                    onPress={() => handleIncidentPress(incident)}>
+                                                    {isIncidentComplete(incident) ? (
+                                                        selectedImage ? (
+                                                            <Image
+                                                                source={selectedImage.uri}
+                                                                style={styles.incidentImage}
+                                                                resizeMode="cover"
+                                                            />
+                                                        ) : (
+                                                            <View style={styles.actionRequiredBox}>
+                                                                <Text style={styles.actionRequiredText}>
+                                                                    No Image
+                                                                </Text>
+                                                            </View>
+                                                        )
+                                                    ) : (
+                                                        <View style={styles.actionRequiredBox}>
+                                                            <Text style={styles.actionRequiredText}>
+                                                                Action Required
+                                                            </Text>
+                                                        </View>
+                                                    )}
+                                                </TouchableOpacity>
+                                            );
+                                        })}
+                                    </ScrollView>
+                                )}
                             </View>
                         );
                     })}
@@ -263,5 +352,73 @@ const styles = StyleSheet.create({
         color: "white",
         fontSize: 18,
         fontWeight: "500",
+    },
+
+    compactHeaderBox: {
+        paddingVertical: 8,
+    },
+    filterButton: {
+        position: "absolute",
+        right: 10,
+        bottom: 8,
+        backgroundColor: "white",
+        borderWidth: 2,
+        borderColor: "black",
+        borderRadius: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+    },
+    filterButtonText: {
+        color: "black",
+        fontSize: 14,
+        fontWeight: "bold",
+    },
+    filterPanel: {
+        width: "95%",
+        backgroundColor: "lightgrey",
+        borderWidth: 2,
+        borderColor: "black",
+        borderRadius: 12,
+        paddingVertical: 8,
+        paddingHorizontal: 8,
+        marginBottom: 12,
+    },
+    filterButtonRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        marginBottom: 8,
+    },
+    filterOptionButton: {
+        width: "48%",
+        backgroundColor: "white",
+        borderWidth: 2,
+        borderColor: "black",
+        borderRadius: 10,
+        paddingVertical: 8,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    activeFilterOptionButton: {
+        backgroundColor: "blue",
+    },
+    filterOptionButtonText: {
+        color: "black",
+        fontSize: 14,
+        fontWeight: "bold",
+        textAlign: "center",
+    },
+    clearFiltersButton: {
+        backgroundColor: "white",
+        borderWidth: 2,
+        borderColor: "black",
+        borderRadius: 10,
+        paddingVertical: 8,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    clearFiltersButtonText: {
+        color: "black",
+        fontSize: 14,
+        fontWeight: "bold",
     },
 });
