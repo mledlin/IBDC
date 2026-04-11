@@ -1,19 +1,19 @@
 import { Stack } from "expo-router";
 import { DeviceProvider } from "@/context/DeviceContext";
 import { View, Text, Image } from "react-native";
+import { ThemeProvider, useTheme} from "@/context/ThemeContext";
 
-export default function AppLayout() {
+function AppStack() {
+  const { theme } = useTheme();
     
-
     return (
-        <DeviceProvider>
         <Stack
         screenOptions={{
         headerStyle: {
-            backgroundColor: '#FFFFFF',
+            backgroundColor: theme.colors.surface,
         },
         headerTitleAlign: "center",
-        headerTintColor: '#0F172A',
+        headerTintColor: theme.colors.returnArrow,
         headerTitleStyle: {
             fontWeight: "700",
             fontSize: 18,
@@ -47,6 +47,15 @@ export default function AppLayout() {
         <Stack.Screen name="RideDetail" options={{title: 'Ride Details'}}/>
         <Stack.Screen name="Settings" options={{title: 'Settings'}}/>
     </Stack>
-    </DeviceProvider>
     );
+}
+
+export default function AppLayout() {
+  return (
+    <ThemeProvider>
+      <DeviceProvider>
+        <AppStack />
+      </DeviceProvider>
+    </ThemeProvider>
+  )
 }

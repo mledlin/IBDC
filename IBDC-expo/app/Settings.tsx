@@ -7,8 +7,12 @@ import {
     TouchableOpacity,
     Alert,
 } from "react-native";
+import { useTheme } from "@/context/ThemeContext";
+import ThemePicker from "@/components/ui/ThemePicker";
 
 export default function SettingsPage() {
+const { theme } = useTheme();
+
     // TODO Load from a properties file on startup!
     const [settingOne, setting1] = useState(true);
     const [settingTwo, setting2] = useState(false);
@@ -23,31 +27,48 @@ export default function SettingsPage() {
     };
 
     return (
-        <View style={styles.container}>
+        
+         <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
 
-            <Text style={styles.title}>SETTINGS</Text>
+            <Text style={[styles.title, { color: theme.colors.text }]}>SETTINGS</Text>
 
             <View style={styles.settingsToggle}>
-                <Switch value={settingOne} onValueChange={setting1}/>
-                <Text style={styles.settingLabel}>Unknown Setting 1</Text>
+                <Switch value={settingOne} onValueChange={setting1} thumbColor={theme.colors.primary}/>
+                <Text style={[styles.settingLabel, { color: theme.colors.text }]}>Unknown Setting 1</Text>
             </View>
 
             <View style={styles.settingsToggle}>
-                <Switch value={settingTwo} onValueChange={setting2}/>
-                <Text style={styles.settingLabel}>Unknown Setting 2</Text>
+                <Switch value={settingTwo} onValueChange={setting2} thumbColor={theme.colors.primary}/>
+                <Text style={[styles.settingLabel, {color: theme.colors.text}]}>Unknown Setting 2</Text>
             </View>
 
             <View style={styles.settingsToggle}>
-                <Switch value={settingThree} onValueChange={setting3}/>
-                <Text style={styles.settingLabel}>Unknown Setting 3</Text>
+                 <Switch value={settingThree} onValueChange={setting3} thumbColor={theme.colors.primary} />
+                <Text style={[styles.settingLabel, { color: theme.colors.text }]}>Unknown Setting 3</Text>
             </View>
 
-            <TouchableOpacity style={styles.addMockButton} onPress={handleAddMockIncident}>
-                <Text style={styles.actionButtonText}>Add Random Mock Incident Data</Text>
+             {/* Theme picker */}
+            <Text style={[styles.sectionLabel, { color: theme.colors.text }]}>APPEARANCE</Text>
+
+            <ThemePicker />
+
+
+            <TouchableOpacity
+                style={[styles.addMockButton, { backgroundColor: theme.colors.primary, borderRadius: theme.radii.md }]}
+                onPress={handleAddMockIncident}
+            >
+                <Text style={[styles.actionButtonText, { color: theme.colors.primaryForeground }]}>
+                    Add Random Mock Incident Data
+                </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.wipeButton} onPress={handleWipeMockData}>
-                <Text style={styles.actionButtonText}>Wipe All Mock Data</Text>
+            <TouchableOpacity
+                style={[styles.wipeButton, { backgroundColor: theme.colors.danger, borderRadius: theme.radii.md }]}
+                onPress={handleWipeMockData}
+            >
+                <Text style={[styles.actionButtonText, { color: theme.colors.primaryForeground }]}>
+                    Wipe All Mock Data
+                </Text>
             </TouchableOpacity>
         </View>
     );
@@ -60,6 +81,13 @@ const styles = StyleSheet.create({
         paddingTop: 60,
         paddingHorizontal: 24,
     },
+    sectionLabel: {
+        fontSize: 11,
+        fontWeight: "600",
+        letterSpacing: 1.2,
+        marginBottom: 8,
+        marginTop: 24,
+        paddingHorizontal: 4,},
     title: {
         fontSize: 24,
         fontWeight: "bold",
@@ -79,14 +107,12 @@ const styles = StyleSheet.create({
     },
     addMockButton: {
         marginTop: 30,
-        backgroundColor: "#cf6329",
         paddingVertical: 14,
         borderRadius: 8,
         alignItems: "center",
     },
     wipeButton: {
         marginTop: 16,
-        backgroundColor: "#cf6329",
         paddingVertical: 14,
         borderRadius: 8,
         alignItems: "center",

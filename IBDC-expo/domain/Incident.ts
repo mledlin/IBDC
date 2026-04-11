@@ -19,7 +19,7 @@ import {Session} from "@/domain/Session";
 
 export type Incident = {
     imageFiles: IncidentImage[];
-    selectedImageId: String | null;
+    selectedImageId: string | null;
     gpsLocation: GpsCoordinates | null;
     gpsTimestamp: Date | null;
     licensePlate: string | null;
