@@ -1,8 +1,21 @@
 import { Stack } from "expo-router";
 import { DeviceProvider } from "@/context/DeviceContext";
+import { initDatabase } from "./database";
+import { useEffect } from "react";
 
 export default function AppLayout() {
-    
+    useEffect(() => {
+        async function setupDatabase(){
+            try {
+                await initDatabase();
+                console.log("Database Init");
+            } catch (error) {
+                console.error("Database init failed", error);
+            }
+        }
+
+        setupDatabase();
+    }, []);
 
     return (
         <DeviceProvider>
