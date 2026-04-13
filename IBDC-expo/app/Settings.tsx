@@ -18,6 +18,28 @@ const { theme } = useTheme();
     const [settingTwo, setting2] = useState(false);
     const [settingThree, setting3] = useState(false);
 
+    const dataOptions = [
+        "10",
+        "25",
+        "50",
+        "100",
+        "All",
+    ];
+
+    const [dataIndex, setDataIndex] = useState(0);
+
+    const handlePrevOption = () => {
+        if (dataIndex > 0) {
+            setDataIndex(dataIndex - 1);
+        }
+    };
+
+    const handleNextOption = () => {
+        if (dataIndex < dataOptions.length - 1) {
+            setDataIndex(dataIndex + 1);
+        }
+    };
+
     const handleAddMockIncident = () => {
         Alert.alert("Add Mock Incident", "Just for show for now!");
     };
@@ -26,11 +48,11 @@ const { theme } = useTheme();
         Alert.alert("Wipe Mock Data", "Just for show for now!");
     };
 
-    return (
-        
+    return (   
          <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
 
             <Text style={[styles.title, { color: theme.colors.text }]}>SETTINGS</Text>
+
 
             <View style={styles.settingsToggle}>
                 <Switch value={settingOne} onValueChange={setting1} thumbColor={theme.colors.primary}/>
@@ -46,7 +68,6 @@ const { theme } = useTheme();
                  <Switch value={settingThree} onValueChange={setting3} thumbColor={theme.colors.primary} />
                 <Text style={[styles.settingLabel, { color: theme.colors.text }]}>Unknown Setting 3</Text>
             </View>
-
              {/* Theme picker */}
             <Text style={[styles.sectionLabel, { color: theme.colors.text }]}>APPEARANCE</Text>
 
@@ -62,6 +83,43 @@ const { theme } = useTheme();
                 </Text>
             </TouchableOpacity>
 
+            <View style={styles.retentionSection}>
+                <Text style={styles.retentionLabel}>Sessions Per Page</Text>
+
+                <View style={styles.retentionSelector}>
+                    <TouchableOpacity
+                        onPress={handlePrevOption}
+                        style={styles.arrowButton}>
+                        <Text
+                            style={[
+                                styles.arrowText,
+                                dataIndex === 0 && styles.disabledArrowText,
+                            ]}>
+                            {"\u25C0"}
+                        </Text>
+                    </TouchableOpacity>
+
+                    <Text style={styles.retentionValue}>
+                        {dataOptions[dataIndex]}
+                    </Text>
+
+                    <TouchableOpacity
+                        onPress={handleNextOption}
+                        style={styles.arrowButton}>
+                        <Text
+                            style={[
+                                styles.arrowText,
+                                dataIndex === dataOptions.length - 1 && styles.disabledArrowText,
+                            ]}>
+                            {"\u25B6"}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+
+            <TouchableOpacity style={styles.addMockButton} onPress={handleAddMockIncident}>
+                <Text style={styles.actionButtonText}>Add Random Mock Incident Data</Text>
+                 </TouchableOpacity>
             <TouchableOpacity
                 style={[styles.wipeButton, { backgroundColor: theme.colors.danger, borderRadius: theme.radii.md }]}
                 onPress={handleWipeMockData}
@@ -102,6 +160,38 @@ const styles = StyleSheet.create({
     },
     settingLabel: {
         marginLeft: 16,
+        fontSize: 18,
+        color: "#333333",
+    },
+    retentionSection: {
+        marginTop: 8,
+        marginBottom: 24,
+    },
+    retentionLabel: {
+        fontSize: 18,
+        color: "#333333",
+        marginBottom: 12,
+    },
+    retentionSelector: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    arrowButton: {
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+    },
+    arrowText: {
+        fontSize: 24,
+        fontWeight: "bold",
+        color: "#333333",
+    },
+    disabledArrowText: {
+        color: "#aaaaaa",
+    },
+    retentionValue: {
+        minWidth: 120,
+        textAlign: "center",
         fontSize: 18,
         color: "#333333",
     },

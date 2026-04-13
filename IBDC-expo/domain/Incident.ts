@@ -16,6 +16,7 @@
 // type/object is needed first.
 
 import {Session} from "@/domain/Session";
+import {ImageSourcePropType} from "react-native";
 
 export type Incident = {
     imageFiles: IncidentImage[];
@@ -37,7 +38,7 @@ export type GpsCoordinates = {
 export type IncidentImage = {
     id: string;
     fileName: string;
-    uri: string;
+    uri: ImageSourcePropType;
 };
 
 // This is a potential check to verify an incident is ready to be published as a PDF or by
