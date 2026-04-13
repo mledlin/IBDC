@@ -82,44 +82,6 @@ const { theme } = useTheme();
                     Add Random Mock Incident Data
                 </Text>
             </TouchableOpacity>
-
-            <View style={styles.retentionSection}>
-                <Text style={styles.retentionLabel}>Sessions Per Page</Text>
-
-                <View style={styles.retentionSelector}>
-                    <TouchableOpacity
-                        onPress={handlePrevOption}
-                        style={styles.arrowButton}>
-                        <Text
-                            style={[
-                                styles.arrowText,
-                                dataIndex === 0 && styles.disabledArrowText,
-                            ]}>
-                            {"\u25C0"}
-                        </Text>
-                    </TouchableOpacity>
-
-                    <Text style={styles.retentionValue}>
-                        {dataOptions[dataIndex]}
-                    </Text>
-
-                    <TouchableOpacity
-                        onPress={handleNextOption}
-                        style={styles.arrowButton}>
-                        <Text
-                            style={[
-                                styles.arrowText,
-                                dataIndex === dataOptions.length - 1 && styles.disabledArrowText,
-                            ]}>
-                            {"\u25B6"}
-                        </Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
-
-            <TouchableOpacity style={styles.addMockButton} onPress={handleAddMockIncident}>
-                <Text style={styles.actionButtonText}>Add Random Mock Incident Data</Text>
-                 </TouchableOpacity>
             <TouchableOpacity
                 style={[styles.wipeButton, { backgroundColor: theme.colors.danger, borderRadius: theme.radii.md }]}
                 onPress={handleWipeMockData}
@@ -128,6 +90,39 @@ const { theme } = useTheme();
                     Wipe All Mock Data
                 </Text>
             </TouchableOpacity>
+            <View style={styles.retentionSection}>
+                <Text style={[styles.retentionLabel, { color: theme.colors.text }]}>Sessions Per Page</Text>
+
+                <View style={styles.retentionSelector}>
+                    <TouchableOpacity
+                        onPress={handlePrevOption}
+                        style={styles.arrowButton}>
+                        <Text
+                            style={[
+                                styles.arrowText,
+                                dataIndex === 0 && { color: theme.colors.background },
+                            ]}>
+                            {"\u25C0"}
+                        </Text>
+                    </TouchableOpacity>
+
+                    <Text style={[styles.retentionValue, { color: theme.colors.text }]}>
+                        {dataOptions[dataIndex]}
+                    </Text>
+
+                    <TouchableOpacity
+                        onPress={handleNextOption}
+                        style={styles.arrowButton}>
+                        <Text
+                            style={[
+                                styles.arrowText, {color: theme.colors.text},
+                                dataIndex === dataOptions.length - 1 && { color: theme.colors.background },
+                            ]}>
+                            {"\u25B6"}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            </View>  
         </View>
     );
 }
@@ -135,7 +130,6 @@ const { theme } = useTheme();
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#f4f4f4",
         paddingTop: 60,
         paddingHorizontal: 24,
     },
@@ -161,7 +155,6 @@ const styles = StyleSheet.create({
     settingLabel: {
         marginLeft: 16,
         fontSize: 18,
-        color: "#333333",
     },
     retentionSection: {
         marginTop: 8,
@@ -169,7 +162,6 @@ const styles = StyleSheet.create({
     },
     retentionLabel: {
         fontSize: 18,
-        color: "#333333",
         marginBottom: 12,
     },
     retentionSelector: {
@@ -184,16 +176,11 @@ const styles = StyleSheet.create({
     arrowText: {
         fontSize: 24,
         fontWeight: "bold",
-        color: "#333333",
-    },
-    disabledArrowText: {
-        color: "#aaaaaa",
     },
     retentionValue: {
         minWidth: 120,
         textAlign: "center",
         fontSize: 18,
-        color: "#333333",
     },
     addMockButton: {
         marginTop: 30,

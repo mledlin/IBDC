@@ -125,14 +125,6 @@ export default function MainScreen() {
           <View style={styles.actionsRow}>
             <Pressable
               style={[styles.actionButtonSmall, { backgroundColor: theme.colors.primary, borderRadius: theme.radii.md }]}
-              onPress={() => router.push("/IncidentHistory")}
-            >
-              <Ionicons name="warning-outline" size={18} color={theme.colors.primaryForeground} />
-              <Text style={[styles.actionButtonSmallText, { color: theme.colors.primaryForeground }]}>Incident{"\n"}History</Text>
-            </Pressable>
-
-            <Pressable
-              style={[styles.actionButtonSmall, { backgroundColor: theme.colors.primary, borderRadius: theme.radii.md }]}
               onPress={() => router.push("/RideSessions")}
             >
               <Ionicons name="bicycle-outline" size={18} color={theme.colors.primaryForeground} />
