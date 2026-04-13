@@ -7,13 +7,18 @@ import {
     TouchableOpacity,
     Image,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 import {fullMockHistory} from "@/domain/mockData";
 import {isIncidentComplete} from "@/domain/Incident";
+import{ useRouter } from "expo-router";
+import { useTheme } from "@/context/ThemeContext";
 
 const SESSIONS_PER_PAGE = 5;
 
 export default function RideSession({navigation}: any) {
+    const router = useRouter();
+    const {theme} = useTheme();
     const [currentPage, setCurrentPage] = useState(0);
     const [showFilters, setShowFilters] = useState(false);
     const [filterHasIncidents, setfilterHasIncidents] = useState(false);
@@ -67,7 +72,11 @@ export default function RideSession({navigation}: any) {
     }
 
     function handleIncidentPress(incident: any) {
-        // TODO
+        // TODO //just for navigation testing for now - need to pass incident ID and load details on the other page
+            router.push({
+                pathname: "/IncidentDetail",
+                params: { incidentId: incident.id }
+            });
     }
 
     function handleToggleFilters() {
@@ -93,27 +102,51 @@ export default function RideSession({navigation}: any) {
     }
 
     return (
-        <View style={styles.screenBackground}>
+        <View style={[styles.screenBackground, { backgroundColor: theme.colors.background }]}>
             <ScrollView
                 ref={scrollViewRef}
                 contentContainerStyle={styles.scrollContainer}>
                 <View style={styles.display}>
                     <View
                         style={[
-                            styles.headerBox,
+                            styles.headerBox, { backgroundColor: theme.colors.primary, borderColor: theme.colors.border },
                             showFilters && styles.compactHeaderBox,
-                        ]}>
-                        <Text style={styles.headerText}>Ride Sessions</Text>
-
+                        ]}
+                        >
+                            <View>
+                                <Text style={[styles.microheader,{color : theme.colors.textSecondary}]}>History</Text>
+                        <Text style={[styles.headerText, {color : theme.colors.textSecondary}]}>Ride Sessions</Text>
+                            </View>
                         <TouchableOpacity
-                            style={styles.filterButton}
-                            onPress={handleToggleFilters}>
-                            <Text style={styles.filterButtonText}>Filter</Text>
+                            style={[
+                                styles.filterButton, 
+                                { 
+                                backgroundColor: showFilters
+                                ? theme.colors.primary 
+                                : theme.colors.background,
+                                borderColor: theme.colors.border, 
+                            },
+                            ]}
+                            onPress={handleToggleFilters}
+                            >
+                <Ionicons
+                name="options-outline"
+                size={16}
+                color={
+                  showFilters
+                    ? theme.colors.primaryForeground
+                    : theme.colors.text
+                }
+              />
+
+                            <Text style={[styles.filterButtonText,
+                                { color: showFilters ? theme.colors.primaryForeground : theme.colors.text },
+                            ]}>Filter</Text>
                         </TouchableOpacity>
                     </View>
 
                     {showFilters && (
-                        <View style={styles.filterPanel}>
+                        <View style={[styles.filterPanel, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
                             <View style={styles.filterButtonRow}>
                                 <TouchableOpacity
                                     style={[
@@ -256,6 +289,12 @@ const styles = StyleSheet.create({
         width: "100%",
         alignItems: "center",
     },
+    microheader: {
+    fontSize: 13,
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+
     headerBox: {
         width: "95%",
         backgroundColor: "blue",
