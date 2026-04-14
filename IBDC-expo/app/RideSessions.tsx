@@ -114,8 +114,8 @@ export default function RideSession({navigation}: any) {
                         ]}
                         >
                             <View>
-                                <Text style={[styles.microheader,{color : theme.colors.textSecondary}]}>History</Text>
-                        <Text style={[styles.headerText, {color : theme.colors.textSecondary}]}>Ride Sessions</Text>
+                                <Text style={[styles.microheader,{color : theme.colors.primaryForeground}]}>History</Text>
+                        <Text style={[styles.headerText, {color : theme.colors.primaryForeground}]}>Ride Sessions</Text>
                             </View>
                         <TouchableOpacity
                             style={[
@@ -147,36 +147,35 @@ export default function RideSession({navigation}: any) {
 
                     {showFilters && (
                         <View style={[styles.filterPanel, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-                            <View style={styles.filterButtonRow}>
+                            <View style={styles.filterRowChip}>
                                 <TouchableOpacity
                                     style={[
-                                        styles.filterOptionButton,
-                                        filterHasIncidents && styles.activeFilterOptionButton,
+                                        styles.filterChip,
+                                            { backgroundColor: filterHasIncidents ? theme.colors.primary : theme.colors.background, borderColor: theme.colors.border },
                                     ]}
                                     onPress={handleToggleNoIncidents}>
-                                    <Text style={styles.filterOptionButtonText}>
-                                        Only Show with Incidents
+                                    <Text style={[styles.filterChipText, { color: filterHasIncidents ? theme.colors.primaryForeground : theme.colors.text },]}>
+                                        Has Incidents
                                     </Text>
                                 </TouchableOpacity>
 
                                 <TouchableOpacity
                                     style={[
-                                        styles.filterOptionButton,
-                                        filterActionRequired &&
-                                        styles.activeFilterOptionButton,
+                                        styles.filterChip,
+                                        { backgroundColor: filterActionRequired ? theme.colors.primary : theme.colors.background, borderColor: theme.colors.border },
                                     ]}
                                     onPress={handleToggleActionRequired}>
-                                    <Text style={styles.filterOptionButtonText}>
-                                        Show Action Required
+                                    <Text style={[styles.filterChipText, { color: filterActionRequired ? theme.colors.primaryForeground : theme.colors.text },]}>
+                                        Action Required
                                     </Text>
                                 </TouchableOpacity>
                             </View>
 
                             <TouchableOpacity
-                                style={styles.clearFiltersButton}
+                                style={[styles.clearFiltersButton, { backgroundColor: theme.colors.background, borderColor: theme.colors.border },]}
                                 onPress={handleClearAllFilters}>
-                                <Text style={styles.clearFiltersButtonText}>
-                                    Clear All Filters
+                                <Text style={[styles.clearFiltersButtonText, { color: theme.colors.text }]}>
+                                    Clear All
                                 </Text>
                             </TouchableOpacity>
                         </View>
@@ -192,14 +191,27 @@ export default function RideSession({navigation}: any) {
                             })
                             : "Unknown date - Unknown time";
 
-                        return (
-                            <View key={startIndex + index} style={styles.sessionCard}>
-                                <Text style={styles.dateText}>{formattedDateTime}</Text>
+                            const incidentCount = session.incidents.length;
+                            const actionRequired = sessionHasActionRequired(session);
 
+                        return (
+                            <View key={startIndex + index} style={[styles.sessionCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },]}>
+                                <View style={styles.sessionHeader}>
+                                    <View style={{flex: 1}}>
+                                        <Text style={[styles.dateText, { color: theme.colors.textSecondary }]}>{formattedDateTime}</Text>
+                                        <Text style={[styles.sessionMeta, { color: theme.colors.textSecondary }]}>{incidentCount} Incident{incidentCount !== 1 ? "s" : ""}</Text>
+                                    </View>
+                                    {actionRequired && (
+                                        <View style={[styles.statusBadge, { backgroundColor: theme.colors.primary}]}>
+                                            <Text style={[styles.statusBadgeText, { color: theme.colors.primaryForeground },]}>Needs Review</Text>
+                                        </View>
+                                    )}
+                                </View>
                                 {session.incidents.length === 0 ? (
-                                    <View style={styles.noIncidentContainer}>
-                                        <Text style={styles.noIncidentText}>
-                                            No Incidents!
+                                    <View style={[styles.noIncidentContainer, { backgroundColor: theme.colors.background },]}>
+                                        <Ionicons name="checkmark-circle-outline" size={28} color={theme.colors.primary} />
+                                        <Text style={[styles.noIncidentText, { color: theme.colors.text }]}>
+                                            No incidents recorded!
                                         </Text>
                                     </View>
                                 ) : (
@@ -213,29 +225,32 @@ export default function RideSession({navigation}: any) {
                                                     (image: any) =>
                                                         image.id === incident.selectedImageId
                                                 ) || null;
+                                                const complete = isIncidentComplete(incident);
 
                                             return (
                                                 <TouchableOpacity
                                                     key={incidentIndex}
-                                                    style={styles.incidentCard}
+                                                    style={[styles.incidentCard, { backgroundColor: theme.colors.background, borderColor: theme.colors.border },]}
                                                     onPress={() => handleIncidentPress(incident)}>
-                                                    {isIncidentComplete(incident) ? (
-                                                        selectedImage ? (
+                                                        {complete ? (
+                                                            selectedImage ? (
                                                             <Image
                                                                 source={selectedImage.uri}
                                                                 style={styles.incidentImage}
                                                                 resizeMode="cover"
                                                             />
                                                         ) : (
-                                                            <View style={styles.actionRequiredBox}>
-                                                                <Text style={styles.actionRequiredText}>
+                                                            <View style={[styles.placeholderBox, { backgroundColor: theme.colors.surface },]}>
+                                                                <Ionicons name="image-outline" size={26} color={theme.colors.textSecondary} />
+                                                                <Text style={[styles.placeholderText, { color: theme.colors.textSecondary }]}>
                                                                     No Image
                                                                 </Text>
                                                             </View>
                                                         )
                                                     ) : (
-                                                        <View style={styles.actionRequiredBox}>
-                                                            <Text style={styles.actionRequiredText}>
+                                                        <View style={[styles.actionRequiredBox, { backgroundColor: theme.colors.primary },]}>
+                                                            <Ionicons name="alert-circle-outline" size={26} color={theme.colors.primaryForeground} />
+                                                            <Text style={[styles.actionRequiredText, { color: theme.colors.primaryForeground }]}>
                                                                 Action Required
                                                             </Text>
                                                         </View>
@@ -252,20 +267,20 @@ export default function RideSession({navigation}: any) {
                     <View style={styles.pageChangeContainer}>
                         {hasPreviousPage && (
                             <TouchableOpacity
-                                style={styles.pageButton}
+                                style={[styles.pageButton, { backgroundColor: theme.colors.primary, borderColor: theme.colors.border },]}
                                 onPress={handlePreviousPage}>
-                                <Text style={styles.pageButtonText}>
-                                    Go Back
+                                <Text style={[styles.pageButtonText, { color: theme.colors.text }]}>
+                                    Previous
                                 </Text>
                             </TouchableOpacity>
                         )}
 
                         {hasNextPage && (
                             <TouchableOpacity
-                                style={styles.pageButton}
+                                style={[styles.pageButton, { backgroundColor: theme.colors.primary, borderColor: theme.colors.border },]}
                                 onPress={handleNextPage}>
-                                <Text style={styles.pageButtonText}>
-                                    Load Next Page
+                                <Text style={[styles.pageButtonText, { color: theme.colors.primaryForeground}]}>
+                                   Next Page
                                 </Text>
                             </TouchableOpacity>
                         )}
@@ -279,15 +294,13 @@ export default function RideSession({navigation}: any) {
 const styles = StyleSheet.create({
     screenBackground: {
         flex: 1,
-        backgroundColor: "white",
     },
     scrollContainer: {
-        paddingVertical: 10,
-        alignItems: "center",
+        paddingVertical: 16,
+        paddingHorizontal: 14,
     },
     display: {
         width: "100%",
-        alignItems: "center",
     },
     microheader: {
     fontSize: 13,
@@ -296,131 +309,167 @@ const styles = StyleSheet.create({
   },
 
     headerBox: {
-        width: "95%",
-        backgroundColor: "blue",
-        borderWidth: 2,
-        borderColor: "black",
-        borderRadius: 18,
-        paddingVertical: 15,
+        borderWidth: 1,
+        borderRadius: 24,
+        paddingVertical: 18,
+        paddingHorizontal: 18,
+        flexDirection: "row",
         alignItems: "center",
-        justifyContent: "center",
-        marginBottom: 15,
+        justifyContent: "space-between",
+        marginBottom: 14,
+        shadowColor: "#000",
+        shadowOpacity: 0.06,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 4 },
+        elevation: 4,
     },
     headerText: {
-        color: "white",
-        fontSize: 28,
+        fontWeight: "800",
+        fontSize: 30,
     },
-    sessionCard: {
-        width: "80%",
-        backgroundColor: "lightgrey",
-        borderWidth: 2,
-        borderColor: "black",
-        minHeight: 220,
-        marginBottom: 10,
-        paddingTop: 10,
-        paddingBottom: 10,
+    filterButton: {
+        flexDirection: "row",
         alignItems: "center",
+        gap: 6,
+        borderWidth: 1,
+        borderRadius: 999,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+    },
+
+    sessionCard: {
+        borderWidth: 1,
+        borderRadius: 22,
+        padding: 12,
+        marginBottom: 14,
+        shadowColor: "#000",
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 3 },
+        elevation: 3,
+    },
+    sessionHeader: {
+        flexDirection: "row",
+        alignItems: "flex-start",
+        marginBottom: 14,
     },
     dateText: {
-        fontSize: 16,
-        color: "black",
-        marginBottom: 10,
-        fontWeight: "bold",
+        fontSize: 17,
+        marginBottom: 4,
+        fontWeight: "800",
+    },
+    sessionMeta: {
+        fontSize: 13,
+        fontWeight: "500",
+    },
+    statusBadge: {
+        borderRadius: 999,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        marginLeft: 10,
+    },
+    statusBadgeText: {
+        fontSize: 11,
+        fontWeight: "800",
+        textTransform: "uppercase",
     },
     noIncidentContainer: {
-        flex: 1,
-        width: "100%",
+        borderRadius: 18,
+        minHeight: 120,
         alignItems: "center",
         justifyContent: "center",
-        paddingBottom: 20,
+        gap: 10,
+        padding: 20,
     },
     noIncidentText: {
-        color: "black",
-        fontSize: 24,
-        fontWeight: "400",
+        fontSize: 16,
+        fontWeight: "600",
     },
     incidentRow: {
-        paddingHorizontal: 10,
-        alignItems: "center",
+        paddingRight: 8,
     },
     incidentCard: {
-        width: 160,
-        height: 150,
-        marginHorizontal: 8,
-        borderWidth: 2,
-        borderColor: "black",
-        backgroundColor: "white",
-        justifyContent: "center",
-        alignItems: "center",
+        width: 170,
+        height: 160,
+        marginRight: 12,
+        borderWidth: 1,
+        borderRadius: 18,
+       overflow: "hidden",
     },
     incidentImage: {
-        width: "95%",
-        height: "95%",
+        width: "100%",
+        height: "100%",
     },
     actionRequiredBox: {
         flex: 1,
-        width: "100%",
         justifyContent: "center",
         alignItems: "center",
-        paddingHorizontal: 10,
-        backgroundColor: "black",
+        paddingHorizontal: 14,
+        gap: 8,
     },
     actionRequiredText: {
-        color: "white",
-        fontSize: 20,
-        fontWeight: "bold",
+        fontSize: 15,
+        fontWeight: "800",
         textAlign: "center",
     },
     pageChangeContainer: {
-        width: "80%",
-        marginTop: 8,
+        gap: 10,
+        flexDirection: "row",
+        marginTop: 4,
         marginBottom: 20,
+    },
+    placeholderBox: {
+        flex: 1,
+        justifyContent: "center",
         alignItems: "center",
+        gap: 8,
+    },
+    placeholderText: {
+        fontSize: 14,
+        fontWeight: "600",
     },
     pageButton: {
-        width: "100%",
-        backgroundColor: "blue",
-        borderWidth: 2,
-        borderColor: "black",
-        borderRadius: 12,
+        flex: 1,
+        borderWidth: 1,
+        borderRadius: 16,
         paddingVertical: 14,
         alignItems: "center",
-        marginBottom: 10,
     },
     pageButtonText: {
-        color: "white",
-        fontSize: 18,
-        fontWeight: "500",
+        fontSize: 15,
+        fontWeight: "800",
     },
 
     compactHeaderBox: {
         paddingVertical: 8,
     },
-    filterButton: {
-        position: "absolute",
-        right: 10,
-        bottom: 8,
-        backgroundColor: "white",
-        borderWidth: 2,
-        borderColor: "black",
-        borderRadius: 10,
-        paddingHorizontal: 12,
-        paddingVertical: 4,
-    },
     filterButtonText: {
-        color: "black",
         fontSize: 14,
-        fontWeight: "bold",
+        fontWeight: "700",
     },
     filterPanel: {
-        width: "95%",
-        backgroundColor: "lightgrey",
-        borderWidth: 2,
-        borderColor: "black",
-        borderRadius: 12,
-        paddingVertical: 8,
-        paddingHorizontal: 8,
+        borderWidth: 1,
+        borderRadius: 20,
+        padding: 12,
         marginBottom: 12,
+    },
+    filterRowChip: {
+        flexDirection: "row",
+        gap: 10,
+        marginBottom: 10,
+    },
+    filterChip: {
+        flex: 1,
+        borderWidth: 1,
+        borderRadius: 999,
+        paddingVertical: 12,
+        paddingHorizontal: 12,
+        alignItems: "center", 
+    },
+    filterChipText: {
+        fontSize: 13,
+        fontWeight: "700",
+        textAlign: "center",
     },
     filterButtonRow: {
         flexDirection: "row",
@@ -447,17 +496,13 @@ const styles = StyleSheet.create({
         textAlign: "center",
     },
     clearFiltersButton: {
-        backgroundColor: "white",
-        borderWidth: 2,
-        borderColor: "black",
-        borderRadius: 10,
-        paddingVertical: 8,
+        borderWidth: 1,
+        borderRadius: 14,
+        paddingVertical: 12,
         alignItems: "center",
-        justifyContent: "center",
     },
     clearFiltersButtonText: {
-        color: "black",
         fontSize: 14,
-        fontWeight: "bold",
+        fontWeight: "700",
     },
 });
