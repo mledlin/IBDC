@@ -100,5 +100,187 @@ export async function getAllSessions(){
 
 export async function deleteAllSessions(){
     const database = await getDatabase();
-    await database.runAsync(`DELETE FROM sessions`);
+    try{
+        await database.runAsync(`DELETE FROM incident_images`);
+        await database.runAsync(`DELETE FROM incidents`);
+        await database.runAsync(`DELETE FROM sessions`);
+    } catch (error) {
+        console.error("Failed to delete session data", error);
+        throw error;
+    }
+}
+
+export async function getAllIncidents() {
+    const database = await getDatabase();
+    return await database.getAllAsync(`
+        SELECT * FROM incidents
+        ORDER BY created_time DESC
+        `);
+}
+
+export async function getAllIncidentImages() {
+    const database = await getDatabase();
+    return await database.getAllAsync(`
+        SELECT * FROM incident_images
+        `)
+}
+
+export async function getSessionHistoryData(){
+    const sessions = await getAllSessions();
+    const incidents = await getAllIncidents();
+    const images = await getAllIncidentImages();
+
+    return sessions.map((session: any) => {
+        const sessionIncidents = incidents
+        .filter((incident: any) => incident.session_id === session.id)
+        .map((incident: any) => {
+            const incidentImages = images
+                .filter((image: any) => image.incident_id === incident.id)
+                .map((image: any) => ({
+                    id: image.id,
+                    file_path: image.file_path,
+                    //This is mock and should be replaced with the following in future
+                    //implementation, where file path is local file directory
+                    uri: getMockImageSource(image.file_path), //uri: { uri: image.file_path }
+                }));
+                return {
+                    ...incident,
+                    imageFiles: incidentImages,
+                    selectedImageId: incident.best_image_id,
+                };
+        });
+
+        return {
+            ...session,
+            startDateStamp: session.created_time ? new Date(session.created_time) : null,
+            incidents: sessionIncidents,
+        };
+    })
+}
+
+export async function createIncident(
+    id: string,
+    sessionId: string,
+    latitude: number | null,
+    longitude: number | null,
+    licensePlate: string | null,
+    bestImageId: string | null,
+    injurySeverity: string | null,
+    driverPresent: number,
+    driverInformation: string | null,
+    extraComment: string | null,
+    vehicleMake: string | null,
+    vehicleModel: string | null,
+    vehicleColor: string | null,
+    vehicleYear: string | null,
+    createdTime: string
+) {
+    const database = await getDatabase();
+
+    await database.runAsync(
+        ` INSERT INTO incidents (
+        id,
+        session_id,
+        latitude,
+        longitude,
+        license_plate,
+        best_image_id,
+        injury_severity,
+        driver_present,
+        driver_information,
+        extra_comment,
+        vehicle_make,
+        vehicle_model,
+        vehicle_color,
+        vehicle_year,
+        created_time
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         id,
+         sessionId,
+         latitude,
+         longitude,
+         licensePlate,
+         bestImageId,
+         injurySeverity,
+         driverPresent,
+         driverInformation,
+         extraComment,
+         vehicleMake,
+         vehicleModel,
+         vehicleColor,
+         vehicleYear,
+         createdTime
+    );
+}
+
+export async function createIncidentImage(
+    id: string,
+    incidentId: string,
+    filePath: string,
+    thumbnailPath: string | null,
+    source: string
+) {
+    const database = await getDatabase();
+
+    await database.runAsync(
+        `INSERT INTO incident_images (
+        id,
+        incident_id,
+        file_path,
+        thumbnail_path,
+        source
+        ) VALUES (?, ?, ?, ?, ?)`,
+         id,
+         incidentId,
+         filePath,
+         thumbnailPath,
+         source
+    );
+}
+
+//Helper for images. Purely for mock, actual images should be loaded from local file path uri
+export function getMockImageSource(filePath: string) {
+    switch(filePath){
+        case "example1":
+            return require("@/assets/images/example.jpg");
+        case "example2":
+            return require("@/assets/images/example2.jpg");
+        case "example3":
+            return require("@/assets/images/example3.jpg");
+        case "example4":
+            return require("@/assets/images/example4.jpg");
+        default:
+            return null;
+    }
+}
+
+export async function updateIncidentBestImage(
+    incidentId: string,
+    imageId: string
+) {
+    const database = await getDatabase();
+
+    await database.runAsync(
+        `UPDATE incidents
+        SET best_image_id = ?
+        WHERE id = ?`,
+        imageId,
+        incidentId
+    );
+}
+
+export async function getIncidentById(incidentId: string){
+    const database = await getDatabase();
+    return await database.getFirstAsync(
+        `SELECT * FROM incidents WHERE id = ?`,
+        incidentId
+    );
+}
+
+export async function getIncidentImagesByIncidentId(incidentId: string){
+    const database = await getDatabase();
+    return await database.getAllAsync(
+        `SELECT * FROM incident_images WHERE incident_id = ?`,
+        incidentId
+    );
 }

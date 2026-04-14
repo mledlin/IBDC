@@ -30,6 +30,7 @@ export default function AppLayout() {
         <Stack.Screen name="PairDevice" options={{title: 'Pair'}}/>
         <Stack.Screen name="RideSessions" options={{title: 'Ride Sessions'}}/>
         <Stack.Screen name="Settings" options={{title: 'Settings'}}/>
+        <Stack.Screen name="ChoosePhoto" options={{title: "Choose Photo"}} />
     </Stack>
     </DeviceProvider>
     );

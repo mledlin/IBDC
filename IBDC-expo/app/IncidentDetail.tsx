@@ -1,19 +1,28 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Image } from "react-native";
 import { useLocalSearchParams, useRouter} from "expo-router";
+import { getMockImageSource } from "./database";
 
 export default function IncidentDetail() {
   const router = useRouter();
-  const { id, session_id, lat, long, license_plate, created_time, best_image_id } = useLocalSearchParams();
+  const { id, session_id, latitude, longitude, license_plate, created_time, best_image_id, image_path} = useLocalSearchParams();
   //Mock image, we can pass the same image once db is in and we can reliably retrieve image paths
-  const thumbnailSource = require("@/assets/images/example.jpg")
+  const thumbnailSource = 
+    typeof image_path === "string" && image_path
+      ? getMockImageSource(image_path)
+      : require("@/assets/images/example.jpg");
   const incidentImages = [
     { id: "1", file_path: "image_1.jpg"},
     { id: "2", file_path: "image_2.jpg"},
     { id: "3", file_path: "image_3.jpg"},
   ];
   function openChoosePhoto(){
-    router.push("/ChoosePhoto");
+    router.push({
+      pathname: "/ChoosePhoto",
+      params: {
+        incident_id: id,
+      },
+    });
   }
   return (
         <ScrollView contentContainerStyle={styles.container}>
@@ -36,10 +45,10 @@ export default function IncidentDetail() {
                 <Text style = {styles.detailsValue}>{created_time || "No Time Found"}</Text>
 
                 <Text style = {styles.detailsLabel}>Latitude</Text>
-                <Text style = {styles.detailsValue}>{lat || "No Latitude"}</Text>
+                <Text style = {styles.detailsValue}>{latitude || "No Latitude"}</Text>
 
                 <Text style = {styles.detailsLabel}>Longitude</Text>
-                <Text style = {styles.detailsValue}>{long || "No Longitude"}</Text>
+                <Text style = {styles.detailsValue}>{longitude || "No Longitude"}</Text>
 
                 <Text style = {styles.detailsLabel}>License Plate</Text>
                 <Text style = {styles.detailsValue}>{license_plate || "No License Plate"}</Text>

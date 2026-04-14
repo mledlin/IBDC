@@ -1,22 +1,36 @@
-import { router } from "expo-router";
+import { router, useLocalSearchParams} from "expo-router";
 import { useState } from "react";
+import { updateIncidentBestImage } from "./database";
 import { Text, View, StyleSheet, FlatList, TouchableOpacity, Image, Dimensions } from "react-native";
 const{ width} = Dimensions.get("window");
 const card_fit = width - 40;
-const handleBack = () => {
-    console.log('photo selceted');
-    router.back();
-}
+
+
 export default function ChoosePhoto() {
+const {incident_id } = useLocalSearchParams();
 //mock data filling in for database
     const photoList = [
-      {id: 'PHOTO 1', title: 'Photo 1', image: require("@/assets/images/example.jpg"),},
-      {id: 'PHOTO 2', title: 'Photo 2', image: require("@/assets/images/example2.jpg"),},
-      {id: 'PHOTO 3', title: 'Photo 3', image: require("@/assets/images/example3.jpg"),},
-      {id: 'PHOTO 4', title: 'Photo 4', image: require("@/assets/images/example4.jpg"),},
+      {id: 'example1', title: 'Photo 1', image: require("@/assets/images/example.jpg"),},
+      {id: 'example2', title: 'Photo 2', image: require("@/assets/images/example2.jpg"),},
+      {id: 'example3', title: 'Photo 3', image: require("@/assets/images/example3.jpg"),},
+      {id: 'example4', title: 'Photo 4', image: require("@/assets/images/example4.jpg"),},
     ];
   
+  async function handleSelectPhoto(photoId: any) {
+  try{
+    if(typeof incident_id !== "string"){
+      return;
+    }
+    await updateIncidentBestImage(incident_id, `${incident_id}-${photoId}`);
+
+    console.log("Selected Photo:", photoId);
+    router.back();
+  }
+  catch (error) {
+    console.error("Failed to update best image", error);
   
+}
+}
     return (
       <View style={styles.container}>
         <Text style={styles.text}>Choose the best photo</Text>
@@ -33,7 +47,7 @@ export default function ChoosePhoto() {
             <View style = {styles.cardWrap}>
             <TouchableOpacity
               style={styles.card}
-              onPress={handleBack}>
+              onPress={() => handleSelectPhoto(item.id)}>
                 <Image source = {item.image} style = {styles.image} resizeMode = "cover" />
               <Text style={styles.itemText}>{item.title}</Text>
             </TouchableOpacity>

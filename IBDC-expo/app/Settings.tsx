@@ -1,5 +1,5 @@
 import React, {useState} from "react";
-import {createSession, getAllSessions, deleteAllSessions} from "./database";
+import {createSession, getAllSessions, deleteAllSessions, createIncident, createIncidentImage} from "./database";
 import {
     View,
     Text,
@@ -14,6 +14,9 @@ export default function SettingsPage() {
     const [settingOne, setting1] = useState(true);
     const [settingTwo, setting2] = useState(false);
     const [settingThree, setting3] = useState(false);
+
+    //MOCK IMAGE POOL
+    const mockImages = ["example1", "example2", "example3", "example4"];
 
     const dataOptions = [
         "10",
@@ -39,17 +42,91 @@ export default function SettingsPage() {
 
     const handleAddMockIncident = async () => {
         try{
-        const id = Date.now().toString();
-        await createSession(id);
+            const sessionId = Date.now().toString();
+            await createSession(sessionId);
 
-        const sessions = await getAllSessions();
-        console.log("Sessions:", sessions);
+            const plates = ["ABC1234", "XYZ32", "DSA123", "1231AS", "ASU3232"];
+            const severities = ["minor", "moderate", "major"];
+            const driverInfos = [
+                "Unknown",
+                "Driver stopped",
+                "Driver left scene",
+                "Driver apologized",
+                "No driver interaction",
+            ];
+            const comments = [
+                "Vehicle passed too closely",
+                "Driver swerved near cyclist",
+                "Unsafe overtake",
+                "Vehicle stayed in lane too long",
+                "Close call at intersection",
+            ];
+            const vehicles = [
+                { make: "Toyota", model: "Camry", color: "Blue", year: "2020"},
+                {make: "Honda", model: "Civic", color: "Black", year: "2018"},
+                {make: "Ford", model: "F-150", color: "White", year: "2022"},
+                {make: "Chevrolet", model: "Malibu", color: "Silver", year: "2019"},
+                {make: "Nissan", model: "Altima", color: "Red", year: "2021"},
+            ];
+            const coordinates = [
+                {lat: 33.4484, long: -122.0740},
+                {lat: 33.4501, long: -112.183},
+                {lat: 32.3123, long: -110.232},
+                {lat: 31.3211, long: -113.111},
+            ];
+            function pickRandom<T>(items: T[]): T{
+                return items[Math.floor(Math.random() * items.length)];
+            }
+            const incidentCount = Math.floor(Math.random() * 4) + 1;
+
+            for (let i = 0; i < incidentCount; i++){
+                const vehicle = pickRandom(vehicles);
+                const coord = pickRandom(coordinates);
+                const incidentId = `${sessionId}-incident-${i+1}`;
+                const imageId = `${incidentId}-image-1`;
+                const imageKey = pickRandom(mockImages);
+
+                await createIncident(
+                    incidentId,
+                    sessionId,
+                    coord.lat,
+                    coord.long,
+                    pickRandom(plates),
+                    imageId,
+                    pickRandom(severities),
+                    Math.random() < 0.5 ? 0:1,
+                    pickRandom(driverInfos),
+                    pickRandom(comments),
+                    vehicle.make,
+                    vehicle.model,
+                    vehicle.color,
+                    vehicle.year,
+                    new Date(Date.now() + i * 1000).toISOString()
+                );
+                /* More mock data 
+                await createIncidentImage (
+                    imageId,
+                    incidentId,
+                    imageKey,
+                    null,
+                    "mock"
+                ); */
+            await createIncidentImage(`${incidentId}-example1`, incidentId, "example1", null, "mock");
+            await createIncidentImage(`${incidentId}-example2`, incidentId, "example2", null, "mock");
+            await createIncidentImage(`${incidentId}-example3`, incidentId, "example3", null, "mock");
+            await createIncidentImage(`${incidentId}-example4`, incidentId, "example4", null, "mock");    
+
+            }
+            const sessions = await getAllSessions();
+            console.log("Sessions:", sessions);
+
+            Alert.alert("Success", `Mock session added with ${incidentCount} incidents`)
+                } catch (error) {
+                    console.error("Failed to add mock data", error);
+                    Alert.alert("Error", "Could not add mock data");
+                }
+            
         
-        Alert.alert("Success", `Sessions added. \nTotal Sessions: ${sessions.length}`)
-        } catch (error){
-            console.error("Failed to add session", error);
-            Alert.alert("Error", "Could not add session")
-        }
     };
 
     const handleWipeMockData = async () => {
@@ -60,7 +137,7 @@ export default function SettingsPage() {
             Alert.alert("Success", "Session data has been wiped");
         } catch (error) {
             console.error("Failed to wipe sessions", error);
-            Alert.alert("Error", "Could not wipe data");
+            Alert.alert("Error", "Could not wipe")
         }
     };
 

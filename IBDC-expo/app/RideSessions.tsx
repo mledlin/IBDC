@@ -7,10 +7,9 @@ import {
     TouchableOpacity,
     Image,
 } from "react-native";
-
-import {fullMockHistory} from "@/domain/mockData";
+import { router, useFocusEffect } from "expo-router";
 import {isIncidentComplete} from "@/domain/Incident";
-
+import { getSessionHistoryData } from "./database";
 const SESSIONS_PER_PAGE = 5;
 
 export default function RideSession({navigation}: any) {
@@ -18,6 +17,7 @@ export default function RideSession({navigation}: any) {
     const [showFilters, setShowFilters] = useState(false);
     const [filterHasIncidents, setfilterHasIncidents] = useState(false);
     const [filterActionRequired, setFilterActionRequired] = useState(false);
+    const [allSessions, setAllSessions] = useState<any[]>([]);
 
     const scrollViewRef = useRef<ScrollView>(null);
 
@@ -25,8 +25,22 @@ export default function RideSession({navigation}: any) {
         return session.incidents.some((incident: any) => !isIncidentComplete(incident));
     }
 
+     useFocusEffect(
+        React.useCallback(() => {
+            async function loadSessions(){
+                try{
+                    const sessions = await getSessionHistoryData();
+                    setAllSessions(sessions);
+                    setCurrentPage(0);
+                } catch (error) {
+                    console.error("Failed to load session history", error);
+                }
+            }
+            loadSessions();
+        }, [])
+    );   
     const filteredSessions = useMemo(() => {
-        return fullMockHistory.filter((session) => {
+        return allSessions.filter((session) => {
             if (!filterHasIncidents && !filterActionRequired) {
                 return true;
             }
@@ -39,7 +53,7 @@ export default function RideSession({navigation}: any) {
 
             return matchesHasIncidents || matchesActionRequired;
         });
-    }, [filterHasIncidents, filterActionRequired]);
+    }, [allSessions, filterHasIncidents, filterActionRequired]);
 
     const startIndex = currentPage * SESSIONS_PER_PAGE;
     const endIndex = startIndex + SESSIONS_PER_PAGE;
@@ -67,7 +81,23 @@ export default function RideSession({navigation}: any) {
     }
 
     function handleIncidentPress(incident: any) {
-        // TODO
+        const selectedImage =
+        incident.imageFiles.find(
+            (image: any) => image.id === incident.selectedImageId) || null;
+        
+        router.push({
+            pathname: "/IncidentDetail",
+            params: {
+                id: incident.id,
+                session_id: incident.session_id,
+                created_time: incident.created_time,
+                latitude: incident.latitude,
+                longitude: incident.longitude,
+                license_plate: incident.license_plate,
+                best_image_id: incident.best_image_id,
+                image_path: selectedImage?.file_path ?? null,
+            },
+        });
     }
 
     function handleToggleFilters() {
@@ -174,7 +204,7 @@ export default function RideSession({navigation}: any) {
                                         horizontal
                                         showsHorizontalScrollIndicator={true}
                                         contentContainerStyle={styles.incidentRow}>
-                                        {session.incidents.map((incident, incidentIndex) => {
+                                        {session.incidents.map((incident: any, incidentIndex: number) => {
                                             const selectedImage =
                                                 incident.imageFiles.find(
                                                     (image: any) =>
@@ -186,27 +216,20 @@ export default function RideSession({navigation}: any) {
                                                     key={incidentIndex}
                                                     style={styles.incidentCard}
                                                     onPress={() => handleIncidentPress(incident)}>
-                                                    {isIncidentComplete(incident) ? (
-                                                        selectedImage ? (
+                                                        {selectedImage ? (
                                                             <Image
-                                                                source={selectedImage.uri}
-                                                                style={styles.incidentImage}
-                                                                resizeMode="cover"
-                                                            />
+                                                                source = {selectedImage.uri}                                            
+                                                                style = {styles.incidentImage}
+                                                                resizeMode = "cover"
+                                                                /> 
                                                         ) : (
-                                                            <View style={styles.actionRequiredBox}>
-                                                                <Text style={styles.actionRequiredText}>
-                                                                    No Image
-                                                                </Text>
-                                                            </View>
-                                                        )
-                                                    ) : (
-                                                        <View style={styles.actionRequiredBox}>
-                                                            <Text style={styles.actionRequiredText}>
-                                                                Action Required
-                                                            </Text>
-                                                        </View>
-                                                    )}
+                                                            <View style = {styles.actionRequiredBox}> 
+                                                                <Text style = {styles.actionRequiredText}> 
+                                                                    Action Required
+                                                                    </Text>
+                                                                    </View>
+
+                                                        )}
                                                 </TouchableOpacity>
                                             );
                                         })}
