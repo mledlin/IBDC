@@ -1,4 +1,5 @@
 import React, {useState} from "react";
+import {createSession, getAllSessions, deleteAllSessions} from "./database";
 import {
     View,
     Text,
@@ -36,12 +37,31 @@ export default function SettingsPage() {
         }
     };
 
-    const handleAddMockIncident = () => {
-        Alert.alert("Add Mock Incident", "Just for show for now!");
+    const handleAddMockIncident = async () => {
+        try{
+        const id = Date.now().toString();
+        await createSession(id);
+
+        const sessions = await getAllSessions();
+        console.log("Sessions:", sessions);
+        
+        Alert.alert("Success", `Sessions added. \nTotal Sessions: ${sessions.length}`)
+        } catch (error){
+            console.error("Failed to add session", error);
+            Alert.alert("Error", "Could not add session")
+        }
     };
 
-    const handleWipeMockData = () => {
-        Alert.alert("Wipe Mock Data", "Just for show for now!");
+    const handleWipeMockData = async () => {
+        try{
+            await deleteAllSessions();
+            const sessions = await getAllSessions();
+            console.log("Sessions: ", sessions);
+            Alert.alert("Success", "Session data has been wiped");
+        } catch (error) {
+            console.error("Failed to wipe sessions", error);
+            Alert.alert("Error", "Could not wipe data");
+        }
     };
 
     return (

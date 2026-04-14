@@ -97,3 +97,8 @@ export async function getAllSessions(){
     const database = await getDatabase();
     return await database.getAllAsync(`SELECT * FROM sessions ORDER by created_time DESC`);
 }
+
+export async function deleteAllSessions(){
+    const database = await getDatabase();
+    await database.runAsync(`DELETE FROM sessions`);
+}
