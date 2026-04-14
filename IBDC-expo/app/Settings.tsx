@@ -80,18 +80,24 @@ export default function SettingsPage() {
             const incidentCount = Math.floor(Math.random() * 4) + 1;
 
             for (let i = 0; i < incidentCount; i++){
+                //Tester method for generating data without thumbnail
+                const hasThumbnail = Math.random() < 0.7;
                 const vehicle = pickRandom(vehicles);
                 const coord = pickRandom(coordinates);
                 const incidentId = `${sessionId}-incident-${i+1}`;
-                const imageId = `${incidentId}-image-1`;
-                const imageKey = pickRandom(mockImages);
-
+                //Conditional logic is solely for generating variance in mock data
+                const imageKey = hasThumbnail ? pickRandom(mockImages) : null;
+                const imageId = hasThumbnail ? `${incidentId}-${imageKey}` : null;
+            
                 await createIncident(
                     incidentId,
                     sessionId,
                     coord.lat,
                     coord.long,
                     pickRandom(plates),
+                    /*  mock version
+                    imageId,
+                    */ 
                     imageId,
                     pickRandom(severities),
                     Math.random() < 0.5 ? 0:1,
@@ -103,14 +109,7 @@ export default function SettingsPage() {
                     vehicle.year,
                     new Date(Date.now() + i * 1000).toISOString()
                 );
-                /* More mock data 
-                await createIncidentImage (
-                    imageId,
-                    incidentId,
-                    imageKey,
-                    null,
-                    "mock"
-                ); */
+                // More mock data 
             await createIncidentImage(`${incidentId}-example1`, incidentId, "example1", null, "mock");
             await createIncidentImage(`${incidentId}-example2`, incidentId, "example2", null, "mock");
             await createIncidentImage(`${incidentId}-example3`, incidentId, "example3", null, "mock");

@@ -1,21 +1,45 @@
-import React from "react";
+import React, {useState} from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Image } from "react-native";
-import { useLocalSearchParams, useRouter} from "expo-router";
-import { getMockImageSource } from "./database";
+import { useFocusEffect, useLocalSearchParams, useRouter} from "expo-router";
+import { getIncidentById, getIncidentImagesByIncidentId, getMockImageSource } from "./database";
 
 export default function IncidentDetail() {
   const router = useRouter();
   const { id, session_id, latitude, longitude, license_plate, created_time, best_image_id, image_path} = useLocalSearchParams();
   //Mock image, we can pass the same image once db is in and we can reliably retrieve image paths
-  const thumbnailSource = 
-    typeof image_path === "string" && image_path
-      ? getMockImageSource(image_path)
-      : require("@/assets/images/example.jpg");
-  const incidentImages = [
-    { id: "1", file_path: "image_1.jpg"},
-    { id: "2", file_path: "image_2.jpg"},
-    { id: "3", file_path: "image_3.jpg"},
-  ];
+  const [bestImageId, setBestImageId] = useState<string | null> (null);
+  const [thumbnailSource, setThumbnailSource] = useState(
+    require("@/assets/images/example.jpg")
+  );
+ 
+useFocusEffect(
+  React.useCallback(() => {
+    async function loadIncidentImage() {
+    try{
+      if (typeof id !== "string")
+        return;
+      const incident: any = await getIncidentById(id);
+      const images: any[] = await getIncidentImagesByIncidentId(id);
+
+      setBestImageId(incident?.best_image_id ?? null);
+
+      const selectedImage = images.find(
+        (image: any) => image.id === incident?.best_image_id
+      );
+
+      if (selectedImage?.file_path) {
+        const source = getMockImageSource(selectedImage.file_path);
+        if (source) {
+          setThumbnailSource(source);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load thumbnail" , error);
+    }
+  }
+    loadIncidentImage();
+  }, [id])
+);
   function openChoosePhoto(){
     router.push({
       pathname: "/ChoosePhoto",
@@ -54,7 +78,7 @@ export default function IncidentDetail() {
                 <Text style = {styles.detailsValue}>{license_plate || "No License Plate"}</Text>
 
                 <Text style = {styles.detailsLabel}>Best Image ID</Text>
-                <Text style = {styles.detailsValue}>{best_image_id || "No Best Image Selected"}</Text>
+                <Text style = {styles.detailsValue}>{bestImageId || "No Best Image Selected"}</Text>
             </View>
 
             <TouchableOpacity style={styles.photoButton} onPress={openChoosePhoto}>
