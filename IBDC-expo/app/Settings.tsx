@@ -77,7 +77,7 @@ export default function SettingsPage() {
             function pickRandom<T>(items: T[]): T{
                 return items[Math.floor(Math.random() * items.length)];
             }
-            const incidentCount = Math.floor(Math.random() * 4) + 1;
+            const incidentCount = Math.floor(Math.random() * 5);
 
             for (let i = 0; i < incidentCount; i++){
                 //Tester method for generating data without thumbnail
