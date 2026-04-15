@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { Text, View, StyleSheet, Alert, Pressable } from "react-native";
+import { Text, View, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import BluetoothDeviceModal from "@/components/ui/BluetoothDeviceModal";
 import { useDevice } from "@/context/DeviceContext";
 import { useRouter } from "expo-router";
+import { useTheme } from "@/context/ThemeContext";
 
 type DeviceItem = {
   id: string;
@@ -31,6 +32,7 @@ const COLORS = {
 };
 
 export default function PairDevice() {
+  const { theme } = useTheme();
   const router = useRouter();
   const {setDevice}= useDevice();
   const [modalVisible, setModalVisable] = useState(false);
@@ -54,18 +56,18 @@ export default function PairDevice() {
  };
   
   return (
-    <View style={styles.screen}>
-      <View style={styles.header}>
-        <Text style={styles.headerText}>Pair Device</Text>
+    <View style={[styles.screen, { backgroundColor: theme.colors.background }]}>
+      <View style={[styles.header, { backgroundColor: theme.colors.primary }]}>
+        <Text style={[styles.headerText, { color: theme.colors.primaryForeground }]}>Pair Device</Text>
       </View>
       
       <View style={styles.container}>
-        <View style={styles.pictureCard}>
-          <View style={styles.iconBackdrop}>
-            <Ionicons name ="bluetooth" size={34} color={COLORS.primaryBlue}/>
+        <View style={[styles.pictureCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+          <View style={[styles.iconBackdrop, { backgroundColor: theme.colors.primary, borderColor: theme.colors.border }]}>
+            <Ionicons name ="bluetooth" size={40} color={theme.colors.primaryForeground}/>
           </View>
-          <Text style= {styles.title}>Connect your IBDC device</Text>
-          <Text style={styles.subtitle}>
+          <Text style= {[styles.title, { color: theme.colors.textSecondary }]}>Connect your IBDC device</Text>
+          <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>
             Turn on Bluetooth, make sure your device is nearby, and tab the button 
             beloww to search for available devices.
           </Text>
@@ -74,17 +76,17 @@ export default function PairDevice() {
             <Ionicons
               name="information-circle-outline"
               size={18}
-              color={COLORS.primaryRed}
+              color={theme.colors.danger}
             />
-            <Text style={styles.infoText}>
+            <Text style={[styles.infoText, { color: theme.colors.danger }]}>
               Keep the device powered on during pairing.
             </Text>
             </View>
           </View>
 
-        <Pressable style={styles.button} onPress={() => setModalVisable(true)}>
-       <Ionicons name="bluetooth-outline" size={18} color="white" />
-      <Text style={styles.buttonText}>Scan for Devices</Text>
+        <Pressable style={[styles.button, { backgroundColor: theme.colors.primary }]} onPress={() => setModalVisable(true)}>
+       <Ionicons name="bluetooth-outline" size={18} color={theme.colors.primaryForeground} />
+      <Text style={[styles.buttonText, { color: theme.colors.primaryForeground }]}>Scan for Devices</Text>
       </Pressable>
 
       
@@ -108,7 +110,7 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    backgroundColor: COLORS.primaryRed,
+    backgroundColor: COLORS.darkBlue,
     paddingHorizontal: 16,
     paddingVertical: 18,
   },
@@ -120,7 +122,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "flex-start",
     padding: 16,
   },
   //defining your own style
@@ -133,7 +135,6 @@ const styles = StyleSheet.create({
   },
     button: {
     width: "100%",
-    backgroundColor: COLORS.primaryBlue,
     borderRadius: 16,
     paddingVertical: 16,
     flexDirection: "row",
@@ -153,10 +154,8 @@ const styles = StyleSheet.create({
     color: "white",
   },
   pictureCard: {
-    backgroundColor: COLORS.white,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: COLORS.border,
     padding: 20,
     alignItems: "center",
     marginBottom: 16,
@@ -191,7 +190,6 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 15,
     lineHeight: 22,
-    color: COLORS.textLight,
     textAlign: "center",
     marginBottom: 18,
   },

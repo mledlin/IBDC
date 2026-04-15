@@ -57,6 +57,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
                     backgroundColor: "#000000",
                 },
             },
+
         ],
         "expo-asset",
         [
@@ -67,6 +68,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
                 iosGoogleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY
             },
         ],
+        "expo-sqlite"
     ],
 
     experiments: {
