@@ -57,7 +57,7 @@ export default function BluetoothDeviceModal({ visible, devices, onClose, onSele
 const styles = StyleSheet.create({
     overlay:{
         flex: 1, 
-        backgroundColor: "transparent", 
+        backgroundColor: "rbga(0,0,0,0.5)", 
         justifyContent: "center", 
         alignItems: "center",
         padding: 20,
