@@ -77,6 +77,65 @@ export default function IncidentDetail() {
                         <Text style={[styles.detailsValue, { color: theme.colors.textSecondary }]}>{long || "No Longitude"}</Text>
                     </View>
                 </View>
+import React, {useState} from "react";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Image } from "react-native";
+import { useFocusEffect, useLocalSearchParams, useRouter} from "expo-router";
+import { getIncidentById, getIncidentImagesByIncidentId, getMockImageSource } from "./database";
+
+export default function IncidentDetail() {
+  const router = useRouter();
+  const { id, session_id, latitude, longitude, license_plate, created_time, best_image_id, image_path} = useLocalSearchParams();
+  //Mock image, we can pass the same image once db is in and we can reliably retrieve image paths
+  const [bestImageId, setBestImageId] = useState<string | null> (null);
+  const [thumbnailSource, setThumbnailSource] = useState(
+    require("@/assets/images/example.jpg")
+  );
+ 
+useFocusEffect(
+  React.useCallback(() => {
+    async function loadIncidentImage() {
+    try{
+      if (typeof id !== "string")
+        return;
+      const incident: any = await getIncidentById(id);
+      const images: any[] = await getIncidentImagesByIncidentId(id);
+
+      setBestImageId(incident?.best_image_id ?? null);
+
+      const selectedImage = images.find(
+        (image: any) => image.id === incident?.best_image_id
+      );
+
+      if (selectedImage?.file_path) {
+        const source = getMockImageSource(selectedImage.file_path);
+        if (source) {
+          setThumbnailSource(source);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load thumbnail" , error);
+    }
+  }
+    loadIncidentImage();
+  }, [id])
+);
+  function openChoosePhoto(){
+    router.push({
+      pathname: "/ChoosePhoto",
+      params: {
+        incident_id: id,
+      },
+    });
+  }
+  return (
+        <ScrollView contentContainerStyle={styles.container}>
+            <Text style = {styles.title}>Incident Details</Text>
+            <View style = {styles.thumbnailContainer}>
+              <Image 
+                source = {thumbnailSource} //This will eventually beocome uri: image.file_path when DB is in
+                style = {styles.thumbnail}
+                resizeMode = "cover"
+                ></Image>
             </View>
 
             <View style={[styles.formSection, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface },]}>
