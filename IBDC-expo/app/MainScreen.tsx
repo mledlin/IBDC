@@ -1,298 +1,204 @@
 import { View, Text, StyleSheet, Pressable, ScrollView, Image } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import React, { useState } from "react";
+import React from "react";
 import { Ionicons } from '@expo/vector-icons';
 import { useDevice } from "@/context/DeviceContext";
-
+import { useTheme } from '@/context/ThemeContext';
 
 type ConnectedStatus = 'connected' | 'disconnected' | 'pairing';
 
-//Information that represents the IBDC device for main screen representation. 
 interface DeviceInfo {
-  name: string; 
+  name: string;
   status: ConnectedStatus;
   battery: number;
-  storage: {used: number; total: number };
+  storage: { used: number; total: number };
   firmwareVersion: string;
   lastSynced: string;
 }
 
-//mock device for demonstration. Will need to be removed for final product
 const demoDevice: DeviceInfo = {
-name: 'IBDC Proto X',
-status: 'connected',
-battery: 78, 
-storage: {used: 3.4, total: 8},
-firmwareVersion: 'v1.0',
-lastSynced: '2 min ago',
+  name: 'IBDC Proto X',
+  status: 'connected',
+  battery: 78,
+  storage: { used: 3.4, total: 8 },
+  firmwareVersion: 'v1.0',
+  lastSynced: '2 min ago',
 };
 
-//function to display the battery level of device on the screen 
-function BatteryBar({ level }: { level : number}) {
-  const color = level > 50 ? 'green' : level > 20 ? '#ffd166' : '#ff6b6b'
-  return(
+function BatteryBar({ level, theme }: { level: number; theme: any }) {
+  const color = level > 50 ? '#16a34a' : level > 20 ? '#ffd166' : '#ff6b6b';
+  return (
     <View style={styles.batteryWrapper}>
-      <View style={styles.batteryOter}>
-        <View style={[styles.batteryFill, { width: `${level}%` as any, backgroundColor: color}]} />
+      <View style={[styles.batteryOuter, { backgroundColor: theme.colors.border }]}>
+        <View style={[styles.batteryFill, { width: `${level}%` as any, backgroundColor: color }]} />
       </View>
     </View>
-  )
+  );
 }
 
-//function to display the Storage level of device on the screen 
-function StorageBar({ level }: { level : number}) {
-  const color = level > 90 ? '#ff6b6b' : level > 70 ? '#ffd166' : 'green'
-  return(
+function StorageBar({ level, theme }: { level: number; theme: any }) {
+  const color = level > 90 ? '#ff6b6b' : level > 70 ? '#ffd166' : '#16a34a';
+  return (
     <View style={styles.batteryWrapper}>
-      <View style={styles.batteryOter}>
-        <View style={[styles.batteryFill, { width: `${level}%` as any, backgroundColor: color}]} />
+      <View style={[styles.batteryOuter, { backgroundColor: theme.colors.border }]}>
+        <View style={[styles.batteryFill, { width: `${level}%` as any, backgroundColor: color }]} />
       </View>
     </View>
-  )
+  );
 }
 
 
-//function to get status of connection
-function getStatusColor(status: ConnectedStatus) {
-  switch (status) {
-    case "connected":
-      return "#16a341";
-    case "pairing":
-      return "#d97706"; 
-    case "disconnected":
-      return "#6b7280";
-  }
-}
-
-//allow the connected style to change the apperace 
 function getStatusText(status: ConnectedStatus) {
   switch (status) {
-    case "connected":
-      return "Connected";
-    case "pairing":
-      return "Pairing";
-    case "disconnected":
-      return "Disconnected";
-    default:
-      return "Unknown";
+    case "connected": return "Connected";
+    case "pairing": return "Pairing";
+    case "disconnected": return "Disconnected";
+    default: return "Unknown";
   }
 }
 
-
-//function for pair status of the device on the screen 
-
-export default function MainScreen(){
+export default function MainScreen() {
+  const { theme } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const {device}= useDevice();
+  const { device } = useDevice();
   const currentDevice = device ?? demoDevice;
+  const storagePercent = (currentDevice.storage.used / currentDevice.storage.total) * 100;
+
   return (
-      <View style={[styles.safe, {paddingTop: insets.top }]}>
-        <ScrollView
-            style={styles.scroll}
-            contentContainerStyle={styles.content}
-            showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.statsRow}>
-            <View style={[styles.statCard]}>
-              <View style={styles.statHeader}>
-                <Ionicons name="bluetooth" size={18} color={'#2563eb'}/>
-                <Text style={styles.statTitle}>{getStatusText(currentDevice.status)}</Text>
-              </View>
-              <Pressable
-                  style={styles.button}
-                  onPress={() => router.push("/PairDevice")}
-              >
-                <Text style={styles.buttonText}>Pair Device</Text>
-              </Pressable>
+    <View style={[styles.safe, { paddingTop: insets.top, backgroundColor: theme.colors.background }]}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Stat cards row */}
+        <View style={styles.statsRow}>
+          <View style={[styles.statCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+            <View style={styles.statHeader}>
+              <Ionicons name="bluetooth" size={18} color={theme.colors.primary} />
+              <Text style={[styles.statTitle, { color: theme.colors.textSecondary }]}>{getStatusText(currentDevice.status)}</Text>
             </View>
-
-            <View style={styles.statCard}>
-              <View style={styles.statHeader}>
-                <Ionicons name="battery-half-outline" size={18} color={'#111827'}/>
-                <Text style={styles.statTitle}>Battery</Text>
-              </View>
-              <Text style={[styles.statBigNumber]}>{currentDevice.battery}%</Text>
-              <BatteryBar level={currentDevice.battery} />
-            </View>
-
-            <View style={styles.statCard}>
-              <View style={styles.statHeader}>
-                <Ionicons name="server-outline" size={18} color={'#111827'}/>
-                <Text style={styles.statTitle}>Device storage</Text>
-              </View>
-              <Text style={[styles.statBigNumber]}>{(currentDevice.storage.used/currentDevice.storage.total)*100}%</Text>
-              <StorageBar level={(currentDevice.storage.used/currentDevice.storage.total)*100} />
-            </View>
+            <Pressable
+              style={[styles.button, { backgroundColor: theme.colors.primary, borderRadius: theme.radii.md }]}
+              onPress={() => router.push("/PairDevice")}
+            >
+              <Text style={[styles.buttonText, { color: theme.colors.primaryForeground }]}>Pair Device</Text>
+            </Pressable>
           </View>
 
-          <View style={styles.imageCard}>
-            <Text style={styles.batteryText}>IBDC</Text>
-            <Image
-                source={require('../assets/images/device-placeholder.png')}
-                style ={styles.productImage}
-                resizeMode = "contain"
-            />
-            <Text style={styles.batteryText}>
-              Firmware {currentDevice.firmwareVersion} • Synced {currentDevice.lastSynced}
-            </Text>
+          <View style={[styles.statCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+            <View style={styles.statHeader}>
+              <Ionicons name="battery-half-outline" size={18} color={theme.colors.textSecondary} />
+              <Text style={[styles.statTitle, { color: theme.colors.textSecondary }]}>Battery</Text>
+            </View>
+            <Text style={[styles.statBigNumber, { color: theme.colors.textSecondary }]}>{currentDevice.battery}%</Text>
+            <BatteryBar level={currentDevice.battery} theme={theme} />
           </View>
 
+          <View style={[styles.statCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+            <View style={styles.statHeader}>
+              <Ionicons name="server-outline" size={18} color={theme.colors.textSecondary} />
+              <Text style={[styles.statTitle, { color: theme.colors.textSecondary }]}>Storage</Text>
+            </View>
+            <Text style={[styles.statBigNumber, { color: theme.colors.textSecondary }]}>{storagePercent}%</Text>
+            <StorageBar level={storagePercent} theme={theme} />
+          </View>
+        </View>
+
+        {/* Device image card */}
+        <View style={[styles.imageCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+          <Text style={[styles.batteryText, { color: theme.colors.text }]}>IBDC</Text>
+          <Image
+            source={require('../assets/images/device-placeholder.png')}
+            style={styles.productImage}
+            resizeMode="contain"
+          />
+          <Text style={[styles.batteryText, { color: theme.colors.textSecondary }]}>
+            Firmware {currentDevice.firmwareVersion} • Synced {currentDevice.lastSynced}
+          </Text>
+        </View>
+
+        {/* Action buttons */}
+        <View style={[styles.actionsCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
           <View style={styles.actionsRow}>
             <Pressable
-                style={styles.actionButtonSmall}
-                onPress={() => router.push("/RideSessions")}>
-              <Ionicons  name="bicycle-outline" size={18} color="white" />
-              <Text style={styles.actionButtonSmallText}>Ride Sessions</Text>
+              style={[styles.actionButtonSmall, { backgroundColor: theme.colors.primary, borderRadius: theme.radii.md }]}
+              onPress={() => router.push("/RideSessions")}
+            >
+              <Ionicons name="bicycle-outline" size={18} color={theme.colors.primaryForeground} />
+              <Text style={[styles.actionButtonSmallText, { color: theme.colors.primaryForeground }]}>Ride Sessions</Text>
             </Pressable>
 
-            <Pressable style={styles.actionButtonSmall}
-                       onPress={() => router.push("/Settings")}>
-              <Ionicons name="settings-outline" size={18} color="white"/>
-              <Text style={styles.actionButtonSmallText} >Settings</Text>
+            <Pressable
+              style={[styles.actionButtonSmall, { backgroundColor: theme.colors.primary, borderRadius: theme.radii.md }]}
+              onPress={() => router.push("/Settings")}
+            >
+              <Ionicons name="settings-outline" size={18} color={theme.colors.primaryForeground} />
+              <Text style={[styles.actionButtonSmallText, { color: theme.colors.primaryForeground }]}>Settings</Text>
             </Pressable>
-
           </View>
-
-        </ScrollView>
-      </View>
-
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#ffffff",
-  },
-  text: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "black",
-  },
-  buttonText:{
-    fontWeight: "bold",
-    color: "white",
-  },
-  link: {
-    fontSize: 18,
-    color: "blue",
-    textDecorationLine: "underline",
-  },
-  button: {
-    padding: 20,
-    backgroundColor: "#4f6ef7", 
-    marginBottom: 15, 
-    borderRadius: 10,
-  }, 
-  batteryWrapper: {
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    gap: 8,
-  },
-  batteryOter: {
-    flex: 1, 
-    height: 8, 
-    backgroundColor: 'grey', 
-    borderRadius: 4, 
-    overflow: 'hidden',
-  },
-  batteryFill: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  batteryText: {
-    fontSize: 11, 
-    fontWeight: '700',
-  },
-  safe: {
-    flex: 1, 
-    backgroundColor: "#f8fafc",
-  },
-  scroll: {
-    flex: 1,
-  }, 
-  content: {
-    padding: 20,
-  },
-  statsRow: {
-    flexDirection: 'row', 
-    gap: 12, 
-    marginBottom: 24,
-  },
+  safe: { flex: 1 },
+  scroll: { flex: 1 },
+  content: { padding: 20 },
+  statsRow: { flexDirection: 'row', gap: 12, marginBottom: 24 },
   statCard: {
-    backgroundColor: '#ffffff', 
-    borderRadius: 18, 
-    borderWidth: 1, 
-    borderColor: "#e5e7eb", 
+    flex: 1,
+    borderRadius: 18,
+    borderWidth: 1,
     padding: 12,
-
     shadowColor: "#000",
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.08,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    elevation: 5,
   },
-  statHeader: {
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    gap: 6, 
-    marginBottom: 8,
-  },
-  statBigNumber: {
-    fontSize: 28, 
-    fontWeight: '800', 
-    color: 'grey', 
-    marginBottom: 10,
-  },
-  statTitle: {
-    fontSize: 12, 
-    color: 'black',
-    fontWeight: '600',
-  },
+  statHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
+  statTitle: { fontSize: 12, fontWeight: '600' },
+  statBigNumber: { fontSize: 28, fontWeight: '800', marginBottom: 10 },
+  batteryWrapper: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  batteryOuter: { flex: 1, height: 8, borderRadius: 4, overflow: 'hidden' },
+  batteryFill: { height: '100%', borderRadius: 4 },
+  batteryText: { fontSize: 11, fontWeight: '700' },
+  button: { padding: 12, marginBottom: 4 },
+  buttonText: { fontWeight: 'bold', textAlign: 'center' },
   imageCard: {
-    backgroundColor: "#eff6ff",
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
     alignItems: 'center',
     paddingTop: 18,
     paddingHorizontal: 16,
     paddingBottom: 20,
     marginBottom: 18,
-
     shadowColor: "#000",
     shadowOpacity: 0.06,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
+    elevation: 5,
   },
-  imageGlow:{
-    position: 'absolute', 
-    top: -40, 
-    width: 200, 
-    height: 200, 
-    borderRadius: 100, 
-    backgroundColor: "black",
-    opacity: 0.04,
+  productImage: { width: '100%', height: 260, marginBottom: 16 },
+  actionsCard: {
+    borderRadius: 24,
+    borderWidth: 1,
+    padding: 14,
+    marginTop: 4,
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
   },
-  productImage: { 
-    width: '100%', 
-    height: 260, 
-    marginBottom: 16,
-  },
-  actionsRow: {
-  flexDirection: "row",
-  gap: 10,
-  marginTop: 4,
-  },
+  actionsRow: { flexDirection: "row", gap: 10, marginTop: 4 },
   actionButtonSmall: {
     flex: 1,
-    backgroundColor: "#4f6ef7",
-    borderRadius: 16,
     minHeight: 82,
     paddingVertical: 12,
     paddingHorizontal: 8,
@@ -302,10 +208,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
+    elevation: 5,
   },
   actionButtonSmallText: {
-    color: "white",
     fontWeight: "700",
     fontSize: 13,
     marginTop: 6,
