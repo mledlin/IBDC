@@ -269,7 +269,7 @@ export default function RideSession({navigation}: any) {
                             <TouchableOpacity
                                 style={[styles.pageButton, { backgroundColor: theme.colors.primary, borderColor: theme.colors.border },]}
                                 onPress={handlePreviousPage}>
-                                <Text style={[styles.pageButtonText, { color: theme.colors.text }]}>
+                                <Text style={[styles.pageButtonText, { color: theme.colors.primaryForeground }]}>
                                     Previous
                                 </Text>
                             </TouchableOpacity>

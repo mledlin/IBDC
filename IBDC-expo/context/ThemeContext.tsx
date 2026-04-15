@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useEffect, useState} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export type ThemeKey = 'original' | 'sleek' | 'wildcard'; 
+export type ThemeKey = 'original' | 'sleek' ;
+//| 'wildcard'; 
 
 export interface AppTheme {
     key: ThemeKey; 
@@ -65,23 +66,23 @@ export const themes: Record<ThemeKey, AppTheme> = {
     typography: { fontFamily: 'System', headingWeight: '600' },
     radii: { sm: 2, md: 4, lg: 8, full: 999 },
   },
-  wildcard: {
-    key: 'wildcard',
-    colors: {
-      background: '#0D0015',
-      surface: '#9e3eec',
-      surfaceAlt: '#26004A',
-      primary: '#FF2EF7',
-      primaryForeground: '#0D0015',
-      text: '#F0E6FF',
-      textSecondary: '#e1d5eb',
-      border: '#4A0080',
-      danger: '#FF4466',
-      returnArrow: '#F0E6FF',
-    },
-    typography: { fontFamily: 'System', headingWeight: '900' },
-    radii: { sm: 12, md: 20, lg: 32, full: 999 },
-  },
+  //wildcard: {
+   // key: 'wildcard',
+  //  colors: {
+   //   background: '#0D0015',
+   //   surface: '#9e3eec',
+   //   surfaceAlt: '#26004A',
+    //  primary: '#FF2EF7',
+   //   primaryForeground: '#0D0015',
+   //   text: '#F0E6FF',
+   //   textSecondary: '#e1d5eb',
+   //   border: '#4A0080',
+    //  danger: '#FF4466',
+   //   returnArrow: '#F0E6FF',
+  //  },
+  //  typography: { fontFamily: 'System', headingWeight: '900' },
+  //  radii: { sm: 12, md: 20, lg: 32, full: 999 },
+  //},
 };
 
 

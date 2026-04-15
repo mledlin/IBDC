@@ -5,7 +5,7 @@ import { useTheme, ThemeKey, themes } from '@/context/ThemeContext';
 const THEME_META: Record<ThemeKey, { label: string; description: string; accent: string }> = {
   original: { label: 'Original', description: 'Basic & familiar', accent: '#4F8EF7' },
   sleek: { label: 'Sleek', description: 'Clean & minimal', accent: '#1A1A1A' },
-  wildcard: { label: 'Wild', description: 'Loud & electric', accent: '#FF2EF7' },
+ // wildcard: { label: 'Wild', description: 'Loud & electric', accent: '#FF2EF7' },
 };
 
 function ThemeCard({ themeKey, active, onPress }: {

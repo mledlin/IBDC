@@ -11,6 +11,7 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import Checkbox from "expo-checkbox";
 import { Picker } from "@react-native-picker/picker";
+import { useTheme } from "@/context/ThemeContext";
 
 // NOTES:
 // You will need to run npm install to get new dependencies here.
@@ -22,6 +23,7 @@ import { Picker } from "@react-native-picker/picker";
 
 export default function IncidentDetail() {
     const router = useRouter();
+    const { theme } = useTheme();
 
     // I dont understand how this 'useLocalSearchParams' works or how its supposed to work.
     // Leaving it alone for now.
@@ -50,38 +52,39 @@ export default function IncidentDetail() {
     const createdTimeText =
         typeof created_time === "string" && created_time.trim().length > 0 ? created_time : "Unknown date/Time";
 
-    return (
-        <ScrollView contentContainerStyle={styles.container}>
-            <Text style={styles.title}>Incident Details</Text>
-            <Text style={styles.createdTime}>{createdTimeText}</Text>
 
-            <View style={styles.thumbnailContainer}>
+    return (
+        <ScrollView contentContainerStyle={[styles.container, { backgroundColor: theme.colors.background },]}>
+            <Text style={[styles.title, { color: theme.colors.text }]}>Incident Details</Text>
+            <Text style={[styles.createdTime, { color: theme.colors.text }]}>{createdTimeText}</Text>
+
+            <View style={[styles.thumbnailContainer, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface },]}>
                 <Image
                     source={thumbnailSource}
                     style={styles.thumbnail}
                     resizeMode="cover"/>
             </View>
 
-            <View style={styles.detailsBox}>
+            <View style={[styles.detailsBox, { borderColor: theme.colors.border , backgroundColor: theme.colors.surface, },]}>
                 <View style={styles.coordinatesRow}>
                     <View style={styles.coordinateItem}>
-                        <Text style={styles.detailsLabel}>Latitude</Text>
-                        <Text style={styles.detailsValue}>{lat || "No Latitude"}</Text>
+                        <Text style={[styles.detailsLabel, { color: theme.colors.textSecondary }]}>Latitude</Text>
+                        <Text style={[styles.detailsValue, { color: theme.colors.textSecondary }]}>{lat || "No Latitude"}</Text>
                     </View>
 
                     <View style={styles.coordinateItem}>
-                        <Text style={styles.detailsLabel}>Longitude</Text>
-                        <Text style={styles.detailsValue}>{long || "No Longitude"}</Text>
+                        <Text style={[styles.detailsLabel, { color: theme.colors.textSecondary }]}>Longitude</Text>
+                        <Text style={[styles.detailsValue, { color: theme.colors.textSecondary }]}>{long || "No Longitude"}</Text>
                     </View>
                 </View>
             </View>
 
-            <View style={styles.formSection}>
-                <Text style={styles.sectionHeader}>Additional Details</Text>
+            <View style={[styles.formSection, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface },]}>
+                <Text style={[styles.sectionHeader, { color: theme.colors.textSecondary } ]}>Additional Details</Text>
 
                 <Text style={styles.inputLabel}>License Plate</Text>
                 <TextInput
-                    style={styles.input}
+                    style={[styles.input]}
                     value={licensePlateInput}
                     onChangeText={setLicensePlateInput}
                     placeholder="Enter license plate"/>
@@ -149,7 +152,7 @@ export default function IncidentDetail() {
                     keyboardType="numeric" />
             </View>
 
-            <TouchableOpacity style={styles.photoButton} onPress={openChoosePhoto}>
+            <TouchableOpacity style={[styles.photoButton, { backgroundColor: theme.colors.primary }]} onPress={openChoosePhoto}>
                 <Text style={styles.photoButtonText}>Choose Best Photo</Text>
             </TouchableOpacity>
         </ScrollView>
