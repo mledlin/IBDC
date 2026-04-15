@@ -53,9 +53,9 @@ const { theme } = useTheme();
             const severities = ["minor", "moderate", "major"];
             const driverInfos = [
                 "Unknown",
-                "Driver stopped",
-                "Driver left scene",
-                "Driver apologized",
+                "John 423-323-1232",
+                "Albert D1234912922",
+                "Walter, 308 Negra Arroyo Lane, 505-965-1672",
                 "No driver interaction",
             ];
             const comments = [

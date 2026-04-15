@@ -9,20 +9,12 @@ const CARD_WIDTH = width * 0.78;
 const SIDE_SPACING = 16;
 const Item_SPACING = 12;
 const SNAP_INTERVAL = CARD_WIDTH + SIDE_SPACING;
-
-export default function ChoosePhoto() {
-    const { theme } = useTheme();
-
-    const handleBack = () => {
-    console.log('photo selceted');
-    router.back();
-    };
-
-const card_fit = width - 40;
-
+  
 
 export default function ChoosePhoto() {
 const {incident_id } = useLocalSearchParams();
+ const { theme } = useTheme();
+ const card_fit = width - 40;
 //mock data filling in for database
     const photoList = [
       {id: 'example1', title: 'Photo 1', image: require("@/assets/images/example.jpg"),},
@@ -68,7 +60,8 @@ const {incident_id } = useLocalSearchParams();
               style={[
               styles.card,
               {width: CARD_WIDTH,backgroundColor: theme.colors.surface,borderColor: theme.colors.border,},]}
-            onPress={handleBack}
+            onPress={ () => {
+              void handleSelectPhoto(item.id)}}
             activeOpacity={0.92}>
             <View style={styles.imageWrap}>
               <Image
@@ -235,3 +228,4 @@ const {incident_id } = useLocalSearchParams();
         fontWeight: "500",
       },
   });
+  

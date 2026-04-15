@@ -284,3 +284,34 @@ export async function getIncidentImagesByIncidentId(incidentId: string){
         incidentId
     );
 }
+
+export async function updateIncidentDetails(
+    incidentId: string,
+    updates: {
+        license_plate?: string | null;
+        injury_severity?: string | null;
+        driver_present?: number;
+        driver_information?: string | null;
+        extra_comment?: string | null;
+        vehicle_make?: string | null;
+        vehicle_model?: string | null;
+        vehicle_color?: string | null;
+        vehicle_year?: string | null;
+    }
+) {
+    const database = await getDatabase();
+    const entries = Object.entries(updates).filter(([, value]) => value!== undefined);
+
+    if(entries.length === 0)
+        return;
+
+    const setClause = entries.map(([key]) => `${key} = ?`).join(", ");
+    const values = entries.map(([, value]) => value);
+
+    await database.runAsync(
+        `UPDATE incidents SET ${setClause} WHERE id = ?`,
+        ...values,
+        incidentId
+    );
+
+}

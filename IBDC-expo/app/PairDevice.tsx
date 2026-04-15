@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Text, View, StyleSheet, Alert, Pressable } from "react-native";
+import { Text, View, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import BluetoothDeviceModal from "@/components/ui/BluetoothDeviceModal";
 import { useDevice } from "@/context/DeviceContext";

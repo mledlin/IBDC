@@ -19,13 +19,23 @@ import {Session} from "@/domain/Session";
 import {ImageSourcePropType} from "react-native";
 
 export type Incident = {
+    id: string;
+    session_id: string;
+    latitude: number | null;
+    longitude: number | null;
+    created_time: string | null;
+    license_plate: string | null;
+    best_image_id: string | null;
+    injury_severity: string | null;
+    driver_present: number;
+    driver_information: string | null;
+    extra_comment: string | null;
+    vehicle_make: string | null;
+    vehicle_model: string | null;
+    vehicle_color: string | null;
+    vehicle_year: string | null;
     imageFiles: IncidentImage[];
     selectedImageId: string | null;
-    gpsLocation: GpsCoordinates | null;
-    gpsTimestamp: Date | null;
-    licensePlate: string | null;
-    riderNotes: string | null;
-    session: Session | null;
 };
 
 // This type/struct will hold GPS longitude/latitude
@@ -44,12 +54,16 @@ export type IncidentImage = {
 // This is a potential check to verify an incident is ready to be published as a PDF or by
 // other means. All data should be filled in to be true.
 export function isIncidentComplete(incident: Incident): boolean {
+    const hasText = (value: unknown): boolean =>
+        typeof value === "string" && value.trim().length > 0;
     return (
+        Array.isArray(incident.imageFiles) &&
         incident.imageFiles.length > 0 &&
-        incident.selectedImageId !== null &&
-        incident.gpsLocation !== null &&
-        incident.gpsTimestamp !== null &&
-            incident.licensePlate !== null && incident.licensePlate.trim().length > 0 &&
-            incident.riderNotes !== null && incident.riderNotes.trim().length > 0
+        incident.selectedImageId != null &&
+        incident.latitude != null &&
+        incident.longitude != null &&
+        hasText(incident.created_time) &&
+        hasText(incident.license_plate) &&
+        hasText(incident.extra_comment)
     );
 }

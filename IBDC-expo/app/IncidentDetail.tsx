@@ -8,11 +8,11 @@ import {
     Image,
     TextInput,
 } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import Checkbox from "expo-checkbox";
 import { Picker } from "@react-native-picker/picker";
 import { useTheme } from "@/context/ThemeContext";
-
+import { getIncidentById, getIncidentImagesByIncidentId, getMockImageSource, updateIncidentDetails } from "./database";
 // NOTES:
 // You will need to run npm install to get new dependencies here.
 // TODO Screen should move up when on-screen keyboard appears but doesnt yet.
@@ -20,80 +20,50 @@ import { useTheme } from "@/context/ThemeContext";
 // TODO Lat/Long should be replaced with a Google Maps I think.
 
 // work in progress
-
-export default function IncidentDetail() {
-    const router = useRouter();
-    const { theme } = useTheme();
-
-    // I dont understand how this 'useLocalSearchParams' works or how its supposed to work.
-    // Leaving it alone for now.
-    const { id, session_id, lat, long, license_plate, created_time, best_image_id } =
-        useLocalSearchParams();
-
-    const thumbnailSource = require("@/assets/images/example.jpg");
-
-    const [licensePlateInput, setLicensePlateInput] = useState(
-        typeof license_plate === "string" ? license_plate : ""
-    );
-
-    const [injurySeverity, setInjurySeverity] = useState("None");
-    const [driverPresent, setDriverPresent] = useState(false);
-    const [driverInfo, setDriverInfo] = useState("");
-    const [extraComments, setExtraComments] = useState("");
-    const [vehicleMake, setVehicleMake] = useState("");
-    const [vehicleModel, setVehicleModel] = useState("");
-    const [vehicleColor, setVehicleColor] = useState("");
-    const [vehicleYear, setVehicleYear] = useState("");
-
-    function openChoosePhoto() {
-        router.push("/ChoosePhoto");
-    }
-
-    const createdTimeText =
-        typeof created_time === "string" && created_time.trim().length > 0 ? created_time : "Unknown date/Time";
-
-
-    return (
-        <ScrollView contentContainerStyle={[styles.container, { backgroundColor: theme.colors.background },]}>
-            <Text style={[styles.title, { color: theme.colors.text }]}>Incident Details</Text>
-            <Text style={[styles.createdTime, { color: theme.colors.text }]}>{createdTimeText}</Text>
-
-            <View style={[styles.thumbnailContainer, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface },]}>
-                <Image
-                    source={thumbnailSource}
-                    style={styles.thumbnail}
-                    resizeMode="cover"/>
-            </View>
-
-            <View style={[styles.detailsBox, { borderColor: theme.colors.border , backgroundColor: theme.colors.surface, },]}>
-                <View style={styles.coordinatesRow}>
-                    <View style={styles.coordinateItem}>
-                        <Text style={[styles.detailsLabel, { color: theme.colors.textSecondary }]}>Latitude</Text>
-                        <Text style={[styles.detailsValue, { color: theme.colors.textSecondary }]}>{lat || "No Latitude"}</Text>
-                    </View>
-
-                    <View style={styles.coordinateItem}>
-                        <Text style={[styles.detailsLabel, { color: theme.colors.textSecondary }]}>Longitude</Text>
-                        <Text style={[styles.detailsValue, { color: theme.colors.textSecondary }]}>{long || "No Longitude"}</Text>
-                    </View>
-                </View>
-import React, {useState} from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Image } from "react-native";
-import { useFocusEffect, useLocalSearchParams, useRouter} from "expo-router";
-import { getIncidentById, getIncidentImagesByIncidentId, getMockImageSource } from "./database";
-
 export default function IncidentDetail() {
   const router = useRouter();
-  const { id, session_id, latitude, longitude, license_plate, created_time, best_image_id, image_path} = useLocalSearchParams();
+  const {theme} = useTheme();
+   const { id, session_id, latitude, longitude, license_plate, created_time, best_image_id, image_path} = useLocalSearchParams();
+  const [injurySeverity, setInjurySeverity] = useState("None");
+  const [driverPresent, setDriverPresent] = useState(false);
+  const [driverInfo, setDriverInfo] = useState("");
+  const [extraComments, setExtraComments] = useState("");
+  const [vehicleMake, setVehicleMake] = useState("");
+  const [vehicleModel, setVehicleModel] = useState("");
+  const [vehicleColor, setVehicleColor] = useState("");
+  const [vehicleYear, setVehicleYear] = useState("");
+  const [licensePlateInput, setLicensePlateInput] = useState(
+        typeof license_plate === "string" ? license_plate : ""
+    );
   //Mock image, we can pass the same image once db is in and we can reliably retrieve image paths
   const [bestImageId, setBestImageId] = useState<string | null> (null);
   const [thumbnailSource, setThumbnailSource] = useState(
     require("@/assets/images/example.jpg")
   );
+  //Update Helper
+  async function saveIncidentField(updates: {
+        license_plate?: string | null;
+        injury_severity?: string | null;
+        driver_present?: number;
+        driver_information?: string | null;
+        extra_comment?: string | null;
+        vehicle_make?: string | null;
+        vehicle_model?: string | null;
+        vehicle_color?: string | null;
+        vehicle_year?: string | null;
+  }) {
+    try {
+        if (typeof id !== "string")
+            return;
+        await updateIncidentDetails(id, updates);
+    } catch(error){
+        console.error("Failed to update incident", error);
+    }
+  }
  
-useFocusEffect(
+    useFocusEffect(
   React.useCallback(() => {
-    async function loadIncidentImage() {
+    async function loadIncidentData() {
     try{
       if (typeof id !== "string")
         return;
@@ -101,6 +71,15 @@ useFocusEffect(
       const images: any[] = await getIncidentImagesByIncidentId(id);
 
       setBestImageId(incident?.best_image_id ?? null);
+      setLicensePlateInput(incident?.license_plate ?? "");
+      setInjurySeverity(incident?.injury_severity ?? "None");
+      setDriverPresent(Boolean(incident?.driver_present));
+      setDriverInfo(incident?.driver_information ?? "");
+      setExtraComments(incident?.extra_comment ?? "");
+      setVehicleMake(incident?.vehicle_make ?? "");
+      setVehicleModel(incident?.vehicle_model ?? "");
+      setVehicleColor(incident?.vehicle_color ?? "");
+      setVehicleYear(incident?.vehicle_year ?? "");
 
       const selectedImage = images.find(
         (image: any) => image.id === incident?.best_image_id
@@ -116,7 +95,7 @@ useFocusEffect(
       console.error("Failed to load thumbnail" , error);
     }
   }
-    loadIncidentImage();
+    loadIncidentData();
   }, [id])
 );
   function openChoosePhoto(){
@@ -128,6 +107,7 @@ useFocusEffect(
     });
   }
   return (
+    
         <ScrollView contentContainerStyle={styles.container}>
             <Text style = {styles.title}>Incident Details</Text>
             <View style = {styles.thumbnailContainer}>
@@ -145,14 +125,21 @@ useFocusEffect(
                 <TextInput
                     style={[styles.input]}
                     value={licensePlateInput}
-                    onChangeText={setLicensePlateInput}
+                    onChangeText={(text) => {
+                        setLicensePlateInput(text);
+                        void saveIncidentField({license_plate: text});
+                    }}
                     placeholder="Enter license plate"/>
 
                 <Text style={styles.inputLabel}>Injury Severity</Text>
                 <View style={styles.pickerContainer}>
                     <Picker
                         selectedValue={injurySeverity}
-                        onValueChange={(itemValue) => setInjurySeverity(itemValue)}>
+                        onValueChange={(itemValue) => {
+                            setInjurySeverity(itemValue);
+                            void saveIncidentField({ injury_severity: itemValue});
+                        }}
+                        >
                         <Picker.Item label="None" value="None" />
                         <Picker.Item label="Minor" value="Minor" />
                         <Picker.Item label="Moderate" value="Moderate" />
@@ -161,7 +148,10 @@ useFocusEffect(
                 </View>
 
                 <View style={styles.checkboxRow}>
-                    <Checkbox value={driverPresent} onValueChange={setDriverPresent} />
+                    <Checkbox value={driverPresent} onValueChange={ (value) => {
+                        setDriverPresent(value);
+                        void saveIncidentField({driver_present: value ? 1 : 0});
+                    }} />
                     <Text style={styles.checkboxLabel}>Driver Present</Text>
                 </View>
 
@@ -169,7 +159,10 @@ useFocusEffect(
                 <TextInput
                     style={[styles.input, styles.multilineInput]}
                     value={driverInfo}
-                    onChangeText={setDriverInfo}
+                    onChangeText={(text) => {
+                        setDriverInfo(text);
+                        void saveIncidentField({driver_information: text});
+                    }}
                     placeholder="Enter driver information"
                     multiline />
 
@@ -177,7 +170,10 @@ useFocusEffect(
                 <TextInput
                     style={[styles.input, styles.multilineInput]}
                     value={extraComments}
-                    onChangeText={setExtraComments}
+                    onChangeText={(text) => {
+                        setExtraComments(text);
+                        void saveIncidentField({extra_comment: text});
+                    }}
                     placeholder="Enter extra comments"
                     multiline />
 
@@ -185,28 +181,40 @@ useFocusEffect(
                 <TextInput
                     style={styles.input}
                     value={vehicleMake}
-                    onChangeText={setVehicleMake}
+                    onChangeText={(text) => {
+                        setVehicleMake(text);
+                        void saveIncidentField({vehicle_make: text});
+                    }}
                     placeholder="Enter vehicle make" />
 
                 <Text style={styles.inputLabel}>Vehicle Model</Text>
                 <TextInput
                     style={styles.input}
                     value={vehicleModel}
-                    onChangeText={setVehicleModel}
+                      onChangeText={(text) => {
+                        setVehicleModel(text);
+                        void saveIncidentField({vehicle_model: text});
+                    }}
                     placeholder="Enter vehicle model" />
 
                 <Text style={styles.inputLabel}>Vehicle Color</Text>
                 <TextInput
                     style={styles.input}
                     value={vehicleColor}
-                    onChangeText={setVehicleColor}
+                    onChangeText={(text) => {
+                        setVehicleColor(text);
+                        void saveIncidentField({vehicle_color: text});
+                    }}
                     placeholder="Enter vehicle color" />
 
                 <Text style={styles.inputLabel}>Vehicle year</Text>
                 <TextInput
                     style={styles.input}
                     value={vehicleYear}
-                    onChangeText={setVehicleYear}
+                    onChangeText={(text) => {
+                        setVehicleYear(text);
+                        void saveIncidentField({vehicle_year: text});
+                    }}
                     placeholder="Enter vehicle year"
                     keyboardType="numeric" />
             </View>

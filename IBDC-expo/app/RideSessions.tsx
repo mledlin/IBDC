@@ -8,18 +8,14 @@ import {
     Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-
-import {fullMockHistory} from "@/domain/mockData";
-import {isIncidentComplete} from "@/domain/Incident";
 import{ useRouter } from "expo-router";
-import { useTheme } from "@/context/ThemeContext";
-
-import { router, useFocusEffect } from "expo-router";
+import { useTheme } from "@/context/ThemeContext"
+import  {useFocusEffect } from "expo-router";
 import {isIncidentComplete} from "@/domain/Incident";
 import { getSessionHistoryData } from "./database";
 const SESSIONS_PER_PAGE = 5;
 
-export default function RideSession({navigation}: any) {
+export default function RideSession() {
     const router = useRouter();
     const {theme} = useTheme();
     const [currentPage, setCurrentPage] = useState(0);
@@ -262,7 +258,8 @@ export default function RideSession({navigation}: any) {
                                                     key={incidentIndex}
                                                     style={[styles.incidentCard, { backgroundColor: theme.colors.background, borderColor: theme.colors.border },]}
                                                     onPress={() => handleIncidentPress(incident)}>
-                                                        {selectedImage ? (
+                                                        {complete ? (
+                                                            selectedImage ? (
                                                             <Image
                                                                 source = {selectedImage.uri}                                            
                                                                 style = {styles.incidentImage}

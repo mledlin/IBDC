@@ -31,7 +31,8 @@
 
 
 // Add more as you feel they are needed.
-
+//File is being sidelined to use DB 
+/*
 import {Incident} from "@/domain/Incident";
 import {Session} from "@/domain/Session";
 
@@ -1074,3 +1075,4 @@ export const defaultIncident = createSingleMockIncident();
 // Returns arrays of sessions
 export const fullMockHistory = createFullMockHistory();
 export const emptyMockSessions = mockEmptyRideSessions();
+*/

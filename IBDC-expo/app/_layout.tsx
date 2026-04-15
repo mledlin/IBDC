@@ -2,14 +2,10 @@ import { Stack } from "expo-router";
 import { DeviceProvider } from "@/context/DeviceContext";
 import { View, Text, Image } from "react-native";
 import { ThemeProvider, useTheme} from "@/context/ThemeContext";
-
-function AppStack() {
-  const { theme } = useTheme();
-    
 import { initDatabase } from "./database";
 import { useEffect } from "react";
-
-export default function AppLayout() {
+function AppStack() {
+  const { theme } = useTheme();
     useEffect(() => {
         async function setupDatabase(){
             try {
@@ -21,8 +17,7 @@ export default function AppLayout() {
         }
 
         setupDatabase();
-    }, []);
-
+        }, []);
     return (
         <Stack
         screenOptions={{
