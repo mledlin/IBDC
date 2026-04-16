@@ -373,6 +373,8 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
         shadowOffset: { width: 0, height: 3 },
         elevation: 3,
+        alignItems: "center",
+        width: "100%",
     },
     sessionHeader: {
         flexDirection: "row",
@@ -415,8 +417,8 @@ const styles = StyleSheet.create({
         paddingRight: 8,
     },
     incidentCard: {
-        width: 170,
-        height: 160,
+        width: 150,
+        height: 140,
         marginRight: 12,
         borderWidth: 1,
         borderRadius: 18,
