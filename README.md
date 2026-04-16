@@ -66,7 +66,7 @@ There are 14 branches in the current project. Many have been merged into dev and
 
 All other branches have been merged to dev at this point.
 
-Taiga Link to see Task history:
+Taiga Link to see Task history: https://tree.taiga.io/project/colintugend-asu-intelligent-bicycle-dash-cam/backlog
 
 ## 8. Issues
 
