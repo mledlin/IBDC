@@ -60,9 +60,16 @@
           "modes": ["central"],
           "bluetoothAlwaysPermission": "Enable IDBC to connect to nearby Bluetooth devices."
         }
-      ]
-    ],
+      ],
+    [
+      "react-native-maps",
+      {
+        "googleMapsApiKey": "process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY"
+      }
+    ]
 
+    ],
+    
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true

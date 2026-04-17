@@ -13,6 +13,9 @@ import Checkbox from "expo-checkbox";
 import { Picker } from "@react-native-picker/picker";
 import { useTheme } from "@/context/ThemeContext";
 import { getIncidentById, getIncidentImagesByIncidentId, getMockImageSource, updateIncidentDetails } from "./database";
+import MapScreen from "@/components/ui/MapsScreen";
+import {Region} from "react-native-maps";
+
 // NOTES:
 // You will need to run npm install to get new dependencies here.
 // TODO Screen should move up when on-screen keyboard appears but doesnt yet.
@@ -35,6 +38,13 @@ export default function IncidentDetail() {
   const [licensePlateInput, setLicensePlateInput] = useState(
         typeof license_plate === "string" ? license_plate : ""
     );
+    const incidentRegion: Region = {
+        latitude: Number(latitude), 
+        longitude: Number(longitude), 
+        latitudeDelta: .5, 
+        longitudeDelta: .5,
+    };
+    
   //Mock image, we can pass the same image once db is in and we can reliably retrieve image paths
   const [bestImageId, setBestImageId] = useState<string | null> (null);
   const [thumbnailSource, setThumbnailSource] = useState(
@@ -108,19 +118,24 @@ export default function IncidentDetail() {
   }
   return (
     
-        <ScrollView contentContainerStyle={styles.container}>
-            <Text style = {styles.title}>Incident Details</Text>
+        <ScrollView contentContainerStyle={[styles.container, {backgroundColor: theme.colors.background,}]}>
+            <Text style = {[styles.title, {color: theme.colors.primaryForeground}]}>Incident Details</Text>
             <View style = {styles.thumbnailContainer}>
               <Image 
                 source = {thumbnailSource} //This will eventually beocome uri: image.file_path when DB is in
                 style = {styles.thumbnail}
                 resizeMode = "cover"
                 ></Image>
-            </View>
+              </View>
+            
+             
 
             <View style={[styles.formSection, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface },]}>
                 <Text style={[styles.sectionHeader, { color: theme.colors.textSecondary } ]}>Additional Details</Text>
-
+                <View style = {styles.map} >
+              <MapScreen initialRegion={incidentRegion
+              }/>   
+                </View>
                 <Text style={styles.inputLabel}>License Plate</Text>
                 <TextInput
                     style={[styles.input]}
@@ -231,6 +246,12 @@ const styles = StyleSheet.create({
         padding: 16,
         flexGrow: 1,
         backgroundColor: "#ffffff",
+    },
+    map: {
+        width: 400,
+        height: 200,
+        padding: 10,
+        alignSelf: "center",
     },
     thumbnailContainer: {
         marginBottom: 16,
