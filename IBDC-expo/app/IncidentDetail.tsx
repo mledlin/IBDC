@@ -12,7 +12,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import Checkbox from "expo-checkbox";
 import { Picker } from "@react-native-picker/picker";
 import { useTheme } from "@/context/ThemeContext";
-import { getIncidentById, getIncidentImagesByIncidentId, getMockImageSource, updateIncidentDetails } from "./database";
+import { deleteIncident, getIncidentById, getIncidentImagesByIncidentId, getMockImageSource, updateIncidentDetails } from "./database";
 // NOTES:
 // You will need to run npm install to get new dependencies here.
 // TODO Screen should move up when on-screen keyboard appears but doesnt yet.
@@ -40,6 +40,17 @@ export default function IncidentDetail() {
   const [thumbnailSource, setThumbnailSource] = useState(
     require("@/assets/images/example.jpg")
   );
+  //Delete Helper 
+  async function handleDeleteIncident(){
+    try{
+        if (typeof id !== "string") 
+            return;
+        await deleteIncident(id);
+        router.back();
+    } catch (error) {
+        console.error("Failed to delete incident", error)
+    }
+  }
   //Update Helper
   async function saveIncidentField(updates: {
         license_plate?: string | null;
@@ -222,6 +233,15 @@ export default function IncidentDetail() {
             <TouchableOpacity style={[styles.photoButton, { backgroundColor: theme.colors.primary }]} onPress={openChoosePhoto}>
                 <Text style={styles.photoButtonText}>Choose Best Photo</Text>
             </TouchableOpacity>
+            <TouchableOpacity
+                style = {[styles.deleteButton, { backgroundColor: theme.colors.danger}]}
+                onPress = {() => {
+                    void handleDeleteIncident();
+                }}
+                >
+                    <Text style = {styles.photoButtonText}> Delete Incident</Text>
+                </TouchableOpacity>
+                
         </ScrollView>
     );
 }
@@ -337,5 +357,11 @@ const styles = StyleSheet.create({
         color: "#fff",
         fontSize: 16,
         fontWeight: "bold",
+    },
+    deleteButton: {
+        padding: 14,
+        borderRadius: 4,
+        marginBottom: 20,
+        alignItems: "center",
     },
 });
