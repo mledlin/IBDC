@@ -20,6 +20,7 @@ This application has been developed by 4 students at Arizona State University du
 9. Future Tasks
 
 Appendix 1 - Expo Development Environment
+Appendix 2 - Dependency Breakdown
 
 ## 1. What is this project?
 
@@ -240,3 +241,30 @@ export async function requestBlePermissions() {
 ```
 
 Note: Android manifest and IOS Info.plist files are not required as app.json covers them completely.
+
+## Appendix 2 - Dependency Breakdown
+
+- expo — Core Expo runtime. 
+    - Needed because the project scripts use expo start, expo run:android, expo run:ios, and multiple Expo modules depend on it. 
+    - Docs: https://docs.expo.dev/
+- react — Component model, hooks, state, and context. 
+    - Needed for every screen and context provider. 
+    - Docs: https://react.dev/
+- react-native — Native UI primitives. 
+    - Needed for View, Text, ScrollView, Image, TextInput, and styling. 
+    - Docs: https://reactnative.dev/docs/getting-started
+- expo-router — File-based navigation.
+    - Needed for useRouter and useLocalSearchParams. 
+    - Docs: https://docs.expo.dev/router/introduction/
+- expo-sqlite — Local SQLite database access. 
+    - Needed for the database module. 
+    - Docs: https://docs.expo.dev/versions/latest/sdk/sqlite/
+- react-native-safe-area-context — Safe area inset handling. 
+    - Needed so content does not overlap device cutouts or system bars. 
+    - Docs: https://appandflow.github.io/react-native-safe-area-context/
+- expo-checkbox — Cross-platform checkbox input. 
+    - Needed for the driver-present field on the incident screen. 
+    - Docs: https://docs.expo.dev/versions/latest/sdk/checkbox/
+- react-native-picker/picker — Dropdown selector. 
+    - Needed for the injury-severity picker on incident detail screen. 
+    - Docs: https://github.com/react-native-picker/picker
