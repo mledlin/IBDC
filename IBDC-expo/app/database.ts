@@ -338,3 +338,23 @@ export async function deleteIncident(
         throw error;
     }
 }
+
+export async function deleteSession(sessionId: string) {
+    const database = await getDatabase();
+
+    try {
+        await database.runAsync(
+            `DELETE FROM sessions
+             WHERE id = ?
+             AND NOT EXISTS (
+                 SELECT 1
+                 FROM incidents
+                 WHERE incidents.session_id = sessions.id
+             )`,
+            sessionId
+        );
+    } catch (error) {
+        console.error("Error deleting session", error);
+        throw error;
+    }
+}
