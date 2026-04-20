@@ -315,3 +315,26 @@ export async function updateIncidentDetails(
     );
 
 }
+//TODO
+/*
+Delete Incident From Session
+Update Session Data and DB To Reflect The removed incident from view.
+*/
+export async function deleteIncident(
+    incidentId: string,
+){
+    const database = await getDatabase();
+    try{
+        await database.runAsync(
+            `DELETE FROM incident_images WHERE incident_id = ?`,
+            incidentId
+        );
+        await database.runAsync(
+            `DELETE FROM incidents WHERE id = ?`,
+            incidentId
+        )
+    } catch (error) {
+        console.error("failed to delete incident", error);
+        throw error;
+    }
+}
