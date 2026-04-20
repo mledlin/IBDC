@@ -1,5 +1,6 @@
-import * as protobuf from 'protobufjs';
-import { BleManager } from 'react-native-ble-plx';
+import * as protobuf from 'protobufjs'
+import { BleManager } from 'react-native-ble-plx'
+import * as fs from 'fs'
 
 /**
  * Analyzing the ways to handle Protobuf serial communication
@@ -66,6 +67,7 @@ import { BleManager } from 'react-native-ble-plx';
 var messages = require('../Resources/IBDC_pb');
 
 
+
 /*Task#103 Serialize responses and de-serialize requests (DONE)
     Serialization To Dos:
         1. Create a valid message type
@@ -103,6 +105,52 @@ console.log('message decoding as a json object', message.toObject());
 */
 
 
+// Task#102 Create communication log
+
+// Detailed receipts upon send and delivery of serialized data can help developers determine if there are any data
+// transmission errors. Certain messages are time-sensitive. It is important that the phone receives certain messages in its
+// entirety or record the necessary information to retrieve the data at a later time.
+// Messages will be logged in three places:
+    // 1. When bytes are detected at the GATT Characteristic level (receiving)
+    // 2. After data de-serialization/serialization attempt (receiving and sending)
+    // 3. When a message is sent over the wire or to the database (sending)
+// These are all either data transformation points or points where the data is being sent over an API. These are places
+// where data integrity and or transmission cannot be guaranteed. Logging at these points ensures the correct component
+// can be investigated when searching for errors.
+
+// All communication logs should have the following: Date and Time, Connection Status[isConnectedToDevice](extensible array),
+// Send or Receive, raw bytes or text attempted to be sent/stored.
+
+function log_communication(message_direction: int, bytes?: uint8[], text?: string, dest?: string): void {
+    // Get date and time
+    // Get device connection status
+
+
+}
+
+
+
+
+// Task#88 Encapsulate data serialization logic
+
+// What states would a DataSerializer need? What does a state diagram look like when considering asynchronicity?
+// STATES: INITIALIZING, READY, SHUT_DOWN, ERROR
+    // INITIALIZING: Determine connection status to database, log file, and the BLE connection.
+        // Trigger -> Phone app powered on
+        // Guards: []
+    // READY: Ready to receive and send messages asynchronously.
+        // Trigger -> all initialization flags are green
+        // Guards: []
+    // SHUTTING_DOWN: Save all data in receive and send buffers to be re-instated later. Write special log.
+        // Trigger -> User exits the application or device connection is lost
+        // Guards: []
+
+
+
+
+
+
+
 // !UPDATE! This is not a valid strategy as it is not guaranteed that a message will fit in a single packet.
 /** Potential solution to problem 1.
  *  As messages are received, each Uint8Array(byte array) is added to the buffer. This creates the
@@ -111,6 +159,7 @@ console.log('message decoding as a json object', message.toObject());
 
 let buffer: Uint8Array[]; // Not feasible unless the packets are arranged into a single message before being placed
 // into the array
+
 
 
 
