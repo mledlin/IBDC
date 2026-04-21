@@ -18,13 +18,13 @@ const LOG_FILE: string = "../communicationLog"
  * This function acts as a way to get device information and return it as an object
  * This would only be able to be called after the BLEManager discovers the target device and connects.
  */
-function getDeviceStatus(): String {
+function getDeviceStatus(): [string, any][] {
     // This object can be edited easily. Each key-val pair from this object will be printed to the comms log.
     let deviceStatus: Object = {
         isConnected: true
     }
     return Object.entries(deviceStatus);
-};
+}
 /**
  * Analyzing the ways to handle Protobuf serial communication
  *
@@ -110,11 +110,6 @@ deviceStatus.setStorageAvailablePercent(35);
 console.log('payload as a json object', deviceStatus.toObject());
 console.log('payload as proto encoded bytes', deviceStatus.serializeBinary());
 
-
-
-// Equivalent of a byte array in Java. This is how protobuf represents data once serialized
-let bytes: Uint8Array = [0, 3, 7, 12, 4];
-
 // De-serialize the message
 let message = messages.DeviceStatus.deserializeBinary(deviceStatus.serializeBinary());
 console.log('message decoding as a json object', message.toObject());
@@ -150,7 +145,7 @@ log_communication(comm_direction["SENDING"], message, message.toString(), destin
  * @param text the data that has been deserialized on the client side
  * @param dest either the database or the IBDC device
  */
-function log_communication(message_direction: comm_direction, bytes: uint8[], text: string, dest: destination): void {
+function log_communication(message_direction: comm_direction, bytes: Uint8Array[], text: string, dest: destination): void {
     // Get date and time
     // Get device connection status
     const now: Date = new Date();
