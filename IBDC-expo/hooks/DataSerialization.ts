@@ -3,6 +3,17 @@ import { BleManager } from 'react-native-ble-plx'
 import * as fs from 'fs'
 
 /**
+ * This function acts as a way to get device information and return it as an object
+ * This would only be able to be called after the BLEManager discovers the target device and connects
+ */
+function getDeviceStatus(): String {
+    // This object can be edited easily. Each key-val pair from this object will be printed to the comms log.
+    let deviceStatus: Object = {
+        isConnected: true
+    }
+    return Object.entries(deviceStatus);
+};
+/**
  * Analyzing the ways to handle Protobuf serial communication
  *
  * User Story Tasks
@@ -97,6 +108,7 @@ let bytes: Uint8Array = [0, 3, 7, 12, 4];
 // De-serialize the message
 let message = messages.DeviceStatus.deserializeBinary(deviceStatus.serializeBinary());
 console.log('message decoding as a json object', message.toObject());
+log_communication("sending", message, message.toString(), "database");
 
 /** Serializing and de-serializing data is not a problem when the type information is known before runtime.
 *   Issues arise when the data type being received over the connection is dynamic. Two issues are:
@@ -121,10 +133,40 @@ console.log('message decoding as a json object', message.toObject());
 // All communication logs should have the following: Date and Time, Connection Status[isConnectedToDevice](extensible array),
 // Send or Receive, raw bytes or text attempted to be sent/stored.
 
-function log_communication(message_direction: int, bytes?: uint8[], text?: string, dest?: string): void {
+/**
+ *
+ * @param message_direction 0 for received, 1 for sending
+ * @param bytes the raw bytes received over the wire
+ * @param text the data that has been deserialized on the client side
+ * @param dest either the database or the IBDC device
+ * @param file the file to write to
+ */
+function log_communication(message_direction: string, bytes: uint8[], text: string, dest: string, file: string =  "./communicationLog"): void {
     // Get date and time
     // Get device connection status
-
+    const now: Date = new Date();
+    const timestamp: string = (now.toLocaleString() + " Ms Elapsed:" + now.getMilliseconds());
+    console.log(message_direction);
+    console.log(getDeviceStatus());
+    console.log(bytes);
+    console.log(text);
+    console.log(dest);
+    const log: string = timestamp + "|" + message_direction + "|" + bytes.toString() + "|" + dest + "\n";
+    if (file == undefined) {
+        fs.writeFile(file, log, (err) => {
+            if (err) {
+                console.log(err);
+            }
+        } )
+    }
+    else {
+        fs.appendFile(file, log, (err) => {
+            if (err) {
+                console.log("This is it?");
+                console.log(err);
+            }
+        })
+    }
 
 }
 
