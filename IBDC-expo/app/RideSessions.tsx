@@ -13,7 +13,7 @@ import {useRouter} from "expo-router";
 import {useTheme} from "@/context/ThemeContext"
 import {useFocusEffect} from "expo-router";
 import {isIncidentComplete} from "@/domain/Incident";
-import {deleteSession, getSessionHistoryData} from "./database";
+import {deleteSession, getSessionHistoryData} from "@/database/SessionDao";
 
 const SESSIONS_PER_PAGE = 5;
 

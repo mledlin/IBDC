@@ -2,7 +2,7 @@ import { Stack } from "expo-router";
 import { DeviceProvider } from "@/context/DeviceContext";
 import { View, Text, Image } from "react-native";
 import { ThemeProvider, useTheme} from "@/context/ThemeContext";
-import { initDatabase } from "./database";
+import { initDatabase } from "@/database/database";
 import { useEffect } from "react";
 function AppStack() {
   const { theme } = useTheme();
