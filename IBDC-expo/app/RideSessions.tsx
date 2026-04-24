@@ -8,6 +8,7 @@ import {
     Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import{ useRouter } from "expo-router";
 import { useTheme } from "@/context/ThemeContext"
 import  {useFocusEffect } from "expo-router";
@@ -126,9 +127,9 @@ export default function RideSession() {
         setCurrentPage(0);
         scrollToTop();
     }
-
+    const insets = useSafeAreaInsets();
     return (
-        <View style={[styles.screenBackground, { backgroundColor: theme.colors.background }]}>
+        <View style={[styles.screenBackground, { backgroundColor: theme.colors.background, top: insets.top + 20 }]}>
             <ScrollView
                 ref={scrollViewRef}
                 contentContainerStyle={styles.scrollContainer}>

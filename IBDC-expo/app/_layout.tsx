@@ -1,11 +1,13 @@
 import { Stack } from "expo-router";
 import { DeviceProvider } from "@/context/DeviceContext";
-import { View, Text, Image } from "react-native";
+import {View, Text, Image, SafeAreaView} from "react-native";
 import { ThemeProvider, useTheme} from "@/context/ThemeContext";
 import { initDatabase } from "./database";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useEffect } from "react";
 function AppStack() {
   const { theme } = useTheme();
+    const insets = useSafeAreaInsets();
     useEffect(() => {
         async function setupDatabase(){
             try {
@@ -19,6 +21,8 @@ function AppStack() {
         setupDatabase();
         }, []);
     return (
+        <View style={{flex: 1,  paddingTop: insets.top,
+            paddingBottom: insets.bottom,}}>
         <Stack
         screenOptions={{
         headerStyle: {
@@ -31,14 +35,11 @@ function AppStack() {
             fontSize: 18,
         },
         headerShadowVisible: false,
-        headerLargeTitleEnabled: true,
         headerTitle: () => (
-  <View style={{ 
-    flexDirection: "row", 
+  <View style={{
+    flexDirection: "row",
     alignItems: "center", 
-    gap: 8, 
-    paddingBottom: 30, 
-    paddingTop: 50,
+    gap: 8,
     }}>
     <Image
       source={require("../assets/images/logo.png")}
@@ -57,7 +58,7 @@ function AppStack() {
         <Stack.Screen name="RideSessions" options={{title: ''}}/>
         <Stack.Screen name="Settings" options={{title: ''}}/>
     </Stack>
-    );
+        </View>);
 }
 
 export default function AppLayout() {
