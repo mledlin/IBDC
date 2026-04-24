@@ -1,3 +1,11 @@
+/**
+ * Photo selection screen for an incident.
+ *
+ * This screen shows a horizontally scrollable list of available images
+ * and lets the user choose which photo should be saved as the incident's
+ * best image.
+ */
+
 import { router, useLocalSearchParams} from "expo-router";
 import { useState } from "react";
 import { updateIncidentBestImage } from "./database";
@@ -9,8 +17,17 @@ const CARD_WIDTH = width * 0.78;
 const SIDE_SPACING = 16;
 const Item_SPACING = 12;
 const SNAP_INTERVAL = CARD_WIDTH + SIDE_SPACING;
-  
 
+/**
+ * Renders the image selector for a specific incident.
+ *
+ * The incident ID is read from the route parameters.
+ * When the user selects a photo, the database is updated
+ * so that photo becomes the incident's chosen image,
+ * then the screen returns to the previous page.
+ *
+ * @returns The choose-photo screen UI.
+ */
 export default function ChoosePhoto() {
 const {incident_id } = useLocalSearchParams();
  const { theme } = useTheme();
@@ -22,7 +39,15 @@ const {incident_id } = useLocalSearchParams();
       {id: 'example3', title: 'Photo 3', image: require("@/assets/images/example3.jpg"),},
       {id: 'example4', title: 'Photo 4', image: require("@/assets/images/example4.jpg"),},
     ];
-  
+
+  /**
+   * Updates the incident's selected best image in the database.
+   *
+   * If the route parameter is not a valid string, the update is skipped.
+   * After a successful update, the screen goes back.
+   *
+   * @param photoId The id of the photo chosen by the user.
+   */
   async function handleSelectPhoto(photoId: any) {
   try{
     if(typeof incident_id !== "string"){
