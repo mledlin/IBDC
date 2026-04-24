@@ -83,13 +83,13 @@ export async function initDatabase(){
         `);
 }
 
-export async function createSession(id: string) {
+export async function createSession(id: string, createdTime: string) {
     const database = await getDatabase();
 
     await database.runAsync(
         `INSERT INTO sessions (id, created_time) VALUES (?, ?)`,
         id,
-        new Date().toISOString()
+        createdTime
     );
 }
 
@@ -335,6 +335,65 @@ export async function deleteIncident(
         )
     } catch (error) {
         console.error("failed to delete incident", error);
+        throw error;
+    }
+}
+
+export async function deleteSession(sessionId: string) {
+    const database = await getDatabase();
+
+    try {
+        await database.runAsync(
+            `DELETE FROM sessions
+             WHERE id = ?
+             AND NOT EXISTS (
+                 SELECT 1
+                 FROM incidents
+                 WHERE incidents.session_id = sessions.id
+             )`,
+            sessionId
+        );
+    } catch (error) {
+        console.error("Error deleting session", error);
+        throw error;
+    }
+}
+
+export async function deleteSessionsOlderThan(cutoffIso: string) {
+    const database = await getDatabase();
+
+    try {
+        await database.runAsync(
+            `DELETE FROM incident_images
+             WHERE incident_id IN (
+                 SELECT id
+                 FROM incidents
+                 WHERE session_id IN (
+                     SELECT id
+                     FROM sessions
+                     WHERE created_time < ?
+                 )
+             )`,
+            cutoffIso
+        );
+
+        await database.runAsync(
+            `DELETE FROM incidents
+             WHERE session_id IN (
+                 SELECT id
+                 FROM sessions
+                 WHERE created_time < ?
+             )`,
+            cutoffIso
+        );
+
+        await database.runAsync(
+            `DELETE FROM sessions
+             WHERE created_time < ?`,
+            cutoffIso
+        );
+    } catch (error) {
+        console.error("Error deleting old session data", error);
         throw error;
     }
 }
