@@ -1,3 +1,9 @@
+/**
+ * Ride session history screen.
+ *
+ * This screen displays stored ride sessions, supports filtering, and allows the user to open incident details
+ * for a selected incident. Sessions with no incidents can also be deleted after confirmation.
+ */
 import React, {useMemo, useRef, useState} from "react";
 import {
     View,
@@ -15,8 +21,25 @@ import {useFocusEffect} from "expo-router";
 import {isIncidentComplete} from "@/domain/Incident";
 import {deleteSession, getSessionHistoryData} from "@/database/SessionDao";
 
+/**
+ * Maximum number of sessions shown on one page.
+ *
+ * TODO This is a temp solution. This needs to be added to the database or a config file.
+ * This should be set by the settings page.
+ */
 const SESSIONS_PER_PAGE = 5;
 
+/**
+ * Renders the ride session history screen.
+ *
+ * This component:
+ * - Loads session data when the screen becomes active.
+ * - Applies optional filters.
+ * - Routes to incident detail screen.
+ * - Allows deletion of empty sessions.
+ *
+ * @returns The ride session history UI.
+ */
 export default function RideSession() {
     const router = useRouter();
     const {theme} = useTheme();
@@ -28,10 +51,20 @@ export default function RideSession() {
 
     const scrollViewRef = useRef<ScrollView>(null);
 
+    /**
+     * Checks whether any incident in a session still needs review.
+     *
+     * @param session The session being checked.
+     * @returns True if at least one incident is incomplete.
+     */
     function sessionHasActionRequired(session: any): boolean {
         return session.incidents.some((incident: any) => !isIncidentComplete(incident));
     }
 
+    /**
+     * Reloads the session history screen whenever this screen comes bac into focus.
+     * This keeps the screen current after navigating away and returning.
+     */
     useFocusEffect(
         React.useCallback(() => {
             async function loadSessions() {
@@ -47,6 +80,11 @@ export default function RideSession() {
             loadSessions();
         }, [])
     );
+
+    /**
+     * Filters sessions based on the currently enabled filter options.
+     * If no filters are enabled, all sessions are displayed.
+     */
     const filteredSessions = useMemo(() => {
         return allSessions.filter((session) => {
             if (!filterHasIncidents && !filterActionRequired) {
@@ -70,10 +108,16 @@ export default function RideSession() {
     const hasNextPage = endIndex < filteredSessions.length;
     const hasPreviousPage = currentPage > 0;
 
+    /**
+     * Scrolls the main screen back to the top. Used after paging and clearing filters.
+     */
     function scrollToTop() {
         scrollViewRef.current?.scrollTo({y: 0, animated: true});
     }
 
+    /**
+     * Advances to the next page of sessions if one exists.
+     */
     function handleNextPage() {
         if (hasNextPage) {
             setCurrentPage(currentPage + 1);
@@ -81,6 +125,9 @@ export default function RideSession() {
         }
     }
 
+    /**
+     * Returns to the previous page of sessions if one exists.
+     */
     function handlePreviousPage() {
         if (hasPreviousPage) {
             setCurrentPage(currentPage - 1);
@@ -88,6 +135,12 @@ export default function RideSession() {
         }
     }
 
+    /**
+     * Opens the incident detail screen for the selected incident.
+     * The currently selected image is included in the route parameters when available.
+     *
+     * @param incident The incident the user pressed.
+     */
     function handleIncidentPress(incident: any) {
         const selectedImage =
             incident.imageFiles.find(
@@ -108,20 +161,32 @@ export default function RideSession() {
         });
     }
 
+    /**
+     * Shows or hides the filter panel.
+     */
     function handleToggleFilters() {
         setShowFilters(!showFilters);
     }
 
+    /**
+     * Toggles the "has incidents" filter and resets paging.
+     */
     function handleToggleNoIncidents() {
         setCurrentPage(0);
         setfilterHasIncidents(!filterHasIncidents);
     }
 
+    /**
+     * Toggles the "action required" filter and resets paging.
+     */
     function handleToggleActionRequired() {
         setCurrentPage(0);
         setFilterActionRequired(!filterActionRequired);
     }
 
+    /**
+     * Clears all active filters, hides the filter panel, and returns the scroll view to the top.
+     */
     function handleClearAllFilters() {
         setfilterHasIncidents(false);
         setFilterActionRequired(false);
@@ -130,6 +195,12 @@ export default function RideSession() {
         scrollToTop();
     }
 
+    /**
+     * Deletes an empty session and reloads the session list.
+     * The current page is adjusted if the number of pages changes after deletion.
+     *
+     * @param sessionId The id of the session to delete.
+     */
     async function handleDeleteSession(sessionId: string) {
         try {
             await deleteSession(sessionId);
@@ -147,6 +218,11 @@ export default function RideSession() {
         }
     }
 
+    /**
+     * Shows a confirmation alert before deleting a session.
+     *
+     * @param session The session selected for deletion.
+     */
     function confirmDeleteSession(session: any) {
         Alert.alert(
             "Delete Session",

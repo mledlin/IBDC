@@ -1,14 +1,22 @@
+/**
+ * Settings screen for the application.
+ *
+ * This screen provides:
+ * - Theme controls.
+ * - Display settings for ride session screen.
+ * - Deletion of stored data older than a selected age.
+ * - Debug tools for generating mock session and incident data.
+ */
+
 import React, {useState} from "react";
 
 import {
     createSession,
     getAllSessions,
-    deleteAllSessions,
     deleteSessionsOlderThan,
 } from "@/database/SessionDao";
-import {
-    createIncidentImage,
-} from "@/database/ImageDao"
+
+import { createIncidentImage } from "@/database/ImageDao"
 import { createIncident } from "@/database/IncidentDao"
 import {
     View,
@@ -18,20 +26,33 @@ import {
     TouchableOpacity,
     Alert, ScrollView,
 } from "react-native";
+
 import {useTheme} from "@/context/ThemeContext";
 import ThemePicker from "@/components/ui/ThemePicker";
 
+/**
+ * Renders the settings screen and manages all local settings UI state.
+ *
+ * This component includes theme selection, session display controls,
+ * cleanup actions for older stored data, and debug tools for adding
+ * mock sessions and incidents to the local database.
+ *
+ * @returns The settings screen UI.
+ */
 export default function SettingsPage() {
     const {theme} = useTheme();
 
     // TODO Load from a properties file on startup!
     const [settingOne, setting1] = useState(true);
-    const [settingTwo, setting2] = useState(false);
-    const [settingThree, setting3] = useState(false);
 
-    //MOCK IMAGE POOL
+    /**
+     * Available mock image identifiers used when creating test incidents.
+     */
     const mockImages = ["example1", "example2", "example3", "example4"];
 
+    /**
+     * Available age thresholds for bulk deleting older stored data.
+     */
     const deleteOlderThanOptions = [
         "3 Months",
         "6 Months",
@@ -40,6 +61,9 @@ export default function SettingsPage() {
 
     const [deleteOlderThanIndex, setDeleteOlderThanIndex] = useState(0);
 
+    /**
+     * Available page size options for the session history screen.
+     */
     const dataOptions = [
         "10",
         "25",
@@ -50,30 +74,49 @@ export default function SettingsPage() {
 
     const [dataIndex, setDataIndex] = useState(0);
 
+    /**
+     * Moves the session display selector to the previous option.
+     */
     const handlePrevOption = () => {
         if (dataIndex > 0) {
             setDataIndex(dataIndex - 1);
         }
     };
 
+    /**
+     * Moves the session display selector to the next option.
+     */
     const handleNextOption = () => {
         if (dataIndex < dataOptions.length - 1) {
             setDataIndex(dataIndex + 1);
         }
     };
 
+    /**
+     * Moves the delete-age selector to the previous option.
+     */
     const handlePrevDeleteOlderThan = () => {
         if (deleteOlderThanIndex > 0) {
             setDeleteOlderThanIndex(deleteOlderThanIndex - 1);
         }
     };
 
+    /**
+     * Moves the delete-age selector to the next option.
+     */
     const handleNextDeleteOlderThan = () => {
         if (deleteOlderThanIndex < deleteOlderThanOptions.length - 1) {
             setDeleteOlderThanIndex(deleteOlderThanIndex + 1);
         }
     };
 
+    /**
+     * Builds the cutoff date used for deleting older data.
+     *
+     * The returned date is based on the currently selected delete-age option.
+     *
+     * @returns A Date representing the oldest time to keep.
+     */
     function getCutoffDate(): Date {
         const cutoff = new Date();
 
@@ -95,6 +138,12 @@ export default function SettingsPage() {
         return cutoff;
     }
 
+    /**
+     * Prompts the user to confirm bulk deletion of stored data
+     * older than the selected age threshold.
+     *
+     * If confirmed, matching sessions and related incidents are deleted.
+     */
     const handleDeleteOldData = async () => {
         const selectedOption = deleteOlderThanOptions[deleteOlderThanIndex];
 
@@ -134,6 +183,11 @@ export default function SettingsPage() {
         );
     };
 
+    /**
+     * Creates one mock session with a random date up to two years old, then creates a random number of
+     * incidents within one hour of that session start time. Each mock incident is populated with random
+     * vehicle, location, injury severity, and image data for testing the app UI and database.
+     */
     const handleAddMockIncident = async () => {
         try {
             const now = Date.now();
@@ -190,11 +244,13 @@ export default function SettingsPage() {
             const incidentCount = Math.floor(Math.random() * 5);
 
             for (let i = 0; i < incidentCount; i++) {
+
                 //Tester method for generating data without thumbnail
                 const hasThumbnail = Math.random() < 0.7;
                 const vehicle = pickRandom(vehicles);
                 const coord = pickRandom(coordinates);
                 const incidentId = `${sessionId}-incident-${i + 1}`;
+
                 //Conditional logic is solely for generating variance in mock data
                 const imageKey = hasThumbnail ? pickRandom(mockImages) : null;
                 const imageId = hasThumbnail ? `${incidentId}-${imageKey}` : null;
