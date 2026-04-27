@@ -5,10 +5,11 @@ import {
     getAllSessions,
     deleteAllSessions,
     deleteSessionsOlderThan,
-    createIncident,
+} from "@/database/SessionDao";
+import {
     createIncidentImage,
-} from "./database";
-
+} from "@/database/ImageDao"
+import { createIncident } from "@/database/IncidentDao"
 import {
     View,
     Text,
