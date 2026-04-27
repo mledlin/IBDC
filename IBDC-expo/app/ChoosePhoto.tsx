@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams} from "expo-router";
 import { useState } from "react";
-import { updateIncidentBestImage } from "./database";
+import { updateIncidentBestImage } from "@/database/IncidentDao";
 import { Text, View, StyleSheet, FlatList, TouchableOpacity, Image, Dimensions } from "react-native";
 import { useTheme } from "@/context/ThemeContext";
 import { Ionicons } from "@expo/vector-icons";

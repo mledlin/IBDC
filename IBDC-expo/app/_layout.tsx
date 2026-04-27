@@ -1,8 +1,8 @@
 import { Stack } from "expo-router";
 import { DeviceProvider } from "@/context/DeviceContext";
-import {View, Text, Image, SafeAreaView} from "react-native";
+import { View, Text, Image } from "react-native";
 import { ThemeProvider, useTheme} from "@/context/ThemeContext";
-import { initDatabase } from "./database";
+import { initDatabase } from "@/database/database";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useEffect } from "react";
 function AppStack() {
@@ -40,6 +40,8 @@ function AppStack() {
     flexDirection: "row",
     alignItems: "center", 
     gap: 8,
+    paddingBottom: 30, 
+    paddingTop: 50,
     }}>
     <Image
       source={require("../assets/images/logo.png")}
