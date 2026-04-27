@@ -12,7 +12,8 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import Checkbox from "expo-checkbox";
 import { Picker } from "@react-native-picker/picker";
 import { useTheme } from "@/context/ThemeContext";
-import { deleteIncident, getIncidentById, getIncidentImagesByIncidentId, getMockImageSource, updateIncidentDetails } from "./database";
+import { deleteIncident, getIncidentById, updateIncidentDetails } from "@/database/IncidentDao";
+import { getIncidentImagesByIncidentId, getMockImageSource} from "@/database/ImageDao";
 // NOTES:
 // You will need to run npm install to get new dependencies here.
 // TODO Screen should move up when on-screen keyboard appears but doesnt yet.
