@@ -1,18 +1,28 @@
 import React, {useState} from "react";
-import {createSession, getAllSessions, deleteAllSessions, createIncident, createIncidentImage} from "./database";
+
+import {
+    createSession,
+    getAllSessions,
+    deleteAllSessions,
+    deleteSessionsOlderThan,
+} from "@/database/SessionDao";
+import {
+    createIncidentImage,
+} from "@/database/ImageDao"
+import { createIncident } from "@/database/IncidentDao"
 import {
     View,
     Text,
     StyleSheet,
     Switch,
     TouchableOpacity,
-    Alert,
+    Alert, ScrollView,
 } from "react-native";
-import { useTheme } from "@/context/ThemeContext";
+import {useTheme} from "@/context/ThemeContext";
 import ThemePicker from "@/components/ui/ThemePicker";
 
 export default function SettingsPage() {
-const { theme } = useTheme();
+    const {theme} = useTheme();
 
     // TODO Load from a properties file on startup!
     const [settingOne, setting1] = useState(true);
@@ -21,6 +31,14 @@ const { theme } = useTheme();
 
     //MOCK IMAGE POOL
     const mockImages = ["example1", "example2", "example3", "example4"];
+
+    const deleteOlderThanOptions = [
+        "3 Months",
+        "6 Months",
+        "1 year",
+    ];
+
+    const [deleteOlderThanIndex, setDeleteOlderThanIndex] = useState(0);
 
     const dataOptions = [
         "10",
@@ -44,10 +62,94 @@ const { theme } = useTheme();
         }
     };
 
+    const handlePrevDeleteOlderThan = () => {
+        if (deleteOlderThanIndex > 0) {
+            setDeleteOlderThanIndex(deleteOlderThanIndex - 1);
+        }
+    };
+
+    const handleNextDeleteOlderThan = () => {
+        if (deleteOlderThanIndex < deleteOlderThanOptions.length - 1) {
+            setDeleteOlderThanIndex(deleteOlderThanIndex + 1);
+        }
+    };
+
+    function getCutoffDate(): Date {
+        const cutoff = new Date();
+
+        switch (deleteOlderThanOptions[deleteOlderThanIndex]) {
+            case "3 months":
+                cutoff.setMonth(cutoff.getMonth() - 3);
+                break;
+            case "6 months":
+                cutoff.setMonth(cutoff.getMonth() - 6);
+                break;
+            case "1 year":
+                cutoff.setFullYear(cutoff.getFullYear() - 1);
+                break;
+            default:
+                cutoff.setMonth(cutoff.getMonth() - 3);
+                break;
+        }
+
+        return cutoff;
+    }
+
+    const handleDeleteOldData = async () => {
+        const selectedOption = deleteOlderThanOptions[deleteOlderThanIndex];
+
+        Alert.alert(
+            "Delete Old Data",
+            `Are you sure you want to delete all sessions and incidents older than ${selectedOption}? This cannot be undone.`,
+            [
+                {
+                    text: "Cancel",
+                    style: "cancel",
+                },
+                {
+                    text: "Delete",
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            const cutoff = getCutoffDate();
+                            await deleteSessionsOlderThan(cutoff.toISOString());
+
+                            const sessions = await getAllSessions();
+                            console.log("Remaining sessions:", sessions);
+
+                            Alert.alert(
+                                "Success",
+                                `All data older than ${selectedOption} has been deleted.`
+                            );
+                        } catch (error) {
+                            console.error("Failed to delete old data", error);
+                            Alert.alert(
+                                "Error",
+                                "Could not delete old data."
+                            );
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
     const handleAddMockIncident = async () => {
-        try{
-            const sessionId = Date.now().toString();
-            await createSession(sessionId);
+        try {
+            const now = Date.now();
+            const twoYears = 2 * 365 * 24 * 60 * 60 * 1000;
+
+            function randomInt(min: number, max: number): number {
+                return Math.floor(Math.random() * (max - min + 1)) + min;
+            }
+
+            const sessionStartTime = new Date(
+                now - randomInt(0, twoYears)
+            );
+
+            const sessionId = sessionStartTime.toISOString();
+
+            await createSession(sessionId, sessionStartTime.toISOString());
 
             const plates = ["ABC1234", "XYZ32", "DSA123", "1231AS", "ASU3232"];
             const severities = ["minor", "moderate", "major"];
@@ -66,33 +168,41 @@ const { theme } = useTheme();
                 "Close call at intersection",
             ];
             const vehicles = [
-                { make: "Toyota", model: "Camry", color: "Blue", year: "2020"},
+                {make: "Toyota", model: "Camry", color: "Blue", year: "2020"},
                 {make: "Honda", model: "Civic", color: "Black", year: "2018"},
                 {make: "Ford", model: "F-150", color: "White", year: "2022"},
                 {make: "Chevrolet", model: "Malibu", color: "Silver", year: "2019"},
                 {make: "Nissan", model: "Altima", color: "Red", year: "2021"},
             ];
             const coordinates = [
-                {lat: 33.4484, long: -122.0740},
-                {lat: 33.4501, long: -112.183},
-                {lat: 32.3123, long: -110.232},
-                {lat: 31.3211, long: -113.111},
+                { lat: 32.2226, long: -110.9747 }, // Tucson
+                { lat: 32.2217, long: -110.9265 }, // Tucson
+                { lat: 32.1789, long: -110.9715 }, // Tucson
+                { lat: 33.4484, long: -112.0740 }, // Phoenix
+                { lat: 33.4522, long: -112.0738 }, // Phoenix
+                { lat: 33.4651, long: -112.0476 }, // Phoenix
             ];
-            function pickRandom<T>(items: T[]): T{
+
+            function pickRandom<T>(items: T[]): T {
                 return items[Math.floor(Math.random() * items.length)];
             }
+
             const incidentCount = Math.floor(Math.random() * 5);
 
-            for (let i = 0; i < incidentCount; i++){
+            for (let i = 0; i < incidentCount; i++) {
                 //Tester method for generating data without thumbnail
                 const hasThumbnail = Math.random() < 0.7;
                 const vehicle = pickRandom(vehicles);
                 const coord = pickRandom(coordinates);
-                const incidentId = `${sessionId}-incident-${i+1}`;
+                const incidentId = `${sessionId}-incident-${i + 1}`;
                 //Conditional logic is solely for generating variance in mock data
                 const imageKey = hasThumbnail ? pickRandom(mockImages) : null;
                 const imageId = hasThumbnail ? `${incidentId}-${imageKey}` : null;
-            
+
+                const incidentTime = new Date(
+                    sessionStartTime.getTime() + randomInt(0, 60 * 60 * 1000)
+                );
+
                 await createIncident(
                     incidentId,
                     sessionId,
@@ -101,132 +211,179 @@ const { theme } = useTheme();
                     pickRandom(plates),
                     /*  mock version
                     imageId,
-                    */ 
+                    */
                     imageId,
                     pickRandom(severities),
-                    Math.random() < 0.5 ? 0:1,
+                    Math.random() < 0.5 ? 0 : 1,
                     pickRandom(driverInfos),
                     pickRandom(comments),
                     vehicle.make,
                     vehicle.model,
                     vehicle.color,
                     vehicle.year,
-                    new Date(Date.now() + i * 1000).toISOString()
+                    incidentTime.toISOString()
                 );
                 // More mock data 
-            await createIncidentImage(`${incidentId}-example1`, incidentId, "example1", null, "mock");
-            await createIncidentImage(`${incidentId}-example2`, incidentId, "example2", null, "mock");
-            await createIncidentImage(`${incidentId}-example3`, incidentId, "example3", null, "mock");
-            await createIncidentImage(`${incidentId}-example4`, incidentId, "example4", null, "mock");    
+                await createIncidentImage(`${incidentId}-example1`, incidentId, "example1", null, "mock");
+                await createIncidentImage(`${incidentId}-example2`, incidentId, "example2", null, "mock");
+                await createIncidentImage(`${incidentId}-example3`, incidentId, "example3", null, "mock");
+                await createIncidentImage(`${incidentId}-example4`, incidentId, "example4", null, "mock");
 
             }
             const sessions = await getAllSessions();
             console.log("Sessions:", sessions);
 
             Alert.alert("Success", `Mock session added with ${incidentCount} incidents`)
-                } catch (error) {
-                    console.error("Failed to add mock data", error);
-                    Alert.alert("Error", "Could not add mock data");
-                }
-            
-        
-    };
-
-    const handleWipeMockData = async () => {
-        try{
-            await deleteAllSessions();
-            const sessions = await getAllSessions();
-            console.log("Sessions: ", sessions);
-            Alert.alert("Success", "Session data has been wiped");
         } catch (error) {
-            console.error("Failed to wipe sessions", error);
-            Alert.alert("Error", "Could not wipe")
+            console.error("Failed to add mock data", error);
+            Alert.alert("Error", "Could not add mock data");
         }
+
+
     };
 
-    return (   
-         <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    return (
+        <View style={[styles.container, {backgroundColor: theme.colors.background}]}>
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.scrollContent}>
 
-            <Text style={[styles.title, { color: theme.colors.text }]}>SETTINGS</Text>
-
-
-            <View style={styles.settingsToggle}>
-                <Switch value={settingOne} onValueChange={setting1} thumbColor={theme.colors.primary}/>
-                <Text style={[styles.settingLabel, { color: theme.colors.text }]}>Unknown Setting 1</Text>
-            </View>
-
-            <View style={styles.settingsToggle}>
-                <Switch value={settingTwo} onValueChange={setting2} thumbColor={theme.colors.primary}/>
-                <Text style={[styles.settingLabel, {color: theme.colors.text}]}>Unknown Setting 2</Text>
-            </View>
-
-            <View style={styles.settingsToggle}>
-                 <Switch value={settingThree} onValueChange={setting3} thumbColor={theme.colors.primary} />
-                <Text style={[styles.settingLabel, { color: theme.colors.text }]}>Unknown Setting 3</Text>
-            </View>
-             {/* Theme picker */}
-            <Text style={[styles.sectionLabel, { color: theme.colors.text }]}>APPEARANCE</Text>
-
-            <ThemePicker />
+                <Text style={[styles.title, {color: theme.colors.text}]}>SETTINGS</Text>
 
 
-            <TouchableOpacity
-                style={[styles.addMockButton, { backgroundColor: theme.colors.primary, borderRadius: theme.radii.md }]}
-                onPress={handleAddMockIncident}
-            >
-                <Text style={[styles.actionButtonText, { color: theme.colors.primaryForeground }]}>
-                    Add Random Mock Incident Data
-                </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-                style={[styles.wipeButton, { backgroundColor: theme.colors.danger, borderRadius: theme.radii.md }]}
-                onPress={handleWipeMockData}
-            >
-                <Text style={[styles.actionButtonText, { color: theme.colors.primaryForeground }]}>
-                    Wipe All Mock Data
-                </Text>
-            </TouchableOpacity>
-            <View style={styles.retentionSection}>
-                <Text style={[styles.retentionLabel, { color: theme.colors.text }]}>Sessions Per Page</Text>
+                <View style={styles.settingsToggle}>
+                    <Switch value={settingOne} onValueChange={setting1} thumbColor={theme.colors.primary}/>
+                    <Text style={[styles.settingLabel, {color: theme.colors.text}]}>Unknown Setting 1</Text>
+                </View>
 
-                <View style={styles.retentionSelector}>
-                    <TouchableOpacity
-                        onPress={handlePrevOption}
-                        style={styles.arrowButton}>
-                        <Text
-                            style={[
-                                styles.arrowText,
-                                dataIndex === 0 && { color: theme.colors.background },
-                            ]}>
-                            {"\u25C0"}
+
+                {/* Theme picker */}
+                <Text style={[styles.sectionLabel, {color: theme.colors.text}]}>APPEARANCE</Text>
+                <ThemePicker/>
+
+
+                <View style={styles.retentionSection}>
+                    <Text style={[styles.retentionLabel, {color: theme.colors.text}]}>Sessions Displayed Per Page</Text>
+
+                    <View style={styles.retentionSelector}>
+                        <TouchableOpacity
+                            onPress={handlePrevOption}
+                            style={styles.arrowButton}>
+                            <Text
+                                style={[
+                                    styles.arrowText,
+                                    dataIndex === 0 && {color: theme.colors.background}]}>
+                                {"\u25C0"}
+                            </Text>
+                        </TouchableOpacity>
+
+                        <Text style={[styles.retentionValue, {color: theme.colors.text}]}>
+                            {dataOptions[dataIndex]}
                         </Text>
-                    </TouchableOpacity>
 
-                    <Text style={[styles.retentionValue, { color: theme.colors.text }]}>
-                        {dataOptions[dataIndex]}
+                        <TouchableOpacity
+                            onPress={handleNextOption}
+                            style={styles.arrowButton}>
+                            <Text
+                                style={[
+                                    styles.arrowText, {color: theme.colors.text},
+                                    dataIndex === dataOptions.length - 1 && {color: theme.colors.background}]}>
+                                {"\u25B6"}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+
+                <View style={styles.retentionSection}>
+                    <Text style={[styles.retentionLabel, {color: theme.colors.text}]}>
+                        Delete Data Older Than
                     </Text>
 
+                    <View style={styles.retentionSelector}>
+                        <TouchableOpacity
+                            onPress={handlePrevDeleteOlderThan}
+                            style={styles.arrowButton}>
+
+                            <Text
+                                style={[
+                                    styles.arrowText,
+                                    {color: theme.colors.text},
+                                    deleteOlderThanIndex === 0 && {color: theme.colors.background},
+                                ]}>
+                                {"\u25C0"}
+                            </Text>
+                        </TouchableOpacity>
+
+                        <Text style={[styles.retentionValue, {color: theme.colors.text}]}>
+                            {deleteOlderThanOptions[deleteOlderThanIndex]}
+                        </Text>
+
+                        <TouchableOpacity
+                            onPress={handleNextDeleteOlderThan}
+                            style={styles.arrowButton}>
+
+                            <Text
+                                style={[
+                                    styles.arrowText,
+                                    {color: theme.colors.text},
+                                    deleteOlderThanIndex === deleteOlderThanOptions.length - 1 &&
+                                    {color: theme.colors.background},
+                                ]}>
+                                {"\u25B6"}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+
                     <TouchableOpacity
-                        onPress={handleNextOption}
-                        style={styles.arrowButton}>
+                        style={[
+                            styles.deleteOldDataButton,
+                            {backgroundColor: theme.colors.danger, borderRadius: theme.radii.md},
+                        ]}
+                        onPress={handleDeleteOldData}>
+
                         <Text
                             style={[
-                                styles.arrowText, {color: theme.colors.text},
-                                dataIndex === dataOptions.length - 1 && { color: theme.colors.background },
+                                styles.actionButtonText,
+                                {color: theme.colors.primaryForeground},
                             ]}>
-                            {"\u25B6"}
+                            Delete Old Data
                         </Text>
                     </TouchableOpacity>
                 </View>
-            </View>  
+
+
+
+                <View style={styles.debugSection}>
+                    <Text style={[styles.inBoxSectionLabel, {color: theme.colors.text}]}>DEBUG FEATURES</Text>
+                    <TouchableOpacity
+                        style={[
+                            styles.addMockButton,
+                            {
+                                backgroundColor: theme.colors.primary,
+                                borderRadius: theme.radii.md,
+                            },
+                        ]}
+                        onPress={handleAddMockIncident}>
+
+                        <Text style={[styles.actionButtonText, {color: theme.colors.primaryForeground}]}>
+                            Add Random Mock Incident Data
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+
+            </ScrollView>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
+    scrollContent: {
+        flexGrow: 1,
+        paddingTop: 60,
+        paddingBottom: 24,
+    },
     container: {
         flex: 1,
-        paddingTop: 60,
         paddingHorizontal: 24,
     },
     sectionLabel: {
@@ -235,7 +392,14 @@ const styles = StyleSheet.create({
         letterSpacing: 1.2,
         marginBottom: 8,
         marginTop: 24,
-        paddingHorizontal: 4,},
+        paddingHorizontal: 4,
+    },
+    inBoxSectionLabel: {
+        fontSize: 11,
+        fontWeight: "600",
+        letterSpacing: 1.2,
+        paddingHorizontal: 4,
+    },
     title: {
         fontSize: 24,
         fontWeight: "bold",
@@ -246,15 +410,18 @@ const styles = StyleSheet.create({
     settingsToggle: {
         flexDirection: "row",
         alignItems: "center",
-        marginBottom: 24,
+        marginBottom: 12,
     },
     settingLabel: {
         marginLeft: 16,
         fontSize: 18,
     },
     retentionSection: {
-        marginTop: 8,
-        marginBottom: 24,
+        padding: 16,
+        marginTop: 16,
+        borderWidth: 1,
+        borderColor: "#000000",
+        borderRadius: 8,
     },
     retentionLabel: {
         fontSize: 18,
@@ -278,8 +445,15 @@ const styles = StyleSheet.create({
         textAlign: "center",
         fontSize: 18,
     },
+    deleteOldDataButton: {
+        marginTop: 16,
+        paddingVertical: 14,
+        borderRadius: 8,
+        alignItems: "center",
+    },
     addMockButton: {
         marginTop: 30,
+        marginBottom: 16,
         paddingVertical: 14,
         borderRadius: 8,
         alignItems: "center",
@@ -294,5 +468,12 @@ const styles = StyleSheet.create({
         color: "#ffffff",
         fontSize: 16,
         fontWeight: "bold",
+    },
+    debugSection: {
+        padding: 16,
+        marginTop: 16,
+        borderWidth: 1,
+        borderColor: "#000000",
+        borderRadius: 8,
     },
 });
