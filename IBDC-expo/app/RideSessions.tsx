@@ -14,6 +14,7 @@ import {useTheme} from "@/context/ThemeContext"
 import {useFocusEffect} from "expo-router";
 import {isIncidentComplete} from "@/domain/Incident";
 import {deleteSession, getSessionHistoryData} from "@/database/SessionDao";
+import { LinearGradient } from "expo-linear-gradient";
 
 const SESSIONS_PER_PAGE = 5;
 
@@ -317,6 +318,7 @@ export default function RideSession() {
                                         </TouchableOpacity>
                                     </View>
                                 ) : (
+                                    <View style={styles.incidentScrollWrapper}>
                                     <ScrollView
                                         horizontal
                                         showsHorizontalScrollIndicator={true}
@@ -370,6 +372,8 @@ export default function RideSession() {
                                             );
                                         })}
                                     </ScrollView>
+                                    <LinearGradient colors={["transparent", theme.colors.surface,]} start= {{x:0, y:0}} end={{x:1, y:0}} pointerEvents="none" style={styles.incidentFadeRight} />
+                                    </View>
                                 )}
                             </View>
                         );
@@ -411,6 +415,18 @@ export default function RideSession() {
 const styles = StyleSheet.create({
     screenBackground: {
         flex: 1,
+    },
+    incidentScrollWrapper: {
+        position: "relative", 
+        width: "100%",
+    },
+    incidentFadeRight: {
+        position: "absolute", 
+        right: 0, 
+        top: 0, 
+        bottom: 0, 
+        width: 48, 
+        pointerEvents: "none",
     },
     scrollContainer: {
         paddingVertical: 16,
