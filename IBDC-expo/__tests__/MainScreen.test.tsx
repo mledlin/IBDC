@@ -2,6 +2,9 @@ import React from 'react';
 import { render } from '@testing-library/react-native';
 import MainScreen from '@/app/MainScreen';
 
+//Ensure that you have run 'npm install --legacy-peer-deps
+//run testing script in terminal by running the script 'npx jest'
+
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn() }),
 }));
