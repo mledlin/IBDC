@@ -120,8 +120,8 @@ export default function IncidentDetail() {
   }
   return (
     
-        <ScrollView contentContainerStyle={styles.container}>
-            <Text style = {styles.title}>Incident Details</Text>
+        <ScrollView contentContainerStyle={[styles.container, {backgroundColor: theme.colors.background}]}>
+            <Text style = {[styles.title, {color: theme.colors.text}]}>Incident Details</Text>
             <View style = {styles.thumbnailContainer}>
               <Image 
                 source = {thumbnailSource} //This will eventually beocome uri: image.file_path when DB is in
