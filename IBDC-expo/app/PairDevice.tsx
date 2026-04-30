@@ -1,3 +1,9 @@
+/**
+ * Device pairing screen.
+ *
+ * This screen gives a simple pairing workflow.
+ */
+
 import React, { useState } from "react";
 import { Text, View, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -6,6 +12,9 @@ import { useDevice } from "@/context/DeviceContext";
 import { useRouter } from "expo-router";
 import { useTheme } from "@/context/ThemeContext";
 
+/**
+ * Represents one selectable Bluetooth device shown.
+ */
 type DeviceItem = {
   id: string;
   name: string;
@@ -15,6 +24,11 @@ type DeviceItem = {
   lastSynced: string;
 };
 
+/**
+ * Fallback color constants used in the stylesheet.
+ *
+ * Mostly overridden by the active theme.
+ */
 const COLORS = {
   primaryBlue: "#2563eb",
   darkBlue: "#1e3a8a",
@@ -31,6 +45,16 @@ const COLORS = {
   white: "#ffffff",
 };
 
+/**
+ * Renders the pairing screen and manages device selection.
+ *
+ * This component:
+ * - Displays a short pairing guide.
+ * - Shows the Bluetooth device.
+ * - Stores the chosen device in DeviceContext.
+ *
+ * @returns The pair-device screen UI.
+ */
 export default function PairDevice() {
   const { theme } = useTheme();
   const router = useRouter();
@@ -41,6 +65,12 @@ export default function PairDevice() {
     {id: "Pretend BT ID#2", name: "IBDC Device2",  battery: 100, storage: {used: 1.0, total: 8}, firmwareVersion: "v1.2", lastSynced: "2 minutes ago"},
   ]);
 
+  /**
+   * Saves the chosen device into shared device state, marks it as connected, closes the modal,
+   * and returns to the previous screen.
+   *
+   * @param device The device selected from the modal list.
+   */
  const handleSelectDevice = (device: (DeviceItem)) => {
   setModalVisable(false);
   setDevice({

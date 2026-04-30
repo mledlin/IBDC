@@ -93,8 +93,8 @@ There are 14 branches in the current project. Many have been merged into dev and
 
 Main - The projects Main Branch. Only documents have been updated here. At the end of Sprint 4 in the Spring C Session we will merge a stable version to main from dev.
 Dev - The primary repository for tested functional code.
-US#56-Protobuf - Efforts to handle data transmitted via Protobuf are focused here.
-All other branches have been merged to dev at this point.
+
+### ***** Document Additional Branch statuses here! *
 
 Taiga Link to see Task history: https://tree.taiga.io/project/colintugend-asu-intelligent-bicycle-dash-cam/backlog
 
@@ -103,8 +103,13 @@ Taiga Link to see Task history: https://tree.taiga.io/project/colintugend-asu-in
 These are issues in the current code that need to be fixed.
 
 - On IOS devices the top 1.5 inches of the screen are blocked preventing the user from seeing a logo or filtering options on some screens. This issue does not exist on Android and needs to be researched.
+  - This has been resolved and there are no longer any IOS display differences.
 - The sponsor would like the transition from incomplete incident images to the edge of the scroll space should be blurred to make a softer transition that a sharp line.
+  - This has been partially resolved. The right side has a good blue effect but its unclear if the left side should get it as well. We need to clarify with the sponsor.
 - Displayed sessions on Session History screen needs to be connected to the settings screen toggle between display options. Right now its just a constant on the Session page.
+- Device pair screen currently does not connect to Bluetooth devices.
+- Main screen image is a place holder.
+- Color Schemes are placeholders.
 
 ## 9. Future Tasks
 
@@ -133,10 +138,13 @@ Network:
 
 Other:
 - Determine how the Google Maps api would work in a public application with the key being personal to a developer.
+  - This is a work in progress in Branch: *TODO Add this*
 - Develop solution to export reports as PDF files.
 - Create build task to produce apk, ipa files easily.
 - Create an export image to phone option so that many images aren't flooding the users gallery but they can move images they choose if needed.
 - Develop code to handle estimating time/location of incidents captured without connectivity. Alternatively allow for users to pick from a map and add a time.
+- Potentially develop an analytics server to handle data that the device collects.
+- Develop code to extract the license plate characters from an image.
 
 
 ## Appendix 1 - Expo Development Environment
