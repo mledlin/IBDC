@@ -36,7 +36,7 @@ export async function getAllIncidentImages() {
         SELECT * FROM incident_images
     `);
 }
-//Retrieves all image records of a specifc incident. 
+//Retrieves all image records of a specific incident.
 export async function getIncidentImagesByIncidentId(incidentId: string) {
     const database = await getDatabase();
 
