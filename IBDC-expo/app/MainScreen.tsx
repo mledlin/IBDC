@@ -129,56 +129,6 @@ export default function MainScreen() {
                 contentContainerStyle={styles.content}
                 showsVerticalScrollIndicator={false}
             >
-                {/* Stat cards row */}
-                <View style={styles.statsRow}>
-                    <View style={[styles.statCard, {
-                        backgroundColor: theme.colors.surface,
-                        borderColor: theme.colors.border
-                    }]}>
-                        <View style={styles.statHeader}>
-                            <Ionicons name="bluetooth" size={18} color={theme.colors.primary}/>
-                            <Text
-                                style={[styles.statTitle, {color: theme.colors.textSecondary}]}>{getStatusText(currentDevice.status)}</Text>
-                        </View>
-                        <Pressable
-                            style={[styles.button, {
-                                backgroundColor: theme.colors.primary,
-                                borderRadius: theme.radii.md
-                            }]}
-                            onPress={() => router.push("/PairDevice")}
-                        >
-                            <Text style={[styles.buttonText, {color: theme.colors.primaryForeground}]}>Pair
-                                Device</Text>
-                        </Pressable>
-                    </View>
-
-                    <View style={[styles.statCard, {
-                        backgroundColor: theme.colors.surface,
-                        borderColor: theme.colors.border
-                    }]}>
-                        <View style={styles.statHeader}>
-                            <Ionicons name="battery-half-outline" size={18} color={theme.colors.textSecondary}/>
-                            <Text style={[styles.statTitle, {color: theme.colors.textSecondary}]}>Battery</Text>
-                        </View>
-                        <Text
-                            style={[styles.statBigNumber, {color: theme.colors.textSecondary}]}>{currentDevice.battery}%</Text>
-                        <BatteryBar level={currentDevice.battery} theme={theme}/>
-                    </View>
-
-                    <View style={[styles.statCard, {
-                        backgroundColor: theme.colors.surface,
-                        borderColor: theme.colors.border
-                    }]}>
-                        <View style={styles.statHeader}>
-                            <Ionicons name="server-outline" size={18} color={theme.colors.textSecondary}/>
-                            <Text style={[styles.statTitle, {color: theme.colors.textSecondary}]}>Storage</Text>
-                        </View>
-                        <Text
-                            style={[styles.statBigNumber, {color: theme.colors.textSecondary}]}>{storagePercent}%</Text>
-                        <StorageBar level={storagePercent} theme={theme}/>
-                    </View>
-                </View>
-
                 {/* Device image card */}
                 <View style={[styles.imageCard, {
                     backgroundColor: theme.colors.surface,
@@ -190,8 +140,74 @@ export default function MainScreen() {
                         style={styles.productImage}
                         resizeMode="contain"
                     />
-                    <Text style={[styles.batteryText, {color: theme.colors.textSecondary}]}>
-                        Firmware {currentDevice.firmwareVersion} • Synced {currentDevice.lastSynced}
+                    {/* Battery status */}
+                    <View style={styles.deviceMetric}>
+                        <View style={styles.metricHead}>
+                            <View style={styles.metricLabel}>
+                            <Ionicons
+                                name="battery-half-outline"
+                                size={18}
+                                color={theme.colors.textSecondary}
+                                />
+                            <Text
+                                style={[
+                                    styles.metricTitle,
+                                    {color: theme.colors.textSecondary}
+                                ]}>
+                                    Battery
+                                    </Text>
+                                   </View>
+                        <Text
+                            stlye={[
+                                styles.metricValue,
+                                {color: theme.colors.text}
+                            ]}>
+                                {currentDevice.battery}%
+                        </Text>
+                        </View>
+                    <BatteryBar
+                        level={currentDevice.battery}
+                        theme={theme}
+                        />
+                    </View>
+
+                    {/* Storage status */}
+                    <View style={styles.deviceMetric}>
+                        <View style={styles.metricHead}>
+                            <View style={styles.metricLabel}>
+                                <Ionicons
+                                name="server-outline"
+                                size={18}
+                                color={theme.colors.textSecondary}
+                                />
+                                <Text
+                                style={[
+                                    styles.metricTitle,
+                                    {color: theme.colors.textSecondary}
+                                ]} >
+                                    Storage
+                                    </Text>
+                                </View>
+                                <Text 
+                                    style={[
+                                        styles.metricValue,
+                                        {color: theme.colors.text}
+                                    ]} >
+                                        {currentDevice.storage.used} / {currentDevice.storage.total}%
+                                        </Text>
+                                </View>
+                                <StorageBar
+                                    level={storagePercent}
+                                    theme={theme}
+                                    />
+                                </View>
+                                <Text
+                                style ={[
+                                    styles.deviceMeta,
+                                    {color: theme.colors.textSecondary}                 
+                                ]}
+                                >
+                                    Firmware {currentDevice.firmwareVersion} • Synced {currentDevice.lastSynced}
                     </Text>
                 </View>
 
@@ -235,21 +251,12 @@ const styles = StyleSheet.create({
     safe: {flex: 1},
     scroll: {flex: 1},
     content: {padding: 20},
-    statsRow: {flexDirection: 'row', gap: 12, marginBottom: 24},
-    statCard: {
-        flex: 1,
-        borderRadius: 18,
-        borderWidth: 1,
-        padding: 12,
-        shadowColor: "#000",
-        shadowOpacity: 0.08,
-        shadowRadius: 6,
-        shadowOffset: {width: 0, height: 2},
-        elevation: 5,
-    },
-    statHeader: {flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8},
-    statTitle: {fontSize: 12, fontWeight: '600'},
-    statBigNumber: {fontSize: 28, fontWeight: '800', marginBottom: 10},
+    deviceMetric: {width:100, marginBottom: 18},
+    metricHead: {flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
+    metricLabel: {flexDirection: "row", alignItems: "center", gap: 6},
+    metricTitle: {fontSize: 13, fontWeight: "600"},
+    metricValue: {fontsize: 15, fontweight: "800"},
+    deviceMeta: {fontsize: 11, fontWeight: "600", marginTop: 2},
     batteryWrapper: {flexDirection: 'row', alignItems: 'center', gap: 8},
     batteryOuter: {flex: 1, height: 8, borderRadius: 4, overflow: 'hidden'},
     batteryFill: {height: '100%', borderRadius: 4},
