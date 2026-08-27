@@ -9,39 +9,38 @@
 import {View, Text, StyleSheet, Pressable, ScrollView, Image} from "react-native";
 import {useRouter} from "expo-router";
 import {useSafeAreaInsets} from "react-native-safe-area-context";
-import React from "react";
+import React, {useEffect, useState} from "react";
 import {Ionicons} from '@expo/vector-icons';
-import {useDevice} from "@/context/DeviceContext";
+import {DeviceProvider, useDevice} from "@/context/DeviceContext";
 import {useTheme} from '@/context/ThemeContext';
+import {bleManager} from './_layout'
 
-type ConnectedStatus = 'connected' | 'disconnected' | 'pairing';
 
 /**
  * Describes the data shown for the current device.
  */
 interface DeviceInfo {
     name: string;
-    status: ConnectedStatus;
+    status: boolean;
     battery: number;
     storage: { used: number; total: number };
     firmwareVersion: string;
     lastSynced: string;
 }
-
 /**
  * DEBUG DATA
- *
  * Temporary fallback device data used when no real device
  * is currently available from context.
  */
 const demoDevice: DeviceInfo = {
     name: 'IBDC Proto X',
-    status: 'connected',
+    status: true,
     battery: 78,
     storage: {used: 3.4, total: 8},
     firmwareVersion: 'v1.0',
     lastSynced: '2 min ago',
 };
+
 
 /**
  * Displays a simple horizontal battery bar.
@@ -63,6 +62,9 @@ function BatteryBar({level, theme}: { level: number; theme: any }) {
     );
 }
 
+function ConnectionIcon(isConnected: boolean) {
+    return isConnected ? "checkmark" : "alert"
+}
 /**
  * Displays a simple storage usage bar.
  *
@@ -89,6 +91,7 @@ function StorageBar({level, theme}: { level: number; theme: any }) {
  * @param status The device connection status.
  * @returns A label for display in the UI.
  */
+/**
 function getStatusText(status: ConnectedStatus) {
     switch (status) {
         case "connected":
@@ -101,6 +104,7 @@ function getStatusText(status: ConnectedStatus) {
             return "Unknown";
     }
 }
+ **/
 
 /**
  * Renders the main dashboard screen.
@@ -122,6 +126,26 @@ export default function MainScreen() {
     const currentDevice = device ?? demoDevice;
     const storagePercent = (currentDevice.storage.used / currentDevice.storage.total) * 100;
 
+    const [conn, setConn] = useState(false);
+    // Each time the page is rendered, execute this useEffect
+    useEffect(() => {
+         let cancelled: boolean = false;
+         const checkBleConnection = (async () => {
+             // Unique device ID stored in the database can be inserted here ->
+             const status: boolean = await bleManager.isDeviceConnected("DeviceID from database");
+             setConn(status);
+             // If the device takes longer than 5 seconds to respond, re-query again
+             if (!cancelled) {
+                 setTimeout(checkBleConnection, 5000);
+             }
+         });
+        checkBleConnection();
+        // This is in case the asycc function isDeviceConnected takes less than 5 seconds to respond. No need to re-poll .
+        return () => {
+            cancelled = true;
+        };
+    },[conn])
+
     return (
         <View style={[styles.safe, {paddingTop: insets.top, backgroundColor: theme.colors.background}]}>
             <ScrollView
@@ -136,10 +160,11 @@ export default function MainScreen() {
                         borderColor: theme.colors.border
                     }]}>
                         <View style={styles.statHeader}>
+                            <View style={styles.bluetoothRow} >
                             <Ionicons name="bluetooth" size={18} color={theme.colors.primary}/>
-                            <Text
-                                style={[styles.statTitle, {color: theme.colors.textSecondary}]}>{getStatusText(currentDevice.status)}</Text>
-                        </View>
+                                <Ionicons name={ConnectionIcon(conn)} size={36} color={theme.colors.primary}/>
+                            </View>
+                         </View>
                         <Pressable
                             style={[styles.button, {
                                 backgroundColor: theme.colors.primary,
@@ -283,6 +308,7 @@ const styles = StyleSheet.create({
         elevation: 5,
     },
     actionsRow: {flexDirection: "row", gap: 10, marginTop: 4},
+    bluetoothRow: {flexDirection: "row", gap: 30, marginTop: 4},
     actionButtonSmall: {
         flex: 1,
         minHeight: 82,

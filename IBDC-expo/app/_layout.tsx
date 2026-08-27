@@ -14,6 +14,11 @@ import { View, Text, Image } from "react-native";
 import { ThemeProvider, useTheme } from "@/context/ThemeContext";
 import { initDatabase } from "@/database/database";
 import { useEffect } from "react";
+import {BleManager} from "react-native-ble-plx";
+
+// Global reference point to the device's Bluetooth peripherals. Any module can use -> import {bleManager} from _layout.tsx
+export const bleManager = new BleManager();
+
 
 /**
  * Builds the application's navigation stack.
@@ -29,7 +34,6 @@ import { useEffect } from "react";
  */
 function AppStack() {
     const { theme } = useTheme();
-
     useEffect(() => {
         /**
          * Initializes the local database used by the application.
@@ -46,10 +50,8 @@ function AppStack() {
                 console.error("Database init failed", error);
             }
         }
-
         setupDatabase();
     }, []);
-
     return (
         <Stack
             screenOptions={{
