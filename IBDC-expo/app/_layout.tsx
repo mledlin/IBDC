@@ -14,6 +14,7 @@ import { View, Text, Image } from "react-native";
 import { ThemeProvider, useTheme } from "@/context/ThemeContext";
 import { initDatabase } from "@/database/database";
 import { useEffect } from "react";
+import {useSafeAreaInsets} from "react-native-safe-area-context";
 
 /**
  * Builds the application's navigation stack.
@@ -29,6 +30,7 @@ import { useEffect } from "react";
  */
 function AppStack() {
     const { theme } = useTheme();
+    const insets = useSafeAreaInsets();
 
     useEffect(() => {
         /**
@@ -75,7 +77,7 @@ function AppStack() {
                             alignItems: "center",
                             gap: 8,
                             paddingBottom: 30,
-                            paddingTop: 50,
+                            paddingTop: insets.top/3,
                         }}
                     >
                         <Image
