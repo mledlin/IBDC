@@ -134,6 +134,48 @@ export default function MainScreen() {
                     backgroundColor: theme.colors.surface,
                     borderColor: theme.colors.border
                 }]}>
+                    <View style={styles.topRow}>
+                    <Pressable
+                        style={styles.connectStatus}
+                        onPress={() => router.push("/PairDevice")}
+                    >
+                        <View 
+                            style ={[
+                                styles.connectedDot,
+                                {
+                                    backgroundColor:
+                                    currentDevice.status === "connected"
+                                    ? "#16a34a"
+                                    : currentDevice.status === "pairing"
+                                    ? "#0961d4"
+                                    : "#ef4444"
+                                }
+                                ]}
+                            />
+                            <Ionicons
+                                name="bluetooth"
+                                size={16}
+                                color={theme.colors.textSecondary}
+                                />
+                            <Text 
+                                style={[
+                                    styles.connectionText,
+                                    {color: theme.colors.textSecondary}
+                                    ]}
+                                >
+                                {getStatusText(currentDevice.status)}
+                            </Text>
+                            <Text 
+                                style={[
+                                    styles.pairText,
+                                    {color: theme.colors.primary}                               
+                                    ]}
+                                >
+                                    Pair Device
+                            </Text>
+                        </Pressable>
+                    </View>
+                    
                     <Text style={[styles.batteryText, {color: theme.colors.text}]}>IBDC</Text>
                     <Image
                         source={require('../assets/images/device-placeholder.png')}
@@ -141,6 +183,7 @@ export default function MainScreen() {
                         resizeMode="contain"
                     />
                     {/* Battery status */}
+                    <View style={styles.metricRow}>
                     <View style={styles.deviceMetric}>
                         <View style={styles.metricHead}>
                             <View style={styles.metricLabel}>
@@ -158,7 +201,7 @@ export default function MainScreen() {
                                     </Text>
                                    </View>
                         <Text
-                            stlye={[
+                            style={[
                                 styles.metricValue,
                                 {color: theme.colors.text}
                             ]}>
@@ -193,13 +236,14 @@ export default function MainScreen() {
                                         styles.metricValue,
                                         {color: theme.colors.text}
                                     ]} >
-                                        {currentDevice.storage.used} / {currentDevice.storage.total}%
+                                        {Math.round(storagePercent)}%
                                         </Text>
                                 </View>
                                 <StorageBar
                                     level={storagePercent}
                                     theme={theme}
                                     />
+                                </View>
                                 </View>
                                 <Text
                                 style ={[
@@ -210,7 +254,6 @@ export default function MainScreen() {
                                     Firmware {currentDevice.firmwareVersion} • Synced {currentDevice.lastSynced}
                     </Text>
                 </View>
-
                 {/* Action buttons */}
                 <View style={[styles.actionsCard, {
                     backgroundColor: theme.colors.surface,
@@ -251,6 +294,12 @@ const styles = StyleSheet.create({
     safe: {flex: 1},
     scroll: {flex: 1},
     content: {padding: 20},
+    topRow:{width: "100%", flexDirection: "row", justifyContent: "flex-end", marginBottom: 12},
+    metricRow: {width:"100%", flexDirection: "row", justifyContent: "space-between", marginBottom: 18, paddingHorizontal: 30},
+    connectStatus: {flexDirection: "row", alignItems: "center", gap: 6},
+    connectedDot: {width: 8, height: 8, borderRadius: 4},
+    connectionText: {fontSize: 12, fontWeight: "600"},
+    pairText: {fontSize: 12, fontWeight: "700", marginLeft: 4},
     deviceMetric: {width:100, marginBottom: 18},
     metricHead: {flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
     metricLabel: {flexDirection: "row", alignItems: "center", gap: 6},
