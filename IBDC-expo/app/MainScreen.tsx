@@ -135,10 +135,7 @@ export default function MainScreen() {
                     borderColor: theme.colors.border
                 }]}>
                     <View style={styles.topRow}>
-                    <Pressable
-                        style={styles.connectStatus}
-                        onPress={() => router.push("/PairDevice")}
-                    >
+                    <View style={styles.connectStatus}>
                         <View 
                             style ={[
                                 styles.connectedDot,
@@ -165,15 +162,23 @@ export default function MainScreen() {
                                 >
                                 {getStatusText(currentDevice.status)}
                             </Text>
-                            <Text 
-                                style={[
-                                    styles.pairText,
-                                    {color: theme.colors.primary}                               
-                                    ]}
+                            <Pressable
+                                onPress={() => router.push("/PairDevice")}
+                                style ={[
+                                    styles.pairButton,
+                                    {borderColor: theme.colors.primary}
+                                ]}
                                 >
-                                    Pair Device
-                            </Text>
-                        </Pressable>
+                                    <Text
+                                    style={[
+                                        styles.pairText,
+                                        {color: theme.colors.primary}
+                                    ]}
+                                    >
+                                        Pair Device
+                                    </Text>
+                            </Pressable>
+                        </View>
                     </View>
                     
                     <Text style={[styles.batteryText, {color: theme.colors.text}]}>IBDC</Text>
@@ -294,17 +299,18 @@ const styles = StyleSheet.create({
     safe: {flex: 1},
     scroll: {flex: 1},
     content: {padding: 20},
-    topRow:{width: "100%", flexDirection: "row", justifyContent: "flex-end", marginBottom: 12},
+    topRow:{width: "100%", flexDirection: "row", justifyContent: "flex-start", marginBottom: 12},
     metricRow: {width:"100%", flexDirection: "row", justifyContent: "space-between", marginBottom: 18, paddingHorizontal: 30},
     connectStatus: {flexDirection: "row", alignItems: "center", gap: 6},
     connectedDot: {width: 8, height: 8, borderRadius: 4},
     connectionText: {fontSize: 12, fontWeight: "600"},
-    pairText: {fontSize: 12, fontWeight: "700", marginLeft: 4},
+    pairButton: {marginLeft: 6, borderWidth: 1, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4},
+    pairText: {fontSize: 12, fontWeight: "700"},
     deviceMetric: {width:100, marginBottom: 18},
-    metricHead: {flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
+    metricHead: {flexDirection: "row", alignItems: "center", marginBottom: 8 },
     metricLabel: {flexDirection: "row", alignItems: "center", gap: 6},
     metricTitle: {fontSize: 13, fontWeight: "600"},
-    metricValue: {fontsize: 15, fontweight: "800"},
+    metricValue: {fontsize: 15, fontweight: "800", marginLeft: 5},
     deviceMeta: {fontsize: 11, fontWeight: "600", marginTop: 2},
     batteryWrapper: {flexDirection: 'row', alignItems: 'center', gap: 8},
     batteryOuter: {flex: 1, height: 8, borderRadius: 4, overflow: 'hidden'},
