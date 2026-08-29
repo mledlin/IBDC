@@ -1,0 +1,79 @@
+// IDBC protobuff v0.2, 2026-02-28
+syntax = "proto3";
+package IBDC;
+
+// Embedded system sends this at event detection
+message EventNotification {
+  uint32 event_id = 1; // unique id for each event
+  uint32 distance_cm = 2; // distance to object in centimeter
+  uint32 time_offset = 3; // time difference between detection and notification
+  uint32 image_count = 4; // number of images
+  ImageFormat image_format = 5; // image format
+}
+
+// Support different image formats
+enum ImageFormat {
+  UNSPECIFIED = 0;
+  JPEG = 1;
+  PNG = 2;
+}
+
+//Metadata describing an individual image.
+//Phone can use this information to validate and track image transfer.
+message ImageInfo{
+  uint32 event_id = 1; // Event this image belongs to.
+  uint32 image_index = 2; // Image number within the event.
+  uint32 image_size_bytes = 3; // Total image size in bytes.
+  uint32 total_chunks = 4; // Total number of BLE chunks for this image.
+  ImageFormat image_format = 5; // Format of this image. 
+}
+
+// Header for each image chunk over BLE
+message ImageChunk {
+  uint32 event_id = 1; // event id image belongs to
+  uint32 image_index = 2; // which image chunk belongs to
+  uint32 chunk_sequence = 3; // which chunk number
+  bool is_last_chunk = 4; // if last chunk
+  bytes payload = 5; // payload size
+  uint32 total_chunks = 6; // Total number of chunks for this image.
+}
+
+// Phone requests image transfer (e.g., if interrupted or transferred later)
+message ImageTransferRequest {
+  uint32 event_id = 1; // event id of image requested
+  uint32 start_from_image = 2; // indicate which is first image  
+  uint32 start_from_chunk = 3;  // indicate which chunk (for resume after disconnect)
+}
+
+//Phone ack successful receipt of an entire event.
+message EventTransferAck{
+  uint32 event_id = 1; //Event successfully recieved by phone.
+}
+
+// Phone writes settings to embedded system
+message Settings {
+  uint32 images_per_event = 1; // how many images per event are taken
+}
+
+// Embedded system exposes this as read
+message DeviceStatus {
+  uint32 protocol_version = 1; // protocol version for future changes and compatibility
+  uint32 battery_percent = 2; // battery percentage (0-100)
+  uint32 pending_events = 3; // number of pending events (not transmitted yet)
+  uint32 storage_available_percent = 4; // available storage percentage (0-100)
+}
+
+//Phone request a list of pending events
+message PendingEventListRequest{
+  //empty message as list requires no parameters.
+}
+
+// In case event notifications are missed, phone can request a list of pending events from embedded system
+message PendingEventList {
+  repeated uint32 event_ids = 1; // unique event id
+}
+
+// Phone requests notification for specific event (e.g., when initial notification missed)
+message EventInfoRequest {
+  uint32 event_id = 1; // request notification of specific event to be resent
+}
