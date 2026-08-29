@@ -49,7 +49,6 @@ function AppStack() {
 
         setupDatabase();
     }, []);
-
     return (
         <Stack
             screenOptions={{
