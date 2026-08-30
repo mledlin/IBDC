@@ -24,8 +24,9 @@ export type DeviceStatus = {
  * Protobuf ImageFormat enum.
  */
 export enum ImageFormat {
-    JPEG = 0,
-    PNG = 1,
+    UNSPECIFIED = 0,
+    JPEG = 1,
+    PNG = 2,
 }
 
 /**
@@ -48,6 +49,18 @@ export type ImageChunk = {
     chunkSequence: number;
     isLastChunk: boolean;
     payload: Uint8Array;
+    totalChunks: number;
+};
+
+/**
+ * Protobuf ImageInfo message
+ */
+export type ImageInfo = {
+    eventId: number;
+    imageIndex: number;
+    imageSizeBytes: number;
+    totalChunks: number;
+    imageFormat: ImageFormat;
 };
 
 /**
@@ -57,6 +70,27 @@ export type ImageTransferRequest = {
     eventId: number;
     startFromImage: number;
     startFromChunk: number;
+};
+
+/**
+ * Protobuf EventTransferAck message.
+ */
+export type EventTransferAck = {
+    eventId: number;
+};
+
+/**
+ * Protobuf Settings message.
+ */
+export type Settings = {
+    imagesPerEvent: number;
+};
+
+/**
+ * Protobuf PendingEventList message.
+ */
+export type PendingEventList = {
+    eventIds: number[];
 };
 
 /**
@@ -78,8 +112,10 @@ export interface BLEAdapter {
     requestPendingEvents(): Promise<number[]>;
     requestEventInfo(eventId: number): Promise<EventNotification>;
     requestImageTransfer(request: ImageTransferRequest): Promise<void>;
+    acknowledgeEvent(eventId: number): Promise<void>;
 
     // Message Pushes From Device
     onEventNotification(listener: (event: EventNotification) => void,): () => void;
     onImageChunk(listener: (imageChunk: ImageChunk) => void,): () => void;
+    onImageInfo(listener: (imageInfo: ImageInfo) => void,): () => void;
 }
