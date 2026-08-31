@@ -129,136 +129,72 @@ export default function MainScreen() {
                 contentContainerStyle={styles.content}
                 showsVerticalScrollIndicator={false}
             >
+                {/* Stat cards row */}
+                <View style={styles.statsRow}>
+                    <View style={[styles.statCard, {
+                        backgroundColor: theme.colors.surface,
+                        borderColor: theme.colors.border
+                    }]}>
+                        <View style={styles.statHeader}>
+                            <Ionicons name="bluetooth" size={18} color={theme.colors.primary}/>
+                            <Text
+                                style={[styles.statTitle, {color: theme.colors.textSecondary}]}>{getStatusText(currentDevice.status)}</Text>
+                        </View>
+                        <Pressable
+                            style={[styles.button, {
+                                backgroundColor: theme.colors.primary,
+                                borderRadius: theme.radii.md
+                            }]}
+                            onPress={() => router.push("/PairDevice")}
+                        >
+                            <Text style={[styles.buttonText, {color: theme.colors.primaryForeground}]}>Pair
+                                Device</Text>
+                        </Pressable>
+                    </View>
+
+                    <View style={[styles.statCard, {
+                        backgroundColor: theme.colors.surface,
+                        borderColor: theme.colors.border
+                    }]}>
+                        <View style={styles.statHeader}>
+                            <Ionicons name="battery-half-outline" size={18} color={theme.colors.textSecondary}/>
+                            <Text style={[styles.statTitle, {color: theme.colors.textSecondary}]}>Battery</Text>
+                        </View>
+                        <Text
+                            style={[styles.statBigNumber, {color: theme.colors.textSecondary}]}>{currentDevice.battery}%</Text>
+                        <BatteryBar level={currentDevice.battery} theme={theme}/>
+                    </View>
+
+                    <View style={[styles.statCard, {
+                        backgroundColor: theme.colors.surface,
+                        borderColor: theme.colors.border
+                    }]}>
+                        <View style={styles.statHeader}>
+                            <Ionicons name="server-outline" size={18} color={theme.colors.textSecondary}/>
+                            <Text style={[styles.statTitle, {color: theme.colors.textSecondary}]}>Storage</Text>
+                        </View>
+                        <Text
+                            style={[styles.statBigNumber, {color: theme.colors.textSecondary}]}>{storagePercent}%</Text>
+                        <StorageBar level={storagePercent} theme={theme}/>
+                    </View>
+                </View>
+
                 {/* Device image card */}
                 <View style={[styles.imageCard, {
                     backgroundColor: theme.colors.surface,
                     borderColor: theme.colors.border
                 }]}>
-                    <View style={styles.topRow}>
-                    <View style={styles.connectStatus}>
-                        <View 
-                            style ={[
-                                styles.connectedDot,
-                                {
-                                    backgroundColor:
-                                    currentDevice.status === "connected"
-                                    ? "#16a34a"
-                                    : currentDevice.status === "pairing"
-                                    ? "#0961d4"
-                                    : "#ef4444"
-                                }
-                                ]}
-                            />
-                            <Ionicons
-                                name="bluetooth"
-                                size={16}
-                                color={theme.colors.textSecondary}
-                                />
-                            <Text 
-                                style={[
-                                    styles.connectionText,
-                                    {color: theme.colors.textSecondary}
-                                    ]}
-                                >
-                                {getStatusText(currentDevice.status)}
-                            </Text>
-                            <Pressable
-                                onPress={() => router.push("/PairDevice")}
-                                style ={[
-                                    styles.pairButton,
-                                    {borderColor: theme.colors.primary}
-                                ]}
-                                >
-                                    <Text
-                                    style={[
-                                        styles.pairText,
-                                        {color: theme.colors.primary}
-                                    ]}
-                                    >
-                                        Pair Device
-                                    </Text>
-                            </Pressable>
-                        </View>
-                    </View>
-                    
                     <Text style={[styles.batteryText, {color: theme.colors.text}]}>IBDC</Text>
                     <Image
                         source={require('../assets/images/device-placeholder.png')}
                         style={styles.productImage}
                         resizeMode="contain"
                     />
-                    {/* Battery status */}
-                    <View style={styles.metricRow}>
-                    <View style={styles.deviceMetric}>
-                        <View style={styles.metricHead}>
-                            <View style={styles.metricLabel}>
-                            <Ionicons
-                                name="battery-half-outline"
-                                size={18}
-                                color={theme.colors.textSecondary}
-                                />
-                            <Text
-                                style={[
-                                    styles.metricTitle,
-                                    {color: theme.colors.textSecondary}
-                                ]}>
-                                    Battery
-                                    </Text>
-                                   </View>
-                        <Text
-                            style={[
-                                styles.metricValue,
-                                {color: theme.colors.text}
-                            ]}>
-                                {currentDevice.battery}%
-                        </Text>
-                        </View>
-                    <BatteryBar
-                        level={currentDevice.battery}
-                        theme={theme}
-                        />
-                    </View>
-
-                    {/* Storage status */}
-                    <View style={styles.deviceMetric}>
-                        <View style={styles.metricHead}>
-                            <View style={styles.metricLabel}>
-                                <Ionicons
-                                name="server-outline"
-                                size={18}
-                                color={theme.colors.textSecondary}
-                                />
-                                <Text
-                                style={[
-                                    styles.metricTitle,
-                                    {color: theme.colors.textSecondary}
-                                ]} >
-                                    Storage
-                                    </Text>
-                                </View>
-                                <Text 
-                                    style={[
-                                        styles.metricValue,
-                                        {color: theme.colors.text}
-                                    ]} >
-                                        {Math.round(storagePercent)}%
-                                        </Text>
-                                </View>
-                                <StorageBar
-                                    level={storagePercent}
-                                    theme={theme}
-                                    />
-                                </View>
-                                </View>
-                                <Text
-                                style ={[
-                                    styles.deviceMeta,
-                                    {color: theme.colors.textSecondary}                 
-                                ]}
-                                >
-                                    Firmware {currentDevice.firmwareVersion} • Synced {currentDevice.lastSynced}
+                    <Text style={[styles.batteryText, {color: theme.colors.textSecondary}]}>
+                        Firmware {currentDevice.firmwareVersion} • Synced {currentDevice.lastSynced}
                     </Text>
                 </View>
+
                 {/* Action buttons */}
                 <View style={[styles.actionsCard, {
                     backgroundColor: theme.colors.surface,
@@ -299,19 +235,21 @@ const styles = StyleSheet.create({
     safe: {flex: 1},
     scroll: {flex: 1},
     content: {padding: 20},
-    topRow:{width: "100%", flexDirection: "row", justifyContent: "flex-start", marginBottom: 12},
-    metricRow: {width:"100%", flexDirection: "row", justifyContent: "space-between", marginBottom: 18, paddingHorizontal: 30},
-    connectStatus: {flexDirection: "row", alignItems: "center", gap: 6},
-    connectedDot: {width: 8, height: 8, borderRadius: 4},
-    connectionText: {fontSize: 12, fontWeight: "600"},
-    pairButton: {marginLeft: 6, borderWidth: 1, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4},
-    pairText: {fontSize: 12, fontWeight: "700"},
-    deviceMetric: {width:100, marginBottom: 18},
-    metricHead: {flexDirection: "row", alignItems: "center", marginBottom: 8 },
-    metricLabel: {flexDirection: "row", alignItems: "center", gap: 6},
-    metricTitle: {fontSize: 13, fontWeight: "600"},
-    metricValue: {fontsize: 15, fontweight: "800", marginLeft: 5},
-    deviceMeta: {fontsize: 11, fontWeight: "600", marginTop: 2},
+    statsRow: {flexDirection: 'row', gap: 12, marginBottom: 24},
+    statCard: {
+        flex: 1,
+        borderRadius: 18,
+        borderWidth: 1,
+        padding: 12,
+        shadowColor: "#000",
+        shadowOpacity: 0.08,
+        shadowRadius: 6,
+        shadowOffset: {width: 0, height: 2},
+        elevation: 5,
+    },
+    statHeader: {flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8},
+    statTitle: {fontSize: 12, fontWeight: '600'},
+    statBigNumber: {fontSize: 28, fontWeight: '800', marginBottom: 10},
     batteryWrapper: {flexDirection: 'row', alignItems: 'center', gap: 8},
     batteryOuter: {flex: 1, height: 8, borderRadius: 4, overflow: 'hidden'},
     batteryFill: {height: '100%', borderRadius: 4},

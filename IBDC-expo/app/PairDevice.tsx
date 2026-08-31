@@ -99,7 +99,7 @@ export default function PairDevice() {
           <Text style= {[styles.title, { color: theme.colors.textSecondary }]}>Connect your IBDC device</Text>
           <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>
             Turn on Bluetooth, make sure your device is nearby, and tab the button 
-            below to search for available devices.
+            beloww to search for available devices.
           </Text>
         
         <View style={styles.infoBox}>
