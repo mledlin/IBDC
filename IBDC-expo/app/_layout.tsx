@@ -14,6 +14,8 @@ import { View, Text, Image } from "react-native";
 import { ThemeProvider, useTheme } from "@/context/ThemeContext";
 import { initDatabase } from "@/database/database";
 import { useEffect } from "react";
+import { requestBluetoothPermissions} from "@/hooks/PermissionsHandler";
+import { Platform } from "react-native";
 
 /**
  * Builds the application's navigation stack.
@@ -48,6 +50,29 @@ function AppStack() {
         }
 
         setupDatabase();
+    }, []);
+
+    // Bluetooth connection code. Asks user for permission to use bluetooth and try to automatically connect to
+    // the IBDC device if the device has been connected before.
+    useEffect(() => {
+        // Await can only be used within asynchronous functions, hence the anonymous function here
+        (async () => {
+            if (await requestBluetoothPermissions()) {
+                console.log("Bluetooth permissions granted");
+            } else {
+                console.log("Bluetooth permissions denied.");
+                console.log("Operating System: " + Platform.OS + "\n");
+                console.log("OS Version: " + Platform.Version+ "\n");
+            }
+        })();
+
+        // These are all bluetooth module responsibilities.
+        // Now that permissions have been verified: TODO
+        // 1. Scan for devices
+        // 2. Compare saved deviceID in database to discovered devices
+        // 3. Connect if possible and update user on connection status
+
+
     }, []);
     return (
         <Stack

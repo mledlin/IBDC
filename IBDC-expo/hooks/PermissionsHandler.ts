@@ -3,21 +3,33 @@
  * This class will be used as a single point where permissions can be requested. This is a utility class sp I think all
  * methods are going to be public static.
  */
-import {Platform} from 'react-native';
-import {PermissionsAndroid} from "react-native";
-// 1. Request permissions for Bluetooth and Location Services
+import {Platform, PermissionsAndroid} from 'react-native';
 
-// 2. Export an object that contains all the necessary data for requesting permissions
+// 1. Request permissions for Bluetooth (✓) and Location Services(ⅹ)
+
+// 2. Export an object that contains all the necessary data for verifying and requesting permissions
 
 
 
-//Private functions ----------------------------------------------------------------------------------------------------
+//Public functions ----------------------------------------------------------------------------------------------------
 
-// This code was found here -> https://dotintent.github.io/react-native-ble-plx/#getting-started
-const requestBluetoothPermission = async () => {
+
+
+// This code was found here at https://dotintent.github.io/react-native-ble-plx/#getting-started.
+/**
+ * requestBluetoothPermissions
+ * Parameters: none
+ * returns: a promise where on success a boolean value of true is returned
+ */
+export async function requestBluetoothPermissions() {
+
+    // Permission automatically granted on iOS if 'NSBluetoothAlwaysUsageDescription' is declared in the infoPlist file.
+    // A prompt asking the user for permission should automatically pop up when scanning begins.
     if (Platform.OS === 'ios') {
         return true
     }
+
+    // Android requires extra queries to guarantee
     if (Platform.OS === 'android' && PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION) {
         const apiLevel = parseInt(Platform.Version.toString(), 10)
 
@@ -42,6 +54,21 @@ const requestBluetoothPermission = async () => {
     console.log("Permissions were not granted")
     return false
 }
+
+
+/*
+export async function requestLocationServices(): Promise<boolean> {
+    // Like bluetooth, depending on device and OS, the protocol for accessing location information may vary.
+}
+ */
+
+
+
+
+
+
+
+
 
 
 
