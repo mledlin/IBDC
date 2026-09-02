@@ -8,6 +8,7 @@ export interface BleAdapter {
      * @param deviceId The ID of the BLE device to connect to.
      * @returns A promise that resolves when the connection is successful.
      */
+    scan(): Promise<BleDeviceInfo[]>;
     connect(deviceId: string): Promise<void>;
     disconnect(): Promise<void>;
     sendData(data: Uint8Array): Promise<void>;

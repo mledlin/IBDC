@@ -1,20 +1,12 @@
 import React from "react";
 import { Modal, View, Text, FlatList, Pressable, StyleSheet, } from "react-native";
-
-type BluetoothDevice = {
-     id: string;
-    name: string;
-     battery: number;
-    storage: { used: number; total: number };
-    firmwareVersion: string;
-    lastSynced: string;
-}
+import {BleDeviceInfo} from "@/ble/BleAdapter";
 
 type BluetoothDeviceModalProps = {
     visible: boolean; 
-    devices: BluetoothDevice[];
+    devices: BleDeviceInfo[];
     onClose: () => void;
-    onSelectDevice: (device: BluetoothDevice) => void;
+    onSelectDevice: (device: BleDeviceInfo) => void;
 }
 
 export default function BluetoothDeviceModal({ visible, devices, onClose, onSelectDevice,}: BluetoothDeviceModalProps ){
@@ -57,7 +49,7 @@ export default function BluetoothDeviceModal({ visible, devices, onClose, onSele
 const styles = StyleSheet.create({
     overlay:{
         flex: 1, 
-        backgroundColor: "rbga(0,0,0,0.5)", 
+        backgroundColor: "rgba(0,0,0,0.5)", 
         justifyContent: "center", 
         alignItems: "center",
         padding: 20,

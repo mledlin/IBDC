@@ -11,18 +11,8 @@ import BluetoothDeviceModal from "@/components/ui/BluetoothDeviceModal";
 import { useDevice } from "@/context/DeviceContext";
 import { useRouter } from "expo-router";
 import { useTheme } from "@/context/ThemeContext";
+import { BleDeviceInfo } from "@/ble/BleAdapter";
 
-/**
- * Represents one selectable Bluetooth device shown.
- */
-type DeviceItem = {
-  id: string;
-  name: string;
-  battery: number;
-  storage: { used: number; total: number };
-  firmwareVersion: string;
-  lastSynced: string;
-};
 
 /**
  * Fallback color constants used in the stylesheet.
@@ -58,12 +48,25 @@ const COLORS = {
 export default function PairDevice() {
   const { theme } = useTheme();
   const router = useRouter();
-  const {setDevice}= useDevice();
+  const { devices, scan, connect, } = useDevice();
   const [modalVisible, setModalVisable] = useState(false);
-  const [devices, setDevices] = useState([
-    {id: "Pretend BT ID#1", name: "IBDC Device1", battery: 20, storage: {used: 6.9, total: 8}, firmwareVersion: "v1.0", lastSynced: "Just now"},
-    {id: "Pretend BT ID#2", name: "IBDC Device2",  battery: 100, storage: {used: 1.0, total: 8}, firmwareVersion: "v1.2", lastSynced: "2 minutes ago"},
-  ]);
+  const [isScanning, setIsScanning] = useState(false);
+
+  /**
+   * scans for available BLE devices and opens the device selection modal.
+   */
+  const handleScan = async () => {
+    try {
+      setIsScanning(true);
+      await scan();
+      setModalVisable(true);
+    } catch (error) {
+      console.error("Error scanning for devices:", error);
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
 
   /**
    * Saves the chosen device into shared device state, marks it as connected, closes the modal,
@@ -71,20 +74,16 @@ export default function PairDevice() {
    *
    * @param device The device selected from the modal list.
    */
- const handleSelectDevice = (device: (DeviceItem)) => {
-  setModalVisable(false);
-  setDevice({
-    id: device.id, 
-    name: device.name || "Unnamed Device", 
-    status: "connected",
-    battery: device.battery,
-    storage: device.storage,
-    firmwareVersion: device.firmwareVersion,
-    lastSynced: device.lastSynced,
-  })
-  router.back();
+ const handleSelectDevice = async (device: BleDeviceInfo) => {
+  try {
+    await connect(device.id);
+    setModalVisable(false);
+    router.back();
+  } catch (error) {
+    console.error("Error connecting to device:", error);
+  }
  };
-  
+ 
   return (
     <View style={[styles.screen, { backgroundColor: theme.colors.background }]}>
       <View style={[styles.header, { backgroundColor: theme.colors.primary }]}>
@@ -114,13 +113,11 @@ export default function PairDevice() {
             </View>
           </View>
 
-        <Pressable style={[styles.button, { backgroundColor: theme.colors.primary }]} onPress={() => setModalVisable(true)}>
+        <Pressable style={[styles.button, { backgroundColor: theme.colors.primary },]} onPress={handleScan} disabled={isScanning}>
        <Ionicons name="bluetooth-outline" size={18} color={theme.colors.primaryForeground} />
-      <Text style={[styles.buttonText, { color: theme.colors.primaryForeground }]}>Scan for Devices</Text>
+      <Text style={[styles.buttonText, { color: theme.colors.primaryForeground }]}>{isScanning ? "Scanning..." : "Scan for Devices"}</Text>
       </Pressable>
 
-      
-      
       <BluetoothDeviceModal
       visible={modalVisible}
       devices={devices}
