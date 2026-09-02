@@ -283,7 +283,7 @@ export default function MainScreen() {
 
                 <Pressable
                     style={styles.navItem}
-                    onPress={() => router.push("/")}
+                    onPress={() => router.push("/MainScreen")}
                 >
                     <Ionicons
                         name="home"

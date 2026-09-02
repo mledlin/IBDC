@@ -109,6 +109,22 @@ export default function RideSession() {
     const hasNextPage = endIndex < filteredSessions.length;
     const hasPreviousPage = currentPage > 0;
 
+    const totalSessions = allSessions.length;
+
+    const totalIncidents = allSessions.reduce(
+        (total, session) => total + session.incidents.length,
+        0
+    );
+
+    const totalNeedReview = allSessions.reduce(
+        (total, session) =>
+            total +
+            session.incidents.filter(
+                (incident: any) => !isIncidentComplete(incident)
+            ).length,
+        0
+    );
+
     /**
      * Scrolls the main screen back to the top. Used after paging and clearing filters.
      */
@@ -250,24 +266,31 @@ export default function RideSession() {
                 ref={scrollViewRef}
                 contentContainerStyle={styles.scrollContainer}>
                 <View style={styles.display}>
-                    <View
-                        style={[
-                            styles.headerBox, {backgroundColor: theme.colors.primary, borderColor: theme.colors.border},
-                            showFilters && styles.compactHeaderBox,
-                        ]}
-                    >
-                        <View>
-                            <Text style={[styles.microheader, {color: theme.colors.primaryForeground}]}>History</Text>
-                            <Text style={[styles.headerText, {color: theme.colors.primaryForeground}]}>Ride
-                                Sessions</Text>
+                    <View style={styles.historyHeader}>
+                        <View style={styles.historyTitleBlock}>
+                            <Text
+                                style={[
+                                    styles.microheader,
+                                    {color: theme.colors.textSecondary},
+                                ]}
+                            >
+                                HISTORY
+                            </Text>
+                            <Text
+                                style={[
+                                    styles.headerText,
+                                    {color: theme.colors.text},
+                                ]}
+                            >
+                                Ride Sessions
+                            </Text>
                         </View>
+
                         <TouchableOpacity
                             style={[
                                 styles.filterButton,
                                 {
-                                    backgroundColor: showFilters
-                                        ? theme.colors.primary
-                                        : theme.colors.background,
+                                    backgroundColor: theme.colors.surface,
                                     borderColor: theme.colors.border,
                                 },
                             ]}
@@ -276,17 +299,96 @@ export default function RideSession() {
                             <Ionicons
                                 name="options-outline"
                                 size={16}
-                                color={
-                                    showFilters
-                                        ? theme.colors.primaryForeground
-                                        : theme.colors.text
-                                }
+                                color={theme.colors.text}
                             />
-
-                            <Text style={[styles.filterButtonText,
-                                {color: showFilters ? theme.colors.primaryForeground : theme.colors.text},
-                            ]}>Filter</Text>
+                            <Text
+                                style={[
+                                    styles.filterButtonText,
+                                    {color: theme.colors.text},
+                                ]}
+                            >
+                                Filter
+                            </Text>
                         </TouchableOpacity>
+                    </View>
+
+                    <View
+                        style={[
+                            styles.summaryBar,
+                            {
+                                backgroundColor: theme.colors.surface,
+                                borderColor: theme.colors.border,
+                            },
+                        ]}
+                    >
+                        <View
+                            style={[
+                                styles.summaryItem,
+                                styles.summaryItemDivider,
+                                {borderColor: theme.colors.border},
+                            ]}
+                        >
+                            <Text
+                                style={[
+                                    styles.summaryNumber,
+                                    {color: theme.colors.primary},
+                                ]}
+                            >
+                                {totalSessions}
+                            </Text>
+                            <Text
+                                style={[
+                                    styles.summaryLabel,
+                                    {color: theme.colors.textSecondary},
+                                ]}
+                            >
+                                Sessions
+                            </Text>
+                        </View>
+
+                        <View
+                            style={[
+                                styles.summaryItem,
+                                styles.summaryItemDivider,
+                                {borderColor: theme.colors.border},
+                            ]}
+                        >
+                            <Text
+                                style={[
+                                    styles.summaryNumber,
+                                    {color: theme.colors.primary},
+                                ]}
+                            >
+                                {totalIncidents}
+                            </Text>
+                            <Text
+                                style={[
+                                    styles.summaryLabel,
+                                    {color: theme.colors.textSecondary},
+                                ]}
+                            >
+                                Incidents
+                            </Text>
+                        </View>
+
+                        <View style={styles.summaryItem}>
+                            <Text
+                                style={[
+                                    styles.summaryNumber,
+                                    {color: theme.colors.danger},
+                                ]}
+                            >
+                                {totalNeedReview}
+                            </Text>
+                            <Text
+                                style={[
+                                    styles.summaryLabel,
+                                    {color: theme.colors.textSecondary},
+                                ]}
+                            >
+                                Need Review
+                            </Text>
+                        </View>
                     </View>
 
                     {showFilters && (
@@ -373,24 +475,45 @@ export default function RideSession() {
                                     )}
                                 </View>
                                 {session.incidents.length === 0 ? (
-                                    <View style={[styles.noIncidentContainer, { backgroundColor: theme.colors.background }]}>
-                                        <Ionicons
-                                            name="checkmark-circle-outline"
-                                            size={28}
-                                            color={theme.colors.primary}
-                                        />
+                                    <View style={styles.noIncidentContainer}>
+                                        <View style={styles.noIncidentMessage}>
+                                            <Ionicons
+                                                name="checkmark-circle-outline"
+                                                size={22}
+                                                color={theme.colors.textSecondary}
+                                            />
 
-                                        <Text style={[styles.noIncidentText, { color: theme.colors.text }]}>
-                                            No incidents recorded!
-                                        </Text>
+                                            <Text
+                                                style={[
+                                                    styles.noIncidentText,
+                                                    {color: theme.colors.textSecondary},
+                                                ]}
+                                            >
+                                                No incidents recorded
+                                            </Text>
+                                        </View>
 
                                         <TouchableOpacity
-                                            style={[styles.deleteSessionButton, { backgroundColor: theme.colors.danger }]}
+                                            style={[
+                                                styles.deleteSessionButton,
+                                                {borderColor: theme.colors.danger},
+                                            ]}
+                                            onPress={() => confirmDeleteSession(session)}
+                                        >
+                                            <Ionicons
+                                                name="trash-outline"
+                                                size={15}
+                                                color={theme.colors.danger}
+                                            />
 
-                                            onPress={() => confirmDeleteSession(session)}>
-
-                                            <Text style={styles.deleteSessionButtonText}>Delete Session</Text>
-
+                                            <Text
+                                                style={[
+                                                    styles.deleteSessionButtonText,
+                                                    {color: theme.colors.danger},
+                                                ]}
+                                            >
+                                                Delete
+                                            </Text>
                                         </TouchableOpacity>
                                     </View>
                                 ) : (
@@ -415,32 +538,35 @@ export default function RideSession() {
                                                         borderColor: theme.colors.border
                                                     },]}
                                                     onPress={() => handleIncidentPress(incident)}>
-                                                    {complete ? (
-                                                        selectedImage ? (
-                                                            <Image
-                                                                source={selectedImage.uri}
-                                                                style={styles.incidentImage}
-                                                                resizeMode="cover"
-                                                            />
-                                                        ) : (
-                                                            <View
-                                                                style={[styles.placeholderBox, {backgroundColor: theme.colors.surface},]}>
-                                                                <Ionicons name="image-outline" size={26}
-                                                                          color={theme.colors.textSecondary}/>
-                                                                <Text
-                                                                    style={[styles.placeholderText, {color: theme.colors.textSecondary}]}>
-                                                                    No Image
-                                                                </Text>
-                                                            </View>
-                                                        )
+                                                    {selectedImage ? (
+                                                        <Image
+                                                            source={selectedImage.uri}
+                                                            style={styles.incidentImage}
+                                                            resizeMode="cover"
+                                                        />
                                                     ) : (
                                                         <View
-                                                            style={[styles.actionRequiredBox, {backgroundColor: theme.colors.primary},]}>
-                                                            <Ionicons name="alert-circle-outline" size={26}
-                                                                      color={theme.colors.primaryForeground}/>
+                                                            style={[styles.placeholderBox, {backgroundColor: theme.colors.surface},]}>
+                                                            <Ionicons name="image-outline" size={26}
+                                                                      color={theme.colors.textSecondary}/>
                                                             <Text
-                                                                style={[styles.actionRequiredText, {color: theme.colors.primaryForeground}]}>
-                                                                Action Required
+                                                                style={[styles.placeholderText, {color: theme.colors.textSecondary}]}>
+                                                                No Image
+                                                            </Text>
+                                                        </View>
+                                                    )}
+
+                                                    {!complete && (
+                                                        <View
+                                                            style={[styles.incidentReviewBadge, {backgroundColor: theme.colors.primary}]}>
+                                                            <Ionicons
+                                                                name="alert"
+                                                                size={11}
+                                                                color={theme.colors.primaryForeground}
+                                                            />
+                                                            <Text
+                                                                style={[styles.incidentReviewText, {color: theme.colors.primaryForeground}]}>
+                                                                Review
                                                             </Text>
                                                         </View>
                                                     )}
@@ -512,29 +638,67 @@ const styles = StyleSheet.create({
         width: "100%",
     },
     microheader: {
-        fontSize: 13,
-        fontWeight: "600",
-        marginBottom: 4,
+        fontSize: 11,
+        fontWeight: "700",
+        letterSpacing: 1,
+        marginBottom: 3,
     },
 
-    headerBox: {
+    summaryBar: {
+        width: "100%",
+        height: 72,
         borderWidth: 1,
-        borderRadius: 24,
-        paddingVertical: 18,
-        paddingHorizontal: 18,
+        borderRadius: 18,
         flexDirection: "row",
         alignItems: "center",
-        justifyContent: "space-between",
         marginBottom: 14,
-        shadowColor: "#000",
-        shadowOpacity: 0.06,
-        shadowRadius: 10,
-        shadowOffset: {width: 0, height: 4},
-        elevation: 4,
+        overflow: "hidden",
     },
+
+    summaryItem: {
+        width: "33.333%",
+        height: "100%",
+        alignItems: "center",
+        justifyContent: "center",
+    },
+
+    summaryItemDivider: {
+        borderRightWidth: 1,
+    },
+
+    summaryNumber: {
+        fontSize: 22,
+        lineHeight: 25,
+        fontWeight: "800",
+        marginBottom: 2,
+    },
+
+    summaryLabel: {
+        fontSize: 9,
+        lineHeight: 11,
+        fontWeight: "700",
+        textTransform: "uppercase",
+        letterSpacing: 0.5,
+        textAlign: "center",
+    },
+
+
+    historyHeader: {
+        flexDirection: "row",
+        alignItems: "flex-end",
+        justifyContent: "space-between",
+        marginBottom: 10,
+    },
+
+    historyTitleBlock: {
+        flex: 1,
+        paddingRight: 12,
+    },
+
     headerText: {
         fontWeight: "800",
-        fontSize: 30,
+        fontSize: 28,
+        lineHeight: 32,
     },
     filterButton: {
         flexDirection: "row",
@@ -585,16 +749,22 @@ const styles = StyleSheet.create({
         textTransform: "uppercase",
     },
     noIncidentContainer: {
-        borderRadius: 18,
-        minHeight: 120,
+        width: "100%",
+        flexDirection: "row",
         alignItems: "center",
-        justifyContent: "center",
-        gap: 10,
-        padding: 20,
+        justifyContent: "space-between",
+        paddingVertical: 8,
     },
+
+    noIncidentMessage: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 7,
+    },
+
     noIncidentText: {
-        fontSize: 16,
-        fontWeight: "600",
+        fontSize: 14,
+        fontWeight: "500",
     },
     incidentRow: {
         paddingRight: 8,
@@ -610,6 +780,22 @@ const styles = StyleSheet.create({
     incidentImage: {
         width: "100%",
         height: "100%",
+    },
+    incidentReviewBadge: {
+        position: "absolute",
+        top: 8,
+        right: 8,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 4,
+        borderRadius: 999,
+        paddingHorizontal: 8,
+        paddingVertical: 5,
+    },
+    incidentReviewText: {
+        fontSize: 10,
+        fontWeight: "800",
+        textTransform: "uppercase",
     },
     actionRequiredBox: {
         flex: 1,
@@ -651,11 +837,8 @@ const styles = StyleSheet.create({
         fontWeight: "800",
     },
 
-    compactHeaderBox: {
-        paddingVertical: 8,
-    },
     filterButtonText: {
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: "700",
     },
     filterPanel: {
@@ -717,14 +900,17 @@ const styles = StyleSheet.create({
         fontWeight: "700",
     },
     deleteSessionButton: {
-        marginTop: 12,
-        paddingVertical: 10,
-        paddingHorizontal: 16,
-        borderRadius: 12,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 5,
+        borderWidth: 1,
+        borderRadius: 999,
+        paddingVertical: 7,
+        paddingHorizontal: 11,
     },
+
     deleteSessionButtonText: {
-        color: "#ffffff",
         fontWeight: "700",
-        fontSize: 14,
+        fontSize: 13,
     },
 });
