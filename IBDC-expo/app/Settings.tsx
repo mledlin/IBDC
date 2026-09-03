@@ -43,7 +43,9 @@ export default function SettingsPage() {
     const {theme} = useTheme();
 
     // TODO Load from a properties file on startup!
-    const [settingOne, setting1] = useState(true);
+    const [locationServices, setLocationServices] = useState(false);
+    const [bluetoothServices, setBluetoothServices] = useState(false);
+    const [uploadPhotosToLibrary, setUploadPhotosToLibrary] = useState(false);
 
     /**
      * Available mock image identifiers used when creating test incidents.
@@ -299,26 +301,37 @@ export default function SettingsPage() {
     };
 
     return (
-        <View style={[styles.container, {backgroundColor: theme.colors.background}]}>
+        <View style={[styles.container, {backgroundColor: theme.colors.background, paddingVertical: 100}]}>
             <ScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}>
 
-                <Text style={[styles.title, {color: theme.colors.text}]}>SETTINGS</Text>
-
+                <Text style={[styles.title, {color: theme.colors.text}]}>CONNECTION SETTINGS</Text>
 
                 <View style={styles.settingsToggle}>
-                    <Switch value={settingOne} onValueChange={setting1} thumbColor={theme.colors.primary}/>
-                    <Text style={[styles.settingLabel, {color: theme.colors.text}]}>Unknown Setting 1</Text>
+                    <Switch value={locationServices} onValueChange={setLocationServices} thumbColor={theme.colors.primary}/>
+                    <Text style={[styles.settingLabel, {color: theme.colors.text}]}>Enable Location Services</Text>
                 </View>
 
+                <View style={styles.settingsToggle}>
+                    <Switch value={bluetoothServices} onValueChange={setBluetoothServices} thumbColor={theme.colors.primary}/>
+                    <Text style={[styles.settingLabel, {color: theme.colors.text}]}>Enable Bluetooth Services</Text>
+                </View>
+
+                <View style={styles.settingsToggle}>
+                    <Switch value={uploadPhotosToLibrary} onValueChange={setUploadPhotosToLibrary} thumbColor={theme.colors.primary}/>
+                    <Text style={[styles.settingLabel, {color: theme.colors.text}]}>Enable Photo Upload</Text>
+                </View>
 
                 {/* Theme picker */}
                 <Text style={[styles.sectionLabel, {color: theme.colors.text}]}>APPEARANCE</Text>
+                <Text style={[styles.title, {color: theme.colors.text}]}>APP THEME</Text>
                 <ThemePicker/>
 
+                <Text style={[styles.title, {color: theme.colors.text, paddingTop: 50}]}>INCIDENT PAGE </Text>
 
                 <View style={styles.retentionSection}>
+
                     <Text style={[styles.retentionLabel, {color: theme.colors.text}]}>Sessions Displayed Per Page</Text>
 
                     <View style={styles.retentionSelector}>
@@ -462,6 +475,7 @@ const styles = StyleSheet.create({
         textAlign: "center",
         marginBottom: 40,
         color: "#333333",
+        paddingTop: 15
     },
     settingsToggle: {
         flexDirection: "row",
