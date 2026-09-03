@@ -5,9 +5,10 @@
  * component, and exposes a custom hook for safely accessing device state.
  */
 
-import React, {createContext, useContext, useState} from "react";
-import { BleAdapter, BleDeviceInfo } from "../ble/BleAdapter";
+import React, {createContext, useContext, useEffect, useState} from "react";
+import { BleAdapter, BleDeviceInfo } from "@/ble/BleAdapter";
 import { MockBleAdapter } from "@/ble/MockBleAdapter";
+import { IBDCCommunicationService, DeviceStatus as IBDCDeviceStatus } from "@/services/IBDCCommunicationService";
 
 
 type ConnectedStatus = 'connected' | 'disconnected' | 'pairing';
@@ -23,6 +24,7 @@ export interface DeviceInfo {
   storage: { used: number; total: number };
   firmwareVersion: string;
   lastSynced: string;
+  pendingEvents?: number; // Number of events on the device not yet acknowledged by the phone. Populated from decoded DeviceStatus messages once the device reports it.
 }
 
 /**
@@ -39,6 +41,11 @@ type DeviceContextType = {
   scan: () => Promise<void>;
   connect: (deviceId: string) => Promise<void>;
   disconnect: () => Promise<void>;
+  // Exposed so other domain services (e.g. incident reporting) can subscribe
+  // directly to message types DeviceContext itself doesn't own, such as
+  // EventNotification, without DeviceContext needing to know about every
+  // message type that flows over BLE.
+  communicationService: IBDCCommunicationService;
 };
 
 /**
@@ -48,6 +55,9 @@ const DeviceContext = createContext<DeviceContextType | undefined>(undefined);
 
 //!!real adatper will be used in production, mock adapter is for testing and development
 const bleAdapter: BleAdapter = new MockBleAdapter();
+
+// Sits between bleAdapter and this context (and any other domain services),
+const communicationService = new IBDCCommunicationService(bleAdapter);
 
 /**
  * Wraps part of the application with shared device state.
@@ -61,6 +71,27 @@ const bleAdapter: BleAdapter = new MockBleAdapter();
 export function DeviceProvider({ children }: { children: React.ReactNode }) {
   const [device, setDevice] = useState<DeviceInfo | null>(null);
   const [devices, setDevices] = useState<BleDeviceInfo[]>([]);
+
+  useEffect(() => {
+    const unsubscribe = communicationService.onDeviceStatus((status: IBDCDeviceStatus) => {
+      setDevice(prevDevice => {
+        if(!prevDevice){
+          return prevDevice;
+        }
+        return { ...prevDevice,
+          battery: status.batteryPercent,
+          pendingEvents: status.pendingEventCount,
+          storage: {
+            used: 100 - status.storageAvailablePercent,
+            total: 100,
+          },
+          lastSynced: new Date().toISOString(),
+        };
+      });
+    });
+
+    return unsubscribe;
+  }, []);
 
   async function scan(): Promise<void> {
     const foundDevices = await bleAdapter.scan();
@@ -92,7 +123,7 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <DeviceContext.Provider value={{ device, devices, isConnected: bleAdapter.isConnected(), scan, connect, disconnect, }}>
+    <DeviceContext.Provider value={{ device, devices, isConnected: bleAdapter.isConnected(), scan, connect, disconnect, communicationService }}>
       {children}
     </DeviceContext.Provider>
   );

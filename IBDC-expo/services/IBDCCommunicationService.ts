@@ -51,13 +51,13 @@ export interface EventNotification {
   distanceCm: number;
   timeOffsetMs: number;
   imageCount: number;
-  imageFormat: String;
+  imageFormat: string;
    // enum name as string, e.g., "IMAGE_FORMAT_JPEG". "IMAGE_FORMAT_JPEG" and "IMAGE_FORMAT_UNSPECIFIED" 
    // are the only two formats currently supported by the device. The device will return an error if any other format is requested.
 }
 
 export interface DeviceStatus {
-  ProtocolVersion: number;
+  protocolVersion: number;
   batteryPercent: number;
   pendingEventCount: number;
   storageAvailablePercent: number;
@@ -117,13 +117,13 @@ export class IBDCCommunicationService {
     };
 
     /** Subscribe to decoded EventNotification messages. Returns an unsubscribe function. */
-    subscribeToEventNotifications(listener: EventNotificationListener): Unsubscribe {
+    onEventNotifications(listener: EventNotificationListener): Unsubscribe {
         this.eventNotificationListeners.add(listener);
         return () => this.eventNotificationListeners.delete(listener);
     }
 
     /** Subscribe to decoded DeviceStatus messages. Returns an unsubscribe function. */
-    subscribeToDeviceStatus(listener: DeviceStatusListener): Unsubscribe {
+    onDeviceStatus(listener: DeviceStatusListener): Unsubscribe {
         this.deviceStatusListeners.add(listener);
         return () => this.deviceStatusListeners.delete(listener);
     }
