@@ -35,12 +35,12 @@ interface DeviceInfo {
  * is currently available from context.
  */
 const demoDevice: DeviceInfo = {
-    name: 'IBDC Proto X',
-    status: 'connected',
-    battery: 78,
-    storage: {used: 3.4, total: 8},
-    firmwareVersion: 'v1.0',
-    lastSynced: '2 min ago',
+    name: 'No Device',
+    status: 'disconnected',
+    battery: 0,
+    storage: {used: 0, total: 1},
+    firmwareVersion: '-',
+    lastSynced: 'Never',
 };
 
 /**
