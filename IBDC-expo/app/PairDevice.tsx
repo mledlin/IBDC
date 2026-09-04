@@ -80,6 +80,7 @@ export default function PairDevice() {
     setModalVisable(false);
     router.back();
   } catch (error) {
+    //add actual error handling here. For now, just log the error to the console.
     console.error("Error connecting to device:", error);
   }
  };

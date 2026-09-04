@@ -9,6 +9,7 @@ import React, {createContext, useContext, useEffect, useState} from "react";
 import { BleAdapter, BleDeviceInfo } from "@/ble/BleAdapter";
 import { MockBleAdapter } from "@/ble/MockBleAdapter";
 import { IBDCCommunicationService, DeviceStatus as IBDCDeviceStatus } from "@/services/IBDCCommunicationService";
+import { SimulatedIBDC } from "@/ble/SimulatedIBDC";
 
 
 type ConnectedStatus = 'connected' | 'disconnected' | 'pairing';
@@ -54,10 +55,15 @@ type DeviceContextType = {
 const DeviceContext = createContext<DeviceContextType | undefined>(undefined);
 
 //!!real adatper will be used in production, mock adapter is for testing and development
-const bleAdapter: BleAdapter = new MockBleAdapter();
+// kept as concrete MockBleRefrence because SimulatedIBDC needs simulateIncomming(),
+// which isn't a part of the BleAdapter interface or the real implementation.
+const mockBLEAdapter = new MockBleAdapter();
+const bleAdapter: BleAdapter = mockBLEAdapter;
 
 // Sits between bleAdapter and this context (and any other domain services),
 const communicationService = new IBDCCommunicationService(bleAdapter);
+
+const simulatedDevice = new SimulatedIBDC(mockBLEAdapter);
 
 /**
  * Wraps part of the application with shared device state.
@@ -72,13 +78,16 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
   const [device, setDevice] = useState<DeviceInfo | null>(null);
   const [devices, setDevices] = useState<BleDeviceInfo[]>([]);
 
+  // keep connceted device state in sync with decoded DeviceStatus pushes. 
+  // only update stat is a device is currently set; ignore otherwise
   useEffect(() => {
     const unsubscribe = communicationService.onDeviceStatus((status: IBDCDeviceStatus) => {
       setDevice(prevDevice => {
         if(!prevDevice){
           return prevDevice;
         }
-        return { ...prevDevice,
+        return { 
+          ...prevDevice,
           battery: status.batteryPercent,
           pendingEvents: status.pendingEventCount,
           storage: {
@@ -106,18 +115,26 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
       throw new Error(`Device with ID ${deviceId} not found in scanned devices.`);
     }
 
+    const initalState = simulatedDevice.getState();
+
     setDevice({
       id: deviceId,
       name: selectedDevice.name || "Unknown IBDC Device",
       status: 'connected',
       //Temporary mock values for battery, storage, firmwareVersion, and lastSynced. eventually these will be retrieved from the device itself.
-      battery: 100,
-      storage: { used: 0, total: 100 },
-      firmwareVersion: "0.2.1",
+      battery: initalState.batteryPercent,
+      storage: { 
+        used: 100 - initalState.storageAvailablePercent, 
+        total: 100 },
+      firmwareVersion: initalState.protocolVersion,
       lastSynced: new Date().toISOString(),
+      pendingEvents: initalState.pendingEventCount,
     });
+
+    simulatedDevice.start();
   }
   async function disconnect() {
+    simulatedDevice.stop();
     await bleAdapter.disconnect();
     setDevice(null);
   }

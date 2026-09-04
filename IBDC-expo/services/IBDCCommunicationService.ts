@@ -63,14 +63,41 @@ export interface DeviceStatus {
   storageAvailablePercent: number;
 }
 
+export interface ImageInfo {
+  eventId: number;
+  imageIndex: number;
+  imageSizeBytes: number;
+  totalChunks: number;
+  imageFormat: string; 
+}
+
+export interface ImageChunk {
+    eventId: number;
+    imageIndex: number;
+    chunkSequence: number;
+    isLastChunk: boolean;
+    payload: Uint8Array;
+    totalChunks: number;
+}
+
+export interface PendingEventList {
+    eventIds: number[];
+}
+
 type EventNotificationListener = (message: EventNotification) => void;
 type DeviceStatusListener = (message: DeviceStatus) => void;
+type ImageInfoListener = (message: ImageInfo) => void;
+type ImageChunkListener = (message: ImageChunk) => void;
+type PendingEventListListener = (message: PendingEventList) => void;
 type Unsubscribe = () => void;
 
 export class IBDCCommunicationService {
     private readonly ble: BleAdapter;
     private eventNotificationListeners = new Set<EventNotificationListener>();
     private deviceStatusListeners = new Set<DeviceStatusListener>();
+    private imageInfoListeners = new Set<ImageInfoListener>();
+    private imageChunkListeners = new Set<ImageChunkListener>()
+    private pendingEventListListeners = new Set<PendingEventListListener>();
 
     constructor(ble: BleAdapter) {
         this.ble = ble;
@@ -104,11 +131,23 @@ export class IBDCCommunicationService {
                     this.deviceStatusListeners.forEach(listener => listener(decodedDeviceStatus));
                     break;
                 }
+                case IBDCMessageTag.ImageInfo: {
+                    const decodedImageInfo = ProtobufService.decode(messageType, payload) as unknown as ImageInfo;
+                    this.imageInfoListeners.forEach(listener => listener(decodedImageInfo));
+                    break;
+                }
+                case IBDCMessageTag.ImageChunk: {
+                    const decodedImageChunk = ProtobufService.decode(messageType, payload) as unknown as ImageChunk;
+                    this.imageChunkListeners.forEach(listener => listener(decodedImageChunk));
+                    break;
+                }
+                case IBDCMessageTag.PendingEventList: {
+                    const decodedPendingEventList = ProtobufService.decode(messageType, payload) as unknown as PendingEventList;
+                    this.pendingEventListListeners.forEach(listener => listener(decodedPendingEventList));
+                    break;
+                }
                 default:
-                    // Reminder to self to come back and implement the other message types when the device firmware supports them. 
-                    // ImageInfo, ImageChunk, PendingEventList, ImageTransferRequest, EventTransferAck, Settings, PendingEventListRequest, EventInfoRequest
-                    // are not wired to any listeners yet, so we can ignore them for now.
-                    // add a case and typed interface and on "message name" method here when those flows are builtd.
+                    
                     console.warn(`IBDCCommunicationService: Received unhandled tag ${tag}, ignoring.`);
             }
         } catch (error) {
@@ -126,6 +165,24 @@ export class IBDCCommunicationService {
     onDeviceStatus(listener: DeviceStatusListener): Unsubscribe {
         this.deviceStatusListeners.add(listener);
         return () => this.deviceStatusListeners.delete(listener);
+    }
+
+    /** Subscribe to decoded ImageInfo messages. Returns an unsubscribe function. */
+    onImageInfo(listener: ImageInfoListener): Unsubscribe {
+        this.imageInfoListeners.add(listener);
+        return () => this.imageInfoListeners.delete(listener);
+    }
+
+    /** Subscribe to decoded ImageChunk messages. Returns an unsubscribe function. */
+    onImageChunk(listener: ImageChunkListener): Unsubscribe {
+        this.imageChunkListeners.add(listener);
+        return () => this.imageChunkListeners.delete(listener);
+    }
+
+    /** Subscribe to decoded PendingEventList messages. Returns an unsubscribe function. */
+    onPendingEventList(listener: PendingEventListListener): Unsubscribe {
+        this.pendingEventListListeners.add(listener);
+        return () => this.pendingEventListListeners.delete(listener);
     }
 
     /** Encodes an outgoing message (app to device), frames it with the matching tag bytes and sends it over BLE. */
