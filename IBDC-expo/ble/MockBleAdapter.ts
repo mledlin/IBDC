@@ -3,24 +3,36 @@ import { ProtobufService } from "@/protobuf/ProtobufService";
 import { IBDCMessageTag } from "@/services/IBDCCommunicationService";
 
 export class MockBleAdapter implements BleAdapter {
-    private readonly mockDeviceId: BleDeviceInfo = { id: "mock-IBDC-001", name: "Simulated IBDC" };
 
     private connectedDeviceId: string | null = null;
 
     private recieveCallback: ((data: Uint8Array) => void) | null = null;
 
+    private deviceInfo: BleDeviceInfo | null = null;
+
+    setDeviceInfo(info: BleDeviceInfo): void {
+        this.deviceInfo = info;
+    }
+
+    getDeviceInfo(): BleDeviceInfo | null {
+        return this.deviceInfo;
+    }
     /**
      * Simulates scanning for nearby BLE devices.
      */
     async scan(): Promise<BleDeviceInfo[]> {
-        return [this.mockDeviceId];
+        if(! this.deviceInfo){
+            console.warn("MockBleAdapeter: scan() called but no simulated device has registerd its identity yet.")
+            return[];
+        }
+        return[this.deviceInfo];
     }
 
     /**
      * Simulates connecting to a BLE device.
      */
     async connect(deviceId: string): Promise<void> {
-        if (deviceId !== this.mockDeviceId.id) {
+        if (!this.deviceInfo || deviceId !== this.deviceInfo.id) {
             throw new Error(`Mock BLE device with ID ${deviceId} not found.`);
         }
         this.connectedDeviceId = deviceId;
