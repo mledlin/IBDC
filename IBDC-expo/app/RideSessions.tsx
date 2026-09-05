@@ -21,6 +21,7 @@ import {useFocusEffect} from "expo-router";
 import {isIncidentComplete} from "@/domain/Incident";
 import {deleteSession, getSessionHistoryData} from "@/database/SessionDao";
 import { LinearGradient } from "expo-linear-gradient";
+import {useSafeAreaInsets} from "react-native-safe-area-context";
 
 /**
  * Maximum number of sessions shown on one page.
@@ -49,6 +50,7 @@ export default function RideSession() {
     const [filterHasIncidents, setfilterHasIncidents] = useState(false);
     const [filterActionRequired, setFilterActionRequired] = useState(false);
     const [allSessions, setAllSessions] = useState<any[]>([]);
+    const insets = useSafeAreaInsets();
 
     const scrollViewRef = useRef<ScrollView>(null);
 
@@ -261,7 +263,7 @@ export default function RideSession() {
     }
 
     return (
-        <View style={[styles.screenBackground, {backgroundColor: theme.colors.background}]}>
+        <View style={[styles.screenBackground, {backgroundColor: theme.colors.background, flex: 1, paddingTop: insets.top * 2.5}] }>
             <ScrollView
                 ref={scrollViewRef}
                 contentContainerStyle={styles.scrollContainer}>
