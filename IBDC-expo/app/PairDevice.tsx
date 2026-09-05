@@ -11,6 +11,7 @@ import BluetoothDeviceModal from "@/components/ui/BluetoothDeviceModal";
 import { useDevice } from "@/context/DeviceContext";
 import { useRouter } from "expo-router";
 import { useTheme } from "@/context/ThemeContext";
+import {useSafeAreaInsets} from "react-native-safe-area-context";
 
 /**
  * Represents one selectable Bluetooth device shown.
@@ -86,7 +87,7 @@ export default function PairDevice() {
  };
   
   return (
-    <View style={[styles.screen, { backgroundColor: theme.colors.background }]}>
+    <View style={[styles.screen, { backgroundColor: theme.colors.background, paddingTop: useSafeAreaInsets().top }]}>
       <View style={[styles.header, { backgroundColor: theme.colors.primary }]}>
         <Text style={[styles.headerText, { color: theme.colors.primaryForeground }]}>Pair Device</Text>
       </View>

@@ -125,7 +125,7 @@ export default function MainScreen() {
     return (
         <View style={[styles.safe, {paddingTop: insets.top, backgroundColor: theme.colors.background}]}>
             <ScrollView
-                style={styles.scroll}
+                style={{paddingTop: insets.top}}
                 contentContainerStyle={styles.content}
                 showsVerticalScrollIndicator={false}
             >
@@ -227,13 +227,13 @@ export default function MainScreen() {
                     </View>
                 </View>
             </ScrollView>
+    <View />
         </View>
     );
 }
 
 const styles = StyleSheet.create({
     safe: {flex: 1},
-    scroll: {flex: 1},
     content: {padding: 20},
     statsRow: {flexDirection: 'row', gap: 12, marginBottom: 24},
     statCard: {
