@@ -181,6 +181,22 @@ export default function RideSession() {
     }
 
     /**
+     * Temporary export stub for a ride session.
+     *
+     * This will later open the session export workflow.
+     *
+     * @param session The ride session selected for export.
+     */
+    function handleExportSession(session: any) {
+        console.log("Export session:", session.id);
+
+        Alert.alert(
+            "Export Session",
+            "Session export UI stub."
+        );
+    }
+
+    /**
      * Shows or hides the filter panel.
      */
     function handleToggleFilters() {
@@ -468,13 +484,43 @@ export default function RideSession() {
                                         <Text
                                             style={[styles.sessionMeta, {color: theme.colors.textSecondary}]}>{incidentCount} Incident{incidentCount !== 1 ? "s" : ""}</Text>
                                     </View>
-                                    {actionRequired && (
-                                        <View style={[styles.statusBadge, {backgroundColor: theme.colors.primary}]}>
-                                            <Text
-                                                style={[styles.statusBadgeText, {color: theme.colors.primaryForeground},]}>Needs
-                                                Review</Text>
-                                        </View>
-                                    )}
+                                    <View style={styles.sessionHeaderActions}>
+                                        <TouchableOpacity
+                                            style={[
+                                                styles.sessionExportButton,
+                                                {
+                                                    backgroundColor: theme.colors.background,
+                                                    borderColor: theme.colors.border,
+                                                },
+                                            ]}
+                                            onPress={() => handleExportSession(session)}
+                                            activeOpacity={0.8}
+                                        >
+                                            <Ionicons
+                                                name="open-outline"
+                                                size={17}
+                                                color={theme.colors.text}
+                                            />
+                                        </TouchableOpacity>
+
+                                        {actionRequired && (
+                                            <View
+                                                style={[
+                                                    styles.statusBadge,
+                                                    {backgroundColor: theme.colors.primary},
+                                                ]}
+                                            >
+                                                <Text
+                                                    style={[
+                                                        styles.statusBadgeText,
+                                                        {color: theme.colors.primaryForeground},
+                                                    ]}
+                                                >
+                                                    Needs Review
+                                                </Text>
+                                            </View>
+                                        )}
+                                    </View>
                                 </View>
                                 {session.incidents.length === 0 ? (
                                     <View style={styles.noIncidentContainer}>
@@ -729,6 +775,22 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "flex-start",
         marginBottom: 14,
+        width: "100%",
+    },
+
+    sessionHeaderActions: {
+        alignItems: "flex-end",
+        gap: 8,
+        marginLeft: 10,
+    },
+
+    sessionExportButton: {
+        width: 34,
+        height: 34,
+        borderWidth: 1,
+        borderRadius: 10,
+        alignItems: "center",
+        justifyContent: "center",
     },
     dateText: {
         fontSize: 17,
@@ -743,7 +805,6 @@ const styles = StyleSheet.create({
         borderRadius: 999,
         paddingHorizontal: 10,
         paddingVertical: 4,
-        marginLeft: 10,
     },
     statusBadgeText: {
         fontSize: 11,
