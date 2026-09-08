@@ -42,24 +42,43 @@ export class SimulatedIBDC {
         this.adapter.setDeviceInfo(this.deviceInfo);
     }
     /**Begins periodically pushing DeviceStatus updates, simulating the device's normal hearbeat. Each tick will also advance battery/storage drain slightly */
-    start():void {
+    start(intervalue_ms: number = 5000):void {
+        if(this.statusIntervalId){
+          return;  
+        }
 
+        this.statusIntervalId = setInterval(() => {
+            this.tick();
+            this.pushDeviceStatus();
+        }, intervalue_ms);
     }
     /**Stops the periodic simulation */
     stop(): void {
-
+        if (this.statusIntervalId){
+            clearInterval(this.statusIntervalId);
+            this.statusIntervalId = null;
+        }
     }
     /**Simulates a detection event on demand */
-    triggerEvent():void {
+    triggerEvent(overrides?: EventOverrides):void {
+        const eventId = this.nextEventId++;
+        this.state.pendingEventCount += 1;
 
+        this.adapter.simulateIncomingData(IBDCMessageTag.EventNotification, "EventNotification", {
+            eventId, 
+            distanceCm: overrides?.distanceCm ?? Math.floor(50 + Math.random() *200), 
+            timeOffsetMs: overrides?.timeOffsetMs ?? Math.floor(Math.random() * 500),
+            imageCount: overrides?.imageCount ?? 3, 
+            imageFormat: overrides?.imageFormat ?? "IMAGE_FORMAT_JPEG",
+        });
     }
     /**Pushes the current sumulated DeviceStatus immediately, outside the normal schedule */
     pushDeviceStatus(): void{
-
+        this.adapter.simulateIncomingData(IBDCMessageTag.DeviceStatus, "DeviceStatus", { ...this.state});
     }
     /** Marks an event as acknowleged, decrementing the simuleated pending count */
     acknowledgeEvent(): void{
-
+        this.state.pendingEventCount = Math.max(0, this.state.pendingEventCount - 1);
     }
     /**retuns a read only snapshot of current simulaed device for debugging */
     getState() : Readonly<SimulatedDeviceState> {
@@ -71,6 +90,7 @@ export class SimulatedIBDC {
     }
     /** Advances simulateed device state slightly, called deach tick. */
     private tick(): void {
-
+        this.state.batteryPercent = Math.max(0, this.state.batteryPercent -1);
+        this.state.storageAvailablePercent = Math.max(0, this.state.storageAvailablePercent - .5);
     }
 }
