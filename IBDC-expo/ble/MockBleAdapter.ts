@@ -7,6 +7,9 @@ export class MockBleAdapter implements BleAdapter {
 
     private recieveCallback: ((data: Uint8Array) => void) | null = null;
 
+    // Device-side callback for app -> device sends : Not part of the BLE Adapter interface
+    private deviceReceiveCallback: ((data: Uint8Array) => void) | null = null;
+
     private deviceInfo: BleDeviceInfo | null = null;
 
     setDeviceInfo(info: BleDeviceInfo): void {
@@ -52,8 +55,12 @@ export class MockBleAdapter implements BleAdapter {
             throw new Error("Not connected to a BLE device.");
         }
         // Simulate sending data (in a real implementation, this would interact with the actual BLE device)
-        // send to simulated device when implemented. Reminder to self to change later.
-        console.log(`Mock sending data to device ${this.connectedDeviceId}:`, data);
+        console.log("MockAdapter: app sent datat to simulated device");
+        if (!this.deviceReceiveCallback){
+            console.error("MockBLEAdapter: No deviceReceiveCallback registered")
+            return;
+        }
+        this.deviceReceiveCallback(data);
     }
 
     /**
@@ -61,6 +68,11 @@ export class MockBleAdapter implements BleAdapter {
      */
     onDataReceived(callback: (data: Uint8Array) => void): void {
         this.recieveCallback = callback;
+    }
+
+    // Registers a callback that receives bytes the app sends via sendData()
+    onDeviceReceive(callback: (data: Uint8Array) => void): void {
+        this.deviceReceiveCallback = callback;
     }
 
     /**

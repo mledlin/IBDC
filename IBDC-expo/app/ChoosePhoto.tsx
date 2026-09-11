@@ -7,7 +7,8 @@
  */
 
 import { router, useLocalSearchParams} from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getIncidentImagesByIncidentId, getMockImageSource } from "@/database/ImageDao";
 import { updateIncidentBestImage } from "@/database/IncidentDao";
 import { Text, View, StyleSheet, FlatList, TouchableOpacity, Image, Dimensions } from "react-native";
 import { useTheme } from "@/context/ThemeContext";

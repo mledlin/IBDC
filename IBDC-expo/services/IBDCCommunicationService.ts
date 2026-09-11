@@ -114,7 +114,7 @@ export class IBDCCommunicationService {
                     break;
                 }
                 case "imageChunk": {
-                    const decodedImageChunk = decoded.imageChunck as unknown as ImageChunk;
+                    const decodedImageChunk = decoded.imageChunk as unknown as ImageChunk;
                     this.imageChunkListeners.forEach(listener => listener(decodedImageChunk));
                     break;
                 }
@@ -162,7 +162,7 @@ export class IBDCCommunicationService {
         return () => this.pendingEventListListeners.delete(listener);
     }
 
-    /** Encodes an outgoing message (app to device), frames it with the matching tag bytes and sends it over BLE. */
+    
     async send(payloadField: AppToDevicePayload, data: Record<string,unknown>): Promise<void> {
         const encoded = ProtobufService.encode("AppToDevice", {[payloadField]: data});
         await this.ble.sendData(encoded);

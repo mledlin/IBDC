@@ -52,15 +52,14 @@ export async function getSessionHistoryData() {
             .map((incident: any) => {
                 const incidentImages = images
                     .filter((image: any) => image.incident_id === incident.id)
-                    .map((image: any) => ({
-                        id: image.id,
-                        file_path: image.file_path,
-
-                        // This is mock and should be replaced with the following in future
-                        // implementation, where file_path is local file directory.
-                        uri: getMockImageSource(image.file_path),
-                        // uri: { uri: image.file_path }
-                    }));
+                    .map((image: any) => {
+                        const mockSource = getMockImageSource(image.file_path);
+                        return {
+                            id: image.id,
+                            file_path: image.file_path,
+                            uri: mockSource ?? {uri: image.file_path},
+                        };
+                    });
 
                 return {
                     ...incident,

@@ -10,9 +10,10 @@ import { BleAdapter, BleDeviceInfo } from "@/ble/BleAdapter";
 import { MockBleAdapter } from "@/ble/MockBleAdapter";
 import { IBDCCommunicationService, DeviceStatus as IBDCDeviceStatus } from "@/services/IBDCCommunicationService";
 import { SimulatedIBDC } from "@/ble/SimulatedIBDC";
+import { ImageIngestService } from "@/services/ImageIngestService";
 
 
-type ConnectedStatus = 'connected' | 'disconnected' | 'pairing';
+export type ConnectedStatus = 'connected' | 'disconnected' | 'pairing';
 
 /**
  * Describes the device information stored in shared context.
@@ -48,6 +49,7 @@ type DeviceContextType = {
   // EventNotification, without DeviceContext needing to know about every
   // message type that flows over BLE.
   communicationService: IBDCCommunicationService;
+  triggerTestEvent: (imageCount?: number) => Promise<void>;
 };
 
 /**
@@ -63,6 +65,8 @@ const bleAdapter: BleAdapter = mockBLEAdapter;
 
 // Sits between bleAdapter and this context (and any other domain services),
 const communicationService = new IBDCCommunicationService(bleAdapter);
+
+new ImageIngestService(communicationService);
 
 const simulatedDevice = new SimulatedIBDC(mockBLEAdapter);
 
@@ -92,12 +96,13 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
           ...prevDevice,
           battery: status.batteryPercent,
           pendingEvents: status.pendingEvents,
+          imagesPerEventOnDevice: status.imagesPerEventSetting,
           storage: {
             used: 100 - status.storageAvailablePercent,
             total: 100,
           },
           lastSynced: new Date().toISOString(),
-          imagesPerEventOnDevice: status.imagesPerEventSetting,
+          
         };
       });
     });
@@ -129,9 +134,10 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
       storage: { 
         used: 100 - initalState.storageAvailablePercent, 
         total: 100 },
-      firmwareVersion: initalState.protocolVersion,
+      firmwareVersion: initalState.firmwareVersionLabel,
       lastSynced: new Date().toISOString(),
       pendingEvents: initalState.pendingEventCount,
+      imagesPerEventOnDevice: initalState.imagesPerEventSetting,
     });
 
     simulatedDevice.start();
@@ -142,8 +148,16 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
     setDevice(null);
   }
 
+  // Development testing hook: Makes mock device simulate a detection event with imageCount photos
+  async function triggerTestEvent(imageCount: number = 1): Promise<void>{
+    if (!device) {
+      throw new Error("cannot trigger a test event: no device is connected");
+    }
+    await simulatedDevice.triggerEvent({imageCount})
+  }
+
   return (
-    <DeviceContext.Provider value={{ device, devices, isConnected: bleAdapter.isConnected(), scan, connect, disconnect, communicationService }}>
+    <DeviceContext.Provider value={{ device, devices, isConnected: bleAdapter.isConnected(), scan, connect, disconnect, communicationService, triggerTestEvent }}>
       {children}
     </DeviceContext.Provider>
   );

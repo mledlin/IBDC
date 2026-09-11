@@ -10,18 +10,19 @@ export class ProtobufService {
     /**
      * Encodes a JavaScript object into a Protobuf binary format based on the specified message type.
      */
-    static encode(
-        messageType: string, 
-        data:Record<string, unknown>
-    ): Uint8Array {
-        const type = root.lookupType(`IBDC.${messageType}`);
-        const errMsg = type.verify(data);
+   static encode( messageType: string, data: Record<string, unknown>): Uint8Array {
+     const type = root.lookupType(`IBDC.${messageType}`);
+
+    // Converts normal JS values into their protobuf representation.
+     // In particular, enum names such as "IMAGE_FORMAT_JPEG"
+     // are converted to their numeric protobuf values.
+        const message = type.fromObject(data);
+        const errMsg = type.verify(message);
         if (errMsg) {
             throw new Error(
                 `Invalid ${messageType} protobuf message: ${errMsg}`
             );
-        }
-        const message = type.create(data);
+     }
         return type.encode(message).finish();
     }
 
@@ -40,6 +41,7 @@ export class ProtobufService {
             enums: String,
             bytes: Uint8Array,
             defaults: true, 
+            oneofs: true,
         });
     }
 }
