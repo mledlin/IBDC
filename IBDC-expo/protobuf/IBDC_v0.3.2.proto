@@ -4,7 +4,7 @@ syntax = "proto3";
 
 package IBDC;
 
-/ Messages the phone sends to the embedded device.
+// Messages the phone sends to the embedded device.
 message AppToDevice {
   oneof payload {
     ImageTransferRequest image_transfer_request = 1;

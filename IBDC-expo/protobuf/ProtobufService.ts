@@ -1,5 +1,5 @@
 import * as protobuf from "protobufjs";
-import schema from "./IBDC_v0.2.1.json";
+import schema from "./IBDC_v0.3.2.json";
 
 const root = protobuf.Root.fromJSON(schema);
 

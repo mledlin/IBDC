@@ -1,6 +1,5 @@
 import {BleAdapter, BleDeviceInfo} from "../ble/BleAdapter";
 import { ProtobufService } from "@/protobuf/ProtobufService";
-import { IBDCMessageTag } from "@/services/IBDCCommunicationService";
 
 export class MockBleAdapter implements BleAdapter {
 
@@ -81,7 +80,7 @@ export class MockBleAdapter implements BleAdapter {
     /**
      * Simulates receiving data from the BLE device and invokes the registered callback.
      */
-    simulateIncomingData(tag: IBDCMessageTag, messageType: string, data: Record<string, unknown>): void {
+    simulateIncomingData(payloadField: string, data: Record<string, unknown>): void {
         if (!this.connectedDeviceId) {
             console.warn("Cannot simulate incoming data: Not connected to a BLE device.");
             return;
@@ -92,12 +91,9 @@ export class MockBleAdapter implements BleAdapter {
             return;
         }
 
-        const encoded = ProtobufService.encode(messageType, data);
-        const framed = new Uint8Array(encoded.length + 1);
-        framed[0] = tag;
-        framed.set(encoded, 1);
+        const encoded = ProtobufService.encode("DeviceToApp", {[payloadField]: data})
 
-        this.recieveCallback(framed);
+        this.recieveCallback(encoded);
     }
 
 }

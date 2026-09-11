@@ -1,5 +1,4 @@
 import {MockBleAdapter} from "@/ble/MockBleAdapter";
-import {IBDCMessageTag} from "@/services/IBDCCommunicationService";
 import { BleDeviceInfo } from "./BleAdapter";
 
 interface SimulatedDeviceState {
@@ -7,6 +6,7 @@ interface SimulatedDeviceState {
     batteryPercent: number;
     pendingEventCount: number;
     storageAvailablePercent: number;
+    imagesPerEventSetting: number;
 }
 
 interface EventOverrides {
@@ -17,7 +17,7 @@ interface EventOverrides {
 }
 
 const DEFAULT_DEVICE_INFO: BleDeviceInfo = {
-    id: "v0.1.pb_v0.2.1",
+    id: "v0.1.pb_v0.3.2",
     name: "prototype_dev_simDevice_v0.1"
 }
 
@@ -32,10 +32,11 @@ export class SimulatedIBDC {
         this.adapter = adapter;
         this.deviceInfo = deviceInfo ?? {...DEFAULT_DEVICE_INFO};
         this.state = {
-            protocolVersion: "v0.2.1",
+            protocolVersion: "v0.3.2",
             batteryPercent: 100,
             pendingEventCount: 0, 
             storageAvailablePercent: 100,
+            imagesPerEventSetting: 10,
             ...initialState,
         };
 
@@ -64,7 +65,7 @@ export class SimulatedIBDC {
         const eventId = this.nextEventId++;
         this.state.pendingEventCount += 1;
 
-        this.adapter.simulateIncomingData(IBDCMessageTag.EventNotification, "EventNotification", {
+        this.adapter.simulateIncomingData("eventNotification", {
             eventId, 
             distanceCm: overrides?.distanceCm ?? Math.floor(50 + Math.random() *200), 
             timeOffsetMs: overrides?.timeOffsetMs ?? Math.floor(Math.random() * 500),
@@ -74,7 +75,7 @@ export class SimulatedIBDC {
     }
     /**Pushes the current sumulated DeviceStatus immediately, outside the normal schedule */
     pushDeviceStatus(): void{
-        this.adapter.simulateIncomingData(IBDCMessageTag.DeviceStatus, "DeviceStatus", { ...this.state});
+        this.adapter.simulateIncomingData("deviceStatus", { ...this.state});
     }
     /** Marks an event as acknowleged, decrementing the simuleated pending count */
     acknowledgeEvent(): void{

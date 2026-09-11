@@ -26,6 +26,7 @@ export interface DeviceInfo {
   firmwareVersion: string;
   lastSynced: string;
   pendingEvents?: number; // Number of events on the device not yet acknowledged by the phone. Populated from decoded DeviceStatus messages once the device reports it.
+  imagesPerEventOnDevice?: number;
 }
 
 /**
@@ -80,6 +81,7 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
 
   // keep connceted device state in sync with decoded DeviceStatus pushes. 
   // only update stat is a device is currently set; ignore otherwise
+  //
   useEffect(() => {
     const unsubscribe = communicationService.onDeviceStatus((status: IBDCDeviceStatus) => {
       setDevice(prevDevice => {
@@ -89,12 +91,13 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
         return { 
           ...prevDevice,
           battery: status.batteryPercent,
-          pendingEvents: status.pendingEventCount,
+          pendingEvents: status.pendingEvents,
           storage: {
             used: 100 - status.storageAvailablePercent,
             total: 100,
           },
           lastSynced: new Date().toISOString(),
+          imagesPerEventOnDevice: status.imagesPerEventSetting,
         };
       });
     });
