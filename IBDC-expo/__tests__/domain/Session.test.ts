@@ -1,3 +1,6 @@
+import * as testdb from "./TestableDatabase"
+import {getAllSessions} from "./TestableDatabase";
+import { Session } from "../../domain/Session"
 /**
  * Testing of the session class should be based on the functionality that sessions provide.
  * Sessions are responsible for:
@@ -25,6 +28,43 @@
  *
  */
 
+
+
+
+/**
+ * @Test This method tests to ensure that determineSession() accurately identifies if an existing session exists for
+ * new data or if a new session should be created.
+ *
+ * Cases:                                       Expected State
+ * 1. Query an empty database                   Return a new unique session ID
+ *
+ * 2. Query a database with n or more elements
+ *    and there is no matching session          Return a new unique session ID
+ *
+ * 3. Query database with n or more elements
+ * and matching session exists                  Return ID of existing session
+ *
+ *
+ * @param time_of_event time when event was received
+ * @param date_of_event date when event was recevied
+ */
+test("determineSession()", () => {
+    // Create test database
+    testdb.initDatabase();
+
+    // Case 1. Query an empty database
+    let sessions: Session[] = getAllSessions();
+    let currentDate = new Date();
+    let found: boolean = false;
+    for (let session of sessions) {
+        if (currentDate.getDate() === session.startDateStamp?.getDate()) {
+            if (Math.abs(currentDate.getTime() - session.startDateStamp.getTime()) <= 2000) {
+                found = true;
+            }
+        }
+    }
+    expect(found).toBe(false)
+})
 
 
 
