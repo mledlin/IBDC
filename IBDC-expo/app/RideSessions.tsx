@@ -37,6 +37,7 @@ import {
 import {deleteSession, getSessionHistoryData} from "@/database/SessionDao";
 import { LinearGradient } from "expo-linear-gradient";
 import {useSafeAreaInsets} from "react-native-safe-area-context";
+import {exportRideSessionToPdf} from "@/utils/SessionExport";
 
 // New reference to default sessions per page
 const SESSIONS_PER_PAGE = DEFAULT_SESSIONS_PER_PAGE;
@@ -198,6 +199,23 @@ export default function RideSession() {
                 image_path: selectedImage?.file_path ?? null,
             },
         });
+    }
+
+    /**
+     * Exports selected ride session as a PDF.
+     *
+     * @param session The ride session selected for export.
+     */
+    async function handleExportSession(session: any) {
+        try {
+            await exportRideSessionToPdf(session);
+        } catch (error) {
+            console.error("Failed to export ride session", error);
+            Alert.alert(
+                "Export Failed",
+                "The ride sesssion could not be exported at this time."
+            );
+        }
     }
 
     /**
@@ -495,13 +513,43 @@ export default function RideSession() {
                                         <Text
                                             style={[styles.sessionMeta, {color: theme.colors.textSecondary}]}>{incidentCount} Incident{incidentCount !== 1 ? "s" : ""}</Text>
                                     </View>
-                                    {actionRequired && (
-                                        <View style={[styles.statusBadge, {backgroundColor: theme.colors.primary}]}>
-                                            <Text
-                                                style={[styles.statusBadgeText, {color: theme.colors.primaryForeground},]}>Needs
-                                                Review</Text>
-                                        </View>
-                                    )}
+                                    <View style={styles.sessionHeaderActions}>
+                                        <TouchableOpacity
+                                            style={[
+                                                styles.sessionExportButton,
+                                                {
+                                                    backgroundColor: theme.colors.background,
+                                                    borderColor: theme.colors.border,
+                                                },
+                                            ]}
+                                            onPress={() => handleExportSession(session)}
+                                            activeOpacity={0.8}
+                                        >
+                                            <Ionicons
+                                                name="open-outline"
+                                                size={17}
+                                                color={theme.colors.text}
+                                            />
+                                        </TouchableOpacity>
+
+                                        {actionRequired && (
+                                            <View
+                                                style={[
+                                                    styles.statusBadge,
+                                                    {backgroundColor: theme.colors.primary},
+                                                ]}
+                                            >
+                                                <Text
+                                                    style={[
+                                                        styles.statusBadgeText,
+                                                        {color: theme.colors.primaryForeground},
+                                                    ]}
+                                                >
+                                                    Needs Review
+                                                </Text>
+                                            </View>
+                                        )}
+                                    </View>
                                 </View>
                                 {session.incidents.length === 0 ? (
                                     <View style={styles.noIncidentContainer}>
@@ -756,6 +804,22 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "flex-start",
         marginBottom: 14,
+        width: "100%",
+    },
+
+    sessionHeaderActions: {
+        alignItems: "flex-end",
+        gap: 8,
+        marginLeft: 10,
+    },
+
+    sessionExportButton: {
+        width: 34,
+        height: 34,
+        borderWidth: 1,
+        borderRadius: 10,
+        alignItems: "center",
+        justifyContent: "center",
     },
     dateText: {
         fontSize: 17,
@@ -770,7 +834,6 @@ const styles = StyleSheet.create({
         borderRadius: 999,
         paddingHorizontal: 10,
         paddingVertical: 4,
-        marginLeft: 10,
     },
     statusBadgeText: {
         fontSize: 11,

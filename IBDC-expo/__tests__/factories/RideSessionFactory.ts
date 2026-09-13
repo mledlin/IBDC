@@ -1,3 +1,7 @@
+/**
+ * Dont run this as it will fail! This is just a helper class for ride sessions.
+ */
+
 import type {Incident} from "@/domain/Incident";
 import type {RideSessionLike} from "@/domain/RideSessionView";
 
