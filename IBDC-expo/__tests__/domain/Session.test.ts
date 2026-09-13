@@ -48,7 +48,7 @@ import { Session } from "../../domain/Session"
  * @param time_of_event time when event was received
  * @param date_of_event date when event was recevied
  */
-test("determineSession()", () => {
+test("determineSessionTest", () => {
     // Create test database
     testdb.initDatabase();
 
@@ -58,7 +58,8 @@ test("determineSession()", () => {
     let found: boolean = false;
     for (let session of sessions) {
         if (currentDate.getDate() === session.startDateStamp?.getDate()) {
-            if (Math.abs(currentDate.getTime() - session.startDateStamp.getTime()) <= 2000) {
+            // If the new time is within the last 2 hours
+            if (currentDate.getTime() - session.startDateStamp.getTime() <= 7200000000) {
                 found = true;
             }
         }

@@ -1,17 +1,18 @@
 import * as SQLite from "expo-sqlite";
+import { Session } from "../../domain/Session"
 
 
 // The code below was written by Jair
 let db: SQLite.SQLiteDatabase | null = null;
 
-export async function getDatabase() {
+export function getDatabase() {
     if (db) {
         return db;
     }
 
-    db = await SQLite.openDatabaseAsync("ibdc_test.db");
+    db = SQLite.openDatabaseSync("ibdc_test.db");
 
-    await db.execAsync(`
+    db.execSync(`
         PRAGMA foreign_keys = ON;
         PRAGMA journal_mode = WAL;
     `);
@@ -87,6 +88,37 @@ export async function initDatabase() {
 }
 // The code above was written by Jair
 
-export async function deleteDatabase(): Promise<void> {
-    await SQLite.deleteDatabaseSync("ibdc_test.db");
+
+
+export function deleteDatabase() {
+    SQLite.deleteDatabaseSync("ibdc_test.db");
 }
+
+// Written by Jair
+export async function createSession(id: string, createdTime: string): Promise<any> {
+    const database = await getDatabase();
+
+    await database.runAsync(
+        `INSERT INTO sessions (id, created_time, date) VALUES (?, ?, ?)`,
+        id,
+        createdTime,
+    );
+}
+
+// Written by Jair
+//Retrieves all sessions, ordered by newest
+export function getAllSessions(): Session[] {
+    const database = getDatabase();
+
+    return database.getAllSync(
+        `SELECT * FROM sessions ORDER BY created_time DESC`
+    );
+}
+
+export function printAllSessions(): void {
+    let sessions: Session[] = getAllSessions();
+    for (let session of sessions) {
+        console.log(`\n${JSON.stringify(session, null, 2)}`);
+    }
+}
+
