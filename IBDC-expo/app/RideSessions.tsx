@@ -22,6 +22,7 @@ import {isIncidentComplete} from "@/domain/Incident";
 import {deleteSession, getSessionHistoryData} from "@/database/SessionDao";
 import { LinearGradient } from "expo-linear-gradient";
 import {useSafeAreaInsets} from "react-native-safe-area-context";
+import {exportRideSessionToPdf} from "@/utils/SessionExport";
 
 /**
  * Maximum number of sessions shown on one page.
@@ -181,19 +182,20 @@ export default function RideSession() {
     }
 
     /**
-     * Temporary export stub for a ride session.
-     *
-     * This will later open the session export workflow.
+     * Exports selected ride session as a PDF.
      *
      * @param session The ride session selected for export.
      */
-    function handleExportSession(session: any) {
-        console.log("Export session:", session.id);
-
-        Alert.alert(
-            "Export Session",
-            "Session export UI stub."
-        );
+    async function handleExportSession(session: any) {
+        try {
+            await exportRideSessionToPdf(session);
+        } catch (error) {
+            console.error("Failed to export ride session", error);
+            Alert.alert(
+                "Export Failed",
+                "The ride sesssion could not be exported at this time."
+            );
+        }
     }
 
     /**
