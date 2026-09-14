@@ -10,6 +10,9 @@ import {
     makeSession,
 } from "../factories/RideSessionFactory";
 
+/**
+ * Tests for the RideSessionView reducer and filter functionality.
+ */
 describe("Ride Session filter and page state", () => {
     test("Clear filters restores all sessions and returns to page 1", () => {
         // Arrange
@@ -185,15 +188,12 @@ describe("Ride Session filter and page state", () => {
             "toggleActionRequired" as const,
         ],
     ])(
-        "Applying the %s filter resets the displayed page to page 1",
-        (_name, actionType) => {
-            // Arrange
+        "Applying the %s filter resets the displayed page to page 1",(_name, actionType) => {
             const state = {
                 ...INITIAL_RIDE_SESSION_VIEW_STATE,
                 currentPage: 3,
             };
 
-            // Act
             const result =
                 rideSessionViewReducer(
                     state,
@@ -202,7 +202,6 @@ describe("Ride Session filter and page state", () => {
                     },
                 );
 
-            // Assert
             expect(
                 result.currentPage,
             ).toBe(0);
