@@ -28,7 +28,24 @@ import { Session } from "../../domain/Session"
  *
  */
 
+/**
+ * @Test Test to determine if an event should be appended to a previous session
+ */
+test("isWithin2HoursAfterSessionInit()", () => {
 
+})
+/**
+ * @Test
+ * Test to ensure that when two date objects created on the same Day/Month/Year are transformed by .toString() are
+ * boolean valued as true
+ */
+
+test("isSameDate()", () => {
+    let d1: Date = new Date();
+    let d2: Date = new Date()
+
+    expect(d1.toString()).toEqual(d2.toString());
+})
 
 
 /**
@@ -36,10 +53,10 @@ import { Session } from "../../domain/Session"
  * new data or if a new session should be created.
  *
  * Cases:                                       Expected State
- * 1. Query an empty database                   Return a new unique session ID
+ * 1. Query an empty database                   Return -1
  *
  * 2. Query a database with n or more elements
- *    and there is no matching session          Return a new unique session ID
+ *    and there is no matching session          Return -1
  *
  * 3. Query database with n or more elements
  * and matching session exists                  Return ID of existing session
@@ -48,24 +65,27 @@ import { Session } from "../../domain/Session"
  * @param time_of_event time when event was received
  * @param date_of_event date when event was recevied
  */
-test("determineSessionTest", () => {
+test("determineSession()", () => {
     // Create test database
+    console.log("determineSessionTest -  Case 1. Query an empty database")
     testdb.initDatabase();
 
-    // Case 1. Query an empty database
+    // Read in all sessions from the database. Should be zero in this case.
     let sessions: Session[] = getAllSessions();
+    expect(sessions.length).toBe(0);
+
     let currentDate = new Date();
+
     let found: boolean = false;
     for (let session of sessions) {
-        if (currentDate.getDate() === session.startDateStamp?.getDate()) {
-            // If the new time is within the last 2 hours
-            if (currentDate.getTime() - session.startDateStamp.getTime() <= 7200000000) {
-                found = true;
-            }
+        // These events happened on the same day, month, and year
+        if (session.startDateStamp?.toDateString() === currentDate.toDateString()) {
+
         }
     }
     expect(found).toBe(false)
 })
+
 
 
 
