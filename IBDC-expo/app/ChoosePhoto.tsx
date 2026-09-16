@@ -10,7 +10,7 @@ import { router, useLocalSearchParams} from "expo-router";
 import { useEffect, useState } from "react";
 import { getIncidentImagesByIncidentId, getMockImageSource } from "@/database/ImageDao";
 import { updateIncidentBestImage } from "@/database/IncidentDao";
-import { Text, View, StyleSheet, FlatList, TouchableOpacity, Image, Dimensions } from "react-native";
+import { Text, View, StyleSheet, FlatList, TouchableOpacity, Image, Dimensions, ImageSourcePropType } from "react-native";
 import { useTheme } from "@/context/ThemeContext";
 import { Ionicons } from "@expo/vector-icons";
 const{ width} = Dimensions.get("window");
@@ -19,6 +19,11 @@ const SIDE_SPACING = 16;
 const Item_SPACING = 12;
 const SNAP_INTERVAL = CARD_WIDTH + SIDE_SPACING;
 
+type PhotoItem = {
+  id: string;
+  title: string;
+  image: ImageSourcePropType;
+}
 /**
  * Renders the image selector for a specific incident.
  *
@@ -32,14 +37,47 @@ const SNAP_INTERVAL = CARD_WIDTH + SIDE_SPACING;
 export default function ChoosePhoto() {
 const {incident_id } = useLocalSearchParams();
  const { theme } = useTheme();
- const card_fit = width - 40;
+  
 //mock data filling in for database
-    const photoList = [
-      {id: 'example1', title: 'Photo 1', image: require("@/assets/images/example.jpg"),},
-      {id: 'example2', title: 'Photo 2', image: require("@/assets/images/example2.jpg"),},
-      {id: 'example3', title: 'Photo 3', image: require("@/assets/images/example3.jpg"),},
-      {id: 'example4', title: 'Photo 4', image: require("@/assets/images/example4.jpg"),},
-    ];
+    const [photoList, setPhotoList] = useState<PhotoItem[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(()=> {
+    let isActive = true;
+
+    async function loadPhotos() {
+      if (typeof incident_id !== 'string'){
+        if (isActive) {
+          setPhotoList([]);
+          setIsLoading(false);
+        }
+        return;
+      }
+      try{
+        setIsLoading(true);
+        const images: any[] = await getIncidentImagesByIncidentId(incident_id);
+        const mappedImages: PhotoItem[] = images.filter((image) =>
+        image.id != null && typeof image.file_path === "string" && image.file_path.length > 0)
+        .map((image,index) => ({
+          id: String(image.id), 
+          title: `Photo ${index + 1}`,
+          image: getMockImageSource(image.file_path) ?? {uri:image.file_path},
+        }));
+        if (isActive){
+          setPhotoList(mappedImages);
+        }
+      }catch (error){
+        console.error("failed to load incident images", error);
+        if (isActive){
+          setIsLoading(false);
+        }
+      }
+    }
+    void loadPhotos();
+    return () => {
+      isActive = false;
+    };
+  }, [incident_id]);
 
   /**
    * Updates the incident's selected best image in the database.
@@ -49,12 +87,12 @@ const {incident_id } = useLocalSearchParams();
    *
    * @param photoId The id of the photo chosen by the user.
    */
-  async function handleSelectPhoto(photoId: any) {
+  async function handleSelectPhoto(photoId: string) {
   try{
     if(typeof incident_id !== "string"){
       return;
     }
-    await updateIncidentBestImage(incident_id, `${incident_id}-${photoId}`);
+    await updateIncidentBestImage(incident_id, photoId);
 
     console.log("Selected Photo:", photoId);
     router.back();

@@ -7,18 +7,19 @@ import {
     ScrollView,
     Image,
     TextInput,
+    ImageSourcePropType,
 } from "react-native";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import Checkbox from "expo-checkbox";
 import { Picker } from "@react-native-picker/picker";
-import { useTheme } from "@/context/ThemeContext";
+import { ThemeProvider, useTheme } from "@/context/ThemeContext";
 import { deleteIncident, getIncidentById, updateIncidentDetails } from "@/database/IncidentDao";
 import { getIncidentImagesByIncidentId, getMockImageSource} from "@/database/ImageDao";
 // NOTES:
 // You will need to run npm install to get new dependencies here.
 // TODO Screen should move up when on-screen keyboard appears but doesnt yet.
-// TODO Image not hooked up yet
-// TODO Lat/Long should be replaced with a Google Maps I think.
+// TODO Image not hooked up yet [DONE Matthew]
+// TODO Lat/Long should be replaced with a Google Maps I think. [Lets do phone gps, not google.]
 
 // work in progress
 export default function IncidentDetail() {
@@ -38,9 +39,7 @@ export default function IncidentDetail() {
     );
   //Mock image, we can pass the same image once db is in and we can reliably retrieve image paths
   const [bestImageId, setBestImageId] = useState<string | null> (null);
-  const [thumbnailSource, setThumbnailSource] = useState(
-    require("@/assets/images/example.jpg")
-  );
+  const [thumbnailSource, setThumbnailSource] = useState<ImageSourcePropType | null>(null);
   //Delete Helper 
   async function handleDeleteIncident(){
     try{
@@ -95,13 +94,13 @@ export default function IncidentDetail() {
 
       const selectedImage = images.find(
         (image: any) => image.id === incident?.best_image_id
-      );
+      ) ?? images[0] ?? null;
 
       if (selectedImage?.file_path) {
-        const source = getMockImageSource(selectedImage.file_path);
-        if (source) {
-          setThumbnailSource(source);
-        }
+        setThumbnailSource(
+            getMockImageSource(selectedImage.file_path) ??
+            {uri: selectedImage.file_path }
+        );
       }
     } catch (error) {
       console.error("Failed to load thumbnail" , error);
@@ -122,12 +121,24 @@ export default function IncidentDetail() {
     
         <ScrollView contentContainerStyle={[styles.container, {backgroundColor: theme.colors.background}]}>
             <Text style = {[styles.title, {color: theme.colors.text}]}>Incident Details</Text>
-            <View style = {styles.thumbnailContainer}>
-              <Image 
-                source = {thumbnailSource} //This will eventually beocome uri: image.file_path when DB is in
-                style = {styles.thumbnail}
-                resizeMode = "cover"
-                ></Image>
+            <View style = {[styles.thumbnailContainer, 
+                {backgroundColor: theme.colors.surface, 
+                borderColor: theme.colors.border,
+                },
+                ]}
+                >
+                {thumbnailSource ? (
+                    <Image
+                    source = {thumbnailSource}
+                    style = {styles.thumbnail}
+                    resizeMode="cover"
+                    />
+                ) : (
+                    <View style={styles.thumbnailPlaceholer}>
+                    <Text style= {[styles.thumbnailPlaceholerText, {color: theme.colors.textSecondary},]}>No photo available</Text>
+                        </View>
+                    )
+                }
             </View>
 
             <View style={[styles.formSection, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface },]}>
@@ -262,6 +273,16 @@ const styles = StyleSheet.create({
     thumbnail: {
         width: 380,
         height: 280,
+    },
+    thumbnailPlaceholer: {
+        width: "100%", 
+        height: 280, 
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    thumbnailPlaceholerText: {
+        fontSize: 16,
+        fontWeight: "600",
     },
     title: {
         fontSize: 24,

@@ -143,9 +143,10 @@ export default function RideSession() {
      * @param incident The incident the user pressed.
      */
     function handleIncidentPress(incident: any) {
+        const imageFiles = incident.imageFiles ?? [];
         const selectedImage =
-            incident.imageFiles.find(
-                (image: any) => image.id === incident.selectedImageId) || null;
+            imageFiles.find(
+                (image: any) => image.id === incident.selectedImageId) ?? imageFiles[0] ?? null;
 
         router.push({
             pathname: "/IncidentDetail",
