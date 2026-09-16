@@ -1,6 +1,7 @@
 // database/IncidentDao.ts
 
 import { getDatabase } from "./database";
+import { Incident } from "../domain/Incident"
 
 //Retrieves incidents, with newest first
 export async function getAllIncidents() {
