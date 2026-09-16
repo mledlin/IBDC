@@ -4,6 +4,12 @@ import { getDatabase } from "./database";
 import { getAllIncidents } from "./IncidentDao";
 import { getAllIncidentImages, getMockImageSource} from "./ImageDao";
 
+// This represents how each Session entry in the Session Table is be shaped
+export type DatabaseSessionRow = {
+    id: string,
+    created_time: string,
+}
+
 //Creates a new session record
 export async function createSession(id: string, createdTime: string) {
     const database = await getDatabase();
@@ -15,7 +21,7 @@ export async function createSession(id: string, createdTime: string) {
     );
 }
 //Retrieves all sessions, ordered by newest 
-export async function getAllSessions() {
+export async function getAllSessions(): Promise<DatabaseSessionRow[]> {
     const database = await getDatabase();
 
     return await database.getAllAsync(

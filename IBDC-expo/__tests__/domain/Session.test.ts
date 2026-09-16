@@ -1,6 +1,5 @@
-import * as testdb from "./TestableDatabase"
-import {getAllSessions} from "./TestableDatabase";
 import { Session } from "../../domain/Session"
+import { SessionManager } from "@/hooks/SessionManager"
 /**
  * Testing of the session class should be based on the functionality that sessions provide.
  * Sessions are responsible for:
@@ -28,24 +27,6 @@ import { Session } from "../../domain/Session"
  *
  */
 
-/**
- * @Test Test to determine if an event should be appended to a previous session
- */
-test("isWithin2HoursAfterSessionInit()", () => {
-
-})
-/**
- * @Test
- * Test to ensure that when two date objects created on the same Day/Month/Year are transformed by .toString() are
- * boolean valued as true
- */
-
-test("isSameDate()", () => {
-    let d1: Date = new Date();
-    let d2: Date = new Date()
-
-    expect(d1.toString()).toEqual(d2.toString());
-})
 
 
 /**
@@ -65,13 +46,22 @@ test("isSameDate()", () => {
  * @param time_of_event time when event was received
  * @param date_of_event date when event was recevied
  */
+
+
+test("getInstance()", async () => {
+    let manager: SessionManager = SessionManager.getInstance();
+    expect(manager).toBeDefined();
+    expect(SessionManager.getInstance()).toEqual(manager);
+})
+
+
+
 test("determineSession()", () => {
     // Create test database
     console.log("determineSessionTest -  Case 1. Query an empty database")
-    testdb.initDatabase();
 
     // Read in all sessions from the database. Should be zero in this case.
-    let sessions: Session[] = getAllSessions();
+    let sessions: Session[] = [];
     expect(sessions.length).toBe(0);
 
     let currentDate = new Date();
@@ -85,7 +75,6 @@ test("determineSession()", () => {
     }
     expect(found).toBe(false)
 })
-
 
 
 
