@@ -10,7 +10,7 @@
 export const MOCK_SESSION_MAX_AGE_MS =
     2 * 365 * 24 * 60 * 60 * 1000;
 
-export const MOCK_INCIDENT_MAX = 5;
+export const MOCK_INCIDENT_MAX = 4;
 
 // 1 hour
 export const MOCK_INCIDENT_MAX_OFFSET_MS =
