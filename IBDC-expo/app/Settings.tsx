@@ -11,13 +11,18 @@
 import React, {useState} from "react";
 
 import {
-    createSession,
     getAllSessions,
     deleteSessionsOlderThan,
 } from "@/database/SessionDao";
 
-import { createIncidentImage } from "@/database/ImageDao"
-import { createIncident } from "@/database/IncidentDao"
+import {
+    sqliteMockDataPersistence,
+} from "@/database/MockDataPersistence";
+
+import {
+    generateMockSessionData,
+} from "@/services/MockDataService";
+
 import {
     View,
     Text,
@@ -45,11 +50,6 @@ export default function SettingsPage() {
 
     // TODO Load from a properties file on startup!
     const [settingOne, setting1] = useState(true);
-
-    /**
-     * Available mock image identifiers used when creating test incidents.
-     */
-    const mockImages = ["example1", "example2", "example3", "example4"];
 
     /**
      * Available age thresholds for bulk deleting older stored data.
@@ -185,120 +185,41 @@ export default function SettingsPage() {
     };
 
     /**
-     * Creates one mock session with a random date up to two years old, then creates a random number of
-     * incidents within one hour of that session start time. Each mock incident is populated with random
-     * vehicle, location, injury severity, and image data for testing the app UI and database.
+     * Creates 1 persistent randomized mock session data set.
+     *
+     * Generation details live outside the UI so they can be
+     * reused and tested independently.
      */
     const handleAddMockIncident = async () => {
         try {
-            const now = Date.now();
-            const twoYears = 2 * 365 * 24 * 60 * 60 * 1000;
+            const mockData =
+                await generateMockSessionData(
+                    sqliteMockDataPersistence,
+                );
 
-            function randomInt(min: number, max: number): number {
-                return Math.floor(Math.random() * (max - min + 1)) + min;
-            }
+            const sessions =
+                await getAllSessions();
 
-            const sessionStartTime = new Date(
-                now - randomInt(0, twoYears)
+            console.log(
+                "Sessions:",
+                sessions,
             );
 
-            const sessionId = sessionStartTime.toISOString();
-
-            await createSession(sessionId, sessionStartTime.toISOString());
-
-            const plates = ["ABC1234", "XYZ32", "DSA123", "1231AS", "ASU3232"];
-            const severities = ["minor", "moderate", "major"];
-            const driverInfos = [
-                "Unknown",
-                "John 423-323-1232",
-                "Albert D1234912922",
-                "Walter, 308 Negra Arroyo Lane, 505-965-1672",
-                "No driver interaction",
-            ];
-            const comments = [
-                "Vehicle passed too closely",
-                "Driver swerved near cyclist",
-                "Unsafe overtake",
-                "Vehicle stayed in lane too long",
-                "Close call at intersection",
-            ];
-            const vehicles = [
-                {make: "Toyota", model: "Camry", color: "Blue", year: "2020"},
-                {make: "Honda", model: "Civic", color: "Black", year: "2018"},
-                {make: "Ford", model: "F-150", color: "White", year: "2022"},
-                {make: "Chevrolet", model: "Malibu", color: "Silver", year: "2019"},
-                {make: "Nissan", model: "Altima", color: "Red", year: "2021"},
-            ];
-            const coordinates = [
-                { lat: 32.2226, long: -110.9747 }, // Tucson
-                { lat: 32.2217, long: -110.9265 }, // Tucson
-                { lat: 32.1789, long: -110.9715 }, // Tucson
-                { lat: 33.4484, long: -112.0740 }, // Phoenix
-                { lat: 33.4522, long: -112.0738 }, // Phoenix
-                { lat: 33.4651, long: -112.0476 }, // Phoenix
-            ];
-
-            function pickRandom<T>(items: T[]): T {
-                return items[Math.floor(Math.random() * items.length)];
-            }
-
-            const incidentCount = Math.floor(Math.random() * 5);
-
-            for (let i = 0; i < incidentCount; i++) {
-
-                //Tester method for generating data without thumbnail
-                const hasThumbnail = Math.random() < 0.7;
-                const vehicle = pickRandom(vehicles);
-                const coord = pickRandom(coordinates);
-                const incidentId = `${sessionId}-incident-${i + 1}`;
-
-                //Conditional logic is solely for generating variance in mock data
-                const imageKey = hasThumbnail ? pickRandom(mockImages) : null;
-                const imageId = hasThumbnail ? `${incidentId}-${imageKey}` : null;
-
-                const incidentTime = new Date(
-                    sessionStartTime.getTime() + randomInt(0, 60 * 60 * 1000)
-                );
-
-                await createIncident(
-                    incidentId,
-                    sessionId,
-                    coord.lat,
-                    coord.long,
-                    pickRandom(plates),
-                    /*  mock version
-                    imageId,
-                    */
-                    imageId,
-                    pickRandom(severities),
-                    Math.random() < 0.5 ? 0 : 1,
-                    pickRandom(driverInfos),
-                    pickRandom(comments),
-                    vehicle.make,
-                    vehicle.model,
-                    vehicle.color,
-                    vehicle.year,
-                    incidentTime.toISOString()
-                );
-                // More mock data 
-                await createIncidentImage(`${incidentId}-example1`, incidentId, "example1", null, "mock");
-                await createIncidentImage(`${incidentId}-example2`, incidentId, "example2", null, "mock");
-                await createIncidentImage(`${incidentId}-example3`, incidentId, "example3", null, "mock");
-                await createIncidentImage(`${incidentId}-example4`, incidentId, "example4", null, "mock");
-
-            }
-            const sessions = await getAllSessions();
-            console.log("Sessions:", sessions);
-
-            Alert.alert("Success", `Mock session added with ${incidentCount} incidents`)
+            Alert.alert(
+                "Success",
+                `Mock session added with ${mockData.incidents.length} incidents`,
+            );
         } catch (error) {
-            console.error("Failed to add mock data", error);
-            Alert.alert("Error", "Could not add mock data");
+            console.error(
+                "Failed to add mock data",
+                error,
+            );
         }
     };
 
     return (
-        <View style={[styles.container, {backgroundColor: theme.colors.background, paddingTop: useSafeAreaInsets().top}]}>
+        <View
+            style={[styles.container, {backgroundColor: theme.colors.background, paddingTop: useSafeAreaInsets().top}]}>
             <ScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}>
@@ -405,7 +326,6 @@ export default function SettingsPage() {
                         </Text>
                     </TouchableOpacity>
                 </View>
-
 
 
                 <View style={styles.debugSection}>

@@ -4,7 +4,13 @@
  * This screen displays stored ride sessions, supports filtering, and allows the user to open incident details
  * for a selected incident. Sessions with no incidents can also be deleted after confirmation.
  */
-import React, {useMemo, useRef, useState} from "react";
+import React, {
+    useMemo,
+    useReducer,
+    useRef,
+    useState,
+} from "react";
+
 import {
     View,
     Text,
@@ -19,17 +25,22 @@ import {useRouter} from "expo-router";
 import {useTheme} from "@/context/ThemeContext"
 import {useFocusEffect} from "expo-router";
 import {isIncidentComplete} from "@/domain/Incident";
+import {
+    DEFAULT_SESSIONS_PER_PAGE,
+    filterRideSessions,
+    INITIAL_RIDE_SESSION_VIEW_STATE,
+    paginateRideSessions,
+    rideSessionViewReducer,
+    sessionHasActionRequired,
+} from "@/domain/RideSessionView";
+
 import {deleteSession, getSessionHistoryData} from "@/database/SessionDao";
 import { LinearGradient } from "expo-linear-gradient";
 import {useSafeAreaInsets} from "react-native-safe-area-context";
+import {exportRideSessionToPdf} from "@/utils/SessionExport";
 
-/**
- * Maximum number of sessions shown on one page.
- *
- * TODO This is a temp solution. This needs to be added to the database or a config file.
- * This should be set by the settings page.
- */
-const SESSIONS_PER_PAGE = 5;
+// New reference to default sessions per page
+const SESSIONS_PER_PAGE = DEFAULT_SESSIONS_PER_PAGE;
 
 /**
  * Renders the ride session history screen.
@@ -45,28 +56,30 @@ const SESSIONS_PER_PAGE = 5;
 export default function RideSession() {
     const router = useRouter();
     const {theme} = useTheme();
-    const [currentPage, setCurrentPage] = useState(0);
-    const [showFilters, setShowFilters] = useState(false);
-    const [filterHasIncidents, setfilterHasIncidents] = useState(false);
-    const [filterActionRequired, setFilterActionRequired] = useState(false);
+
+    const [viewState, dispatchViewState] = useReducer(
+        rideSessionViewReducer,
+        INITIAL_RIDE_SESSION_VIEW_STATE,
+    );
+
     const [allSessions, setAllSessions] = useState<any[]>([]);
+
+    const {
+        currentPage,
+        showFilters,
+        filterHasIncidents,
+        filterActionRequired,
+    } = viewState;
+
     const insets = useSafeAreaInsets();
 
     const scrollViewRef = useRef<ScrollView>(null);
 
     /**
-     * Checks whether any incident in a session still needs review.
-     *
-     * @param session The session being checked.
-     * @returns True if at least one incident is incomplete.
-     */
-    function sessionHasActionRequired(session: any): boolean {
-        return session.incidents.some((incident: any) => !isIncidentComplete(incident));
-    }
-
-    /**
      * Reloads the session history screen whenever this screen comes bac into focus.
      * This keeps the screen current after navigating away and returning.
+     *
+     * current page 0-indexed
      */
     useFocusEffect(
         React.useCallback(() => {
@@ -74,7 +87,7 @@ export default function RideSession() {
                 try {
                     const sessions = await getSessionHistoryData();
                     setAllSessions(sessions);
-                    setCurrentPage(0);
+                    dispatchViewState({type: "resetPage"});
                 } catch (error) {
                     console.error("Failed to load session history", error);
                 }
@@ -89,27 +102,27 @@ export default function RideSession() {
      * If no filters are enabled, all sessions are displayed.
      */
     const filteredSessions = useMemo(() => {
-        return allSessions.filter((session) => {
-            if (!filterHasIncidents && !filterActionRequired) {
-                return true;
-            }
+        return filterRideSessions(
+            allSessions,
+            filterHasIncidents,
+            filterActionRequired,
+        );
+    }, [
+        allSessions,
+        filterHasIncidents,
+        filterActionRequired,
+    ]);
 
-            const matchesHasIncidents =
-                filterHasIncidents && session.incidents.length > 0;
-
-            const matchesActionRequired =
-                filterActionRequired && sessionHasActionRequired(session);
-
-            return matchesHasIncidents || matchesActionRequired;
-        });
-    }, [allSessions, filterHasIncidents, filterActionRequired]);
-
-    const startIndex = currentPage * SESSIONS_PER_PAGE;
-    const endIndex = startIndex + SESSIONS_PER_PAGE;
-    const visibleSessions = filteredSessions.slice(startIndex, endIndex);
-
-    const hasNextPage = endIndex < filteredSessions.length;
-    const hasPreviousPage = currentPage > 0;
+    const {
+        visibleSessions,
+        startIndex,
+        hasNextPage,
+        hasPreviousPage,
+    } = paginateRideSessions(
+        filteredSessions,
+        currentPage,
+        SESSIONS_PER_PAGE,
+    );
 
     const totalSessions = allSessions.length;
 
@@ -139,7 +152,11 @@ export default function RideSession() {
      */
     function handleNextPage() {
         if (hasNextPage) {
-            setCurrentPage(currentPage + 1);
+            dispatchViewState({
+                type: "setPage",
+                page: currentPage + 1,
+            });
+
             scrollToTop();
         }
     }
@@ -149,7 +166,11 @@ export default function RideSession() {
      */
     function handlePreviousPage() {
         if (hasPreviousPage) {
-            setCurrentPage(currentPage - 1);
+            dispatchViewState({
+                type: "setPage",
+                page: currentPage - 1,
+            });
+
             scrollToTop();
         }
     }
@@ -181,36 +202,57 @@ export default function RideSession() {
     }
 
     /**
+     * Exports selected ride session as a PDF.
+     *
+     * @param session The ride session selected for export.
+     */
+    async function handleExportSession(session: any) {
+        try {
+            await exportRideSessionToPdf(session);
+        } catch (error) {
+            console.error("Failed to export ride session", error);
+            Alert.alert(
+                "Export Failed",
+                "The ride sesssion could not be exported at this time."
+            );
+        }
+    }
+
+    /**
      * Shows or hides the filter panel.
      */
     function handleToggleFilters() {
-        setShowFilters(!showFilters);
+        dispatchViewState({
+            type: "toggleFilterPanel",
+        });
     }
 
     /**
      * Toggles the "has incidents" filter and resets paging.
      */
     function handleToggleNoIncidents() {
-        setCurrentPage(0);
-        setfilterHasIncidents(!filterHasIncidents);
+        dispatchViewState({
+            type: "toggleHasIncidents",
+        });
     }
 
     /**
      * Toggles the "action required" filter and resets paging.
      */
     function handleToggleActionRequired() {
-        setCurrentPage(0);
-        setFilterActionRequired(!filterActionRequired);
+        dispatchViewState({
+            type: "toggleActionRequired",
+        });
     }
 
     /**
      * Clears all active filters, hides the filter panel, and returns the scroll view to the top.
      */
     function handleClearAllFilters() {
-        setfilterHasIncidents(false);
-        setFilterActionRequired(false);
-        setShowFilters(false);
-        setCurrentPage(0);
+        dispatchViewState({
+            type: "clearFilters",
+        });
+
         scrollToTop();
     }
 
@@ -231,7 +273,10 @@ export default function RideSession() {
                 sessions.length === 0
                     ? 0 : Math.max(0, Math.ceil(sessions.length / SESSIONS_PER_PAGE) - 1);
 
-            setCurrentPage((previousPage) => Math.min(previousPage, maxPage));
+            dispatchViewState({
+                type: "clampPage",
+                maxPage,
+            });
         } catch (error) {
             console.error("Error deleting session", error);
         }
@@ -468,13 +513,43 @@ export default function RideSession() {
                                         <Text
                                             style={[styles.sessionMeta, {color: theme.colors.textSecondary}]}>{incidentCount} Incident{incidentCount !== 1 ? "s" : ""}</Text>
                                     </View>
-                                    {actionRequired && (
-                                        <View style={[styles.statusBadge, {backgroundColor: theme.colors.primary}]}>
-                                            <Text
-                                                style={[styles.statusBadgeText, {color: theme.colors.primaryForeground},]}>Needs
-                                                Review</Text>
-                                        </View>
-                                    )}
+                                    <View style={styles.sessionHeaderActions}>
+                                        <TouchableOpacity
+                                            style={[
+                                                styles.sessionExportButton,
+                                                {
+                                                    backgroundColor: theme.colors.background,
+                                                    borderColor: theme.colors.border,
+                                                },
+                                            ]}
+                                            onPress={() => handleExportSession(session)}
+                                            activeOpacity={0.8}
+                                        >
+                                            <Ionicons
+                                                name="open-outline"
+                                                size={17}
+                                                color={theme.colors.text}
+                                            />
+                                        </TouchableOpacity>
+
+                                        {actionRequired && (
+                                            <View
+                                                style={[
+                                                    styles.statusBadge,
+                                                    {backgroundColor: theme.colors.primary},
+                                                ]}
+                                            >
+                                                <Text
+                                                    style={[
+                                                        styles.statusBadgeText,
+                                                        {color: theme.colors.primaryForeground},
+                                                    ]}
+                                                >
+                                                    Needs Review
+                                                </Text>
+                                            </View>
+                                        )}
+                                    </View>
                                 </View>
                                 {session.incidents.length === 0 ? (
                                     <View style={styles.noIncidentContainer}>
@@ -729,6 +804,22 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "flex-start",
         marginBottom: 14,
+        width: "100%",
+    },
+
+    sessionHeaderActions: {
+        alignItems: "flex-end",
+        gap: 8,
+        marginLeft: 10,
+    },
+
+    sessionExportButton: {
+        width: 34,
+        height: 34,
+        borderWidth: 1,
+        borderRadius: 10,
+        alignItems: "center",
+        justifyContent: "center",
     },
     dateText: {
         fontSize: 17,
@@ -743,7 +834,6 @@ const styles = StyleSheet.create({
         borderRadius: 999,
         paddingHorizontal: 10,
         paddingVertical: 4,
-        marginLeft: 10,
     },
     statusBadgeText: {
         fontSize: 11,
