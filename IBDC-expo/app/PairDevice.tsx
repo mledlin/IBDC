@@ -7,11 +7,12 @@
 import React, { useState } from "react";
 import { Text, View, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import BluetoothDeviceModal from "@/components/ui/BluetoothDeviceModal";
+import { BleDeviceInfo } from "@/ble/BleAdapter";
 import { useDevice } from "@/context/DeviceContext";
 import { useRouter } from "expo-router";
 import { useTheme } from "@/context/ThemeContext";
-import { BleDeviceInfo } from "@/ble/BleAdapter";
 
 
 /**
@@ -48,7 +49,8 @@ const COLORS = {
 export default function PairDevice() {
   const { theme } = useTheme();
   const router = useRouter();
-  const { devices, scan, connect, } = useDevice();
+  const insets = useSafeAreaInsets();
+  const { devices, scan, connect } = useDevice();
   const [modalVisible, setModalVisable] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
 
@@ -86,7 +88,7 @@ export default function PairDevice() {
  };
  
   return (
-    <View style={[styles.screen, { backgroundColor: theme.colors.background }]}>
+    <View style={[styles.screen, { backgroundColor: theme.colors.background, paddingTop: insets.top }]}>
       <View style={[styles.header, { backgroundColor: theme.colors.primary }]}>
         <Text style={[styles.headerText, { color: theme.colors.primaryForeground }]}>Pair Device</Text>
       </View>

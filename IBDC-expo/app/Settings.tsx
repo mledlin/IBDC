@@ -30,6 +30,7 @@ import {
 
 import {useTheme} from "@/context/ThemeContext";
 import ThemePicker from "@/components/ui/ThemePicker";
+import {useSafeAreaInsets} from "react-native-safe-area-context";
 
 /**
  * Renders the settings screen and manages all local settings UI state.
@@ -295,8 +296,6 @@ export default function SettingsPage() {
             console.error("Failed to add mock data", error);
             Alert.alert("Error", "Could not add mock data");
         }
-
-
     };
 
     const handleClearTestRideData = () => {
@@ -328,7 +327,7 @@ export default function SettingsPage() {
     };
 
     return (
-        <View style={[styles.container, {backgroundColor: theme.colors.background}]}>
+        <View style={[styles.container, {backgroundColor: theme.colors.background, paddingTop: useSafeAreaInsets().top}]}>
             <ScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}>

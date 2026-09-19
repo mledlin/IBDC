@@ -1,0 +1,35 @@
+Meeting Minutes – Team 4
+Date 9/3/2026
+Time: 2:57 PM (Asynchronus)
+Duration: 12.5 hours
+Participants: Team 4: Christopher Paquin, Matthew Edlin, Jair Franco, Colin Tugend
+
+Topics Covered:
+Discussed solutions for license plate readers including machine learning, paid api options, and locally run developed
+solutions. One idea was that machine learning could help us make a local version while another suggested offering paid
+api solutions to the sponsor. Reliability, funding and overhead were discussed and the topic was tabled for now.
+
+We identified the limits of what we can do with BLE given the lack of information from the hardware team. Matthew did a
+lot of research into data tagging, UUIDs and wrappers as possible solutions to bridging BLE <-> proto commms. He will
+ask our sponsor for additional information.
+
+We discussed data flow within the application and Matthew made an incredible diagram that helped clarify everything well.
+
+We discussed not enough tasks for us to work on separate things.
+
+Chris presented a list of test cases for the BLE adapter for review.
+
+Summary:
+Our meeting helped us to understand where we were at in the project and the team goals.
+
+Action Item List: Meet with sponsor
+Action Owner: Team 4
+Action Item Dates: 9/9/26
+
+Action Item List: Develop inter-device comms
+Action Owner: Matthew Edlin
+Action Item Dates: 8/27/2026
+
+Action Item List: Documentation for BLE systems
+Action Owner: Team 4
+Action Item Dates: 9/6/2026
