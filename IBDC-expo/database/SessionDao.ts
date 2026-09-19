@@ -3,6 +3,9 @@
 import { getDatabase } from "./database";
 import { getAllIncidents } from "./IncidentDao";
 import { getAllIncidentImages, getMockImageSource} from "./ImageDao";
+import { Directory, Paths} from "expo-file-system";
+
+const INCIDENT_IMAGE_DIRECTROY = new Directory(Paths.document, "incident_images");
 
 //Creates a new session record
 export async function createSession(id: string, createdTime: string) {
@@ -31,6 +34,15 @@ export async function deleteAllSessions() {
         await database.runAsync(`DELETE FROM incident_images`);
         await database.runAsync(`DELETE FROM incidents`);
         await database.runAsync(`DELETE FROM sessions`);
+
+        if (INCIDENT_IMAGE_DIRECTROY.exists){
+            INCIDENT_IMAGE_DIRECTROY.delete();
+        }
+
+        INCIDENT_IMAGE_DIRECTROY.create({
+            intermediates: true,
+            idempotent: true,
+        });
     } catch (error) {
         console.error("Failed to delete session data", error);
         throw error;

@@ -13,6 +13,7 @@ import React, {useState} from "react";
 import {
     createSession,
     getAllSessions,
+    deleteAllSessions,
     deleteSessionsOlderThan,
 } from "@/database/SessionDao";
 
@@ -41,7 +42,7 @@ import ThemePicker from "@/components/ui/ThemePicker";
  */
 export default function SettingsPage() {
     const {theme} = useTheme();
-
+    const [isClearingTestData, setIsClearingTestData] = useState(false);
     // TODO Load from a properties file on startup!
     const [settingOne, setting1] = useState(true);
 
@@ -298,6 +299,34 @@ export default function SettingsPage() {
 
     };
 
+    const handleClearTestRideData = () => {
+        Alert.alert("Clear Test Ride Data?", 
+            "This will permenetly delete every ride session, incident, and saved incident photo. App settings and paired decices will not be chnaged.", 
+        [
+            {
+                text: "Cancel", 
+                style: "cancel",
+            },
+            {
+                text: "Clear All Data", 
+                style: "destructive",
+                onPress: async () => {
+                    try{
+                        setIsClearingTestData(true);
+                        await deleteAllSessions();
+                        Alert.alert("Test Data Cleared", "All ride test data has been deleted.");
+                    } catch (error) {
+                        console.error("Failed to clear test ride data", error);
+                        Alert.alert("Error", "Could not clear the ride test data. :(");
+                    } finally {
+                        setIsClearingTestData(false);
+                    }
+                },
+            },
+        ]
+    );
+    };
+
     return (
         <View style={[styles.container, {backgroundColor: theme.colors.background}]}>
             <ScrollView
@@ -424,6 +453,20 @@ export default function SettingsPage() {
                         <Text style={[styles.actionButtonText, {color: theme.colors.primaryForeground}]}>
                             Add Random Mock Incident Data
                         </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.wipeButton,
+                            {
+                                backgroundColor: theme.colors.danger,
+                                borderRadius: theme.radii.md,
+                                opacity: isClearingTestData ? 0.6 : 1,
+                            }
+                        ]}
+                        onPress={handleClearTestRideData}
+                        disabled={isClearingTestData}>
+                            <Text style={[styles.actionButtonText, {color: theme.colors.primaryForeground}]}>
+                                {isClearingTestData ? "clearing Test Data..." : "Clear Test Ride Data (DEV TOOL)"}
+                            </Text>
                     </TouchableOpacity>
                 </View>
 
