@@ -1,55 +1,43 @@
-import { DeviceInfo } from "../context/DeviceContext"
-import { getAllSessions } from "@/database/SessionDao"
-import { Session } from "../domain/Session"
-import { DatabaseSessionRow} from "@/database/SessionDao";
-
 /**
- * This module encapsulates all functionality related to sessions. This Class utilizes the Singleton Design Pattern.
- *  - Links incoming incident data to a session within the database.
+ * SessionManager is responsible for determining if incoming data should be appended to an existing session or if
+ * a new session in the database should be created.
  */
 
+
+// This interface determines what type of data SessionManager should query in order to determine incoming data's home.
+export interface SessionInfo {
+    id: string,
+    createdTime: string // A string of format -> Date.toString()
+}
+
+// This interface determines the method name and return type that must exist in order to work with Session
+// Manager querying capabilities.
+export interface SessionPersistence {
+    getAllSessions(): Promise<SessionInfo[]>;
+}
+
+//
+
 export class SessionManager {
-    // Reference to the only SessionManager object.
-    private static instance: SessionManager;
 
-    // All sessions from database. The unknown type has the shape of the database table Session.
-    /**
-     * id: TEXT (the unique index is a number though)
-     * created_time: TEXT
-     * last_gps_long: REAL
-     * last_gps_lat: REAL
-     * last_gps_time: TEXT
-     * @private
-     */
-    private allSessionsInDb: DatabaseSessionRow[] = []; // Should this expect a Session type or should this return exactly the database
-    // representation? This question arises from the fact that a Session type and the Session table in the db are represented
-    // have different data shapes and types. To demonstrate, compare the Session type to the database types above.
+    private persistence: SessionPersistence;
 
-    private constructor() {
-        this.syncSessions();
+
+    public constructor(sessionPersistence: SessionPersistence) {
+        this.persistence = sessionPersistence;
     }
 
-    // Pulls the latest data from the database into the Class
-    private async syncSessions() {
-        this.allSessionsInDb = await getAllSessions();
-    }
-
-    // This function permits programmers to either get a reference to the only SessionManager object or create the only
-    // SessionManager.
-    public static getInstance() {
-        if (!SessionManager.instance) {
-            SessionManager.instance = new SessionManager();
-        }
-        return SessionManager.instance;
-    }
-
-    // Determines whether something occurred on the same Day, Month, Year
+    // Determines which date M/D/Y an event occurred.
     private isSameDate(incomingDate: Date, sessionDate: Date): boolean {
-        return incomingDate.toString() === sessionDate.toString()
+        return (
+            incomingDate.getFullYear() === sessionDate.getFullYear() &&
+            incomingDate.getMonth() === sessionDate.getMonth() &&
+            incomingDate.getDate() === sessionDate.getDate()
+        );
     }
 
-    // Determines if the incoming data happened within 2 hours from the start of a session.
-    private isWithin2HoursAfterSessionInit(incomingDate: Date, sessionDate:Date): boolean {
+    // Determines if the incoming data happened within 2 hours from the start of an existing session.
+    private isWithin2HoursAfterSessionInit(incomingDate: Date, sessionDate: Date): boolean {
         const difference = incomingDate.getTime() - sessionDate.getTime();
 
         // The math here is converting milliseconds to hours
@@ -63,26 +51,18 @@ export class SessionManager {
      *                     data belongs to.
      * @returns an existing session ID or undefined if no session exists
      */
-    public async determineSession(incomingDate: Date): Promise<Promise<number> | Promise<undefined>> {
-        await this.syncSessions();
-        for (const session of this.allSessionsInDb) {
-            if (this.isSameDate(incomingDate, new Date(session.created_time))) {
-                if (this.isWithin2HoursAfterSessionInit(incomingDate, new Date(session.created_time))) {
-                    return +session.id;
+    public async determineSession(incomingDate: Date): Promise<string | undefined> {
+
+        const sessions: SessionInfo[] = await this.persistence.getAllSessions();
+
+        for (const session of sessions) {
+            const sessionDate = new Date(session.createdTime);
+            if (this.isSameDate(incomingDate, sessionDate)) {
+                if (this.isWithin2HoursAfterSessionInit(incomingDate, sessionDate)) {
+                    return session.id;
                 }
             }
         }
-        // No existing session for this data. Return a new index that doesn't exist in the Database table for Session.
         return undefined;
     }
-
-
-
-
-
-
-
-
-
 }
-
