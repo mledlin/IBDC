@@ -147,22 +147,20 @@ export default function IncidentDetail() {
                     const selectedImage = images.find(
                         (image: any) =>
                             image.id === incident?.best_image_id
-                    );
+                    ) ?? images[0] ?? null;
 
                     // Reset first so incidents without a selected image show placeholder.
-                    setThumbnailSource(null);
+                    //setThumbnailSource(null);
 
                     // Resolve the saved image path into a image source.
                     if (selectedImage?.file_path) {
-                        const source = getMockImageSource(
-                            selectedImage.file_path
-                        );
-
-                        if (source) {
-                            setThumbnailSource(source);
-                        }
+                        setThumbnailSource(getMockImageSource(selectedImage.file_path) ?? {
+                            uri: selectedImage.file_path,
+                        });
+                    }else{
+                        setThumbnailSource(null);
                     }
-                } catch (error) {
+                    } catch (error) {
                     console.error(
                         "Failed to load incident information",
                         error
