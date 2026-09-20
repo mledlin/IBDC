@@ -1,5 +1,9 @@
 import { getSessionHistoryData } from "@/database/SessionDao";
-import {LocalRideSession,ServerUploadAdapter,} from "@/utils/ServerUploadAdapter";
+import {
+    DefaultServerUploadAdapter,
+    LocalRideSession,
+    ServerUploadAdapter,
+} from "@/utils/ServerUploadAdapter";
 
 export type DataUploadConfig = {
     endpoint: string;
@@ -16,20 +20,24 @@ export type DataUploadResult = {
 
 /**
  * Uploads a ride session to the server.
- *
  */
 export async function uploadSession(
     session: LocalRideSession,
     config: DataUploadConfig,
 ): Promise<DataUploadResult> {
 
+    const adapter = config.adapter ?? new DefaultServerUploadAdapter();
+    const adaptedSession = adapter.adaptSession(session);
+
     console.log("Uploading session:", session.id);
     console.log("Upload endpoint:", config.endpoint);
+    console.log("Adapted session:", adaptedSession);
 
     return {
         ok: true,
         status: 200,
         sessionId: session.id,
+        responseBody: adaptedSession.payload,
     };
 }
 
