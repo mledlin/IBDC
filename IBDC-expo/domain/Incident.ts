@@ -15,8 +15,7 @@
 // separate and be assigned to sessions based on timestamps. Further work on a session
 // type/object is needed first.
 
-import {Session} from "@/domain/Session";
-import {ImageSourcePropType} from "react-native";
+import type {ImageSourcePropType} from "react-native";
 
 export type Incident = {
     id: string;
