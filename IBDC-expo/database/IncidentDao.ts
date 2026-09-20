@@ -1,10 +1,15 @@
 // database/IncidentDao.ts
 
 import { getDatabase } from "./database";
+import type {SQLiteDatabase} from "expo-sqlite";
 
 //Retrieves incidents, with newest first
-export async function getAllIncidents() {
-    const database = await getDatabase();
+export async function getAllIncidents(
+    suppliedDatabase?: SQLiteDatabase
+) {
+    const database =
+        suppliedDatabase ??
+        await getDatabase();
 
     return await database.getAllAsync(`
         SELECT * FROM incidents
@@ -28,9 +33,12 @@ export async function createIncident(
     vehicleModel: string | null,
     vehicleColor: string | null,
     vehicleYear: string | null,
-    createdTime: string
+    createdTime: string,
+    suppliedDatabase?: SQLiteDatabase
 ) {
-    const database = await getDatabase();
+    const database =
+        suppliedDatabase ??
+        await getDatabase();
 
     await database.runAsync(
         `INSERT INTO incidents (
@@ -67,6 +75,7 @@ export async function createIncident(
         createdTime
     );
 }
+
 //Updates image marked as best for an incident
 export async function updateIncidentBestImage(
     incidentId: string,

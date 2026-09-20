@@ -3,10 +3,18 @@
 import { getDatabase } from "./database";
 import { getAllIncidents } from "./IncidentDao";
 import { getAllIncidentImages, getMockImageSource} from "./ImageDao";
+import type {SQLiteDatabase} from "expo-sqlite";
 
 //Creates a new session record
-export async function createSession(id: string, createdTime: string) {
-    const database = await getDatabase();
+// Adapter to support new "supplied database" style
+export async function createSession(
+    id: string,
+    createdTime: string,
+    suppliedDatabase?: SQLiteDatabase
+) {
+    const database =
+        suppliedDatabase ??
+        await getDatabase();
 
     await database.runAsync(
         `INSERT INTO sessions (id, created_time) VALUES (?, ?)`,
@@ -14,9 +22,15 @@ export async function createSession(id: string, createdTime: string) {
         createdTime
     );
 }
-//Retrieves all sessions, ordered by newest 
-export async function getAllSessions() {
-    const database = await getDatabase();
+
+//Retrieves all sessions, ordered by newest
+// Adapter to support new "supplied database" style
+export async function getAllSessions(
+    suppliedDatabase?: SQLiteDatabase
+) {
+    const database =
+        suppliedDatabase ??
+        await getDatabase();
 
     return await database.getAllAsync(
         `SELECT * FROM sessions ORDER BY created_time DESC`

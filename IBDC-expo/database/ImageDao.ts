@@ -1,6 +1,8 @@
 // database/ImageDao.ts
 
 import { getDatabase } from "./database";
+import type {SQLiteDatabase} from "expo-sqlite";
+
 // Creates a new image record connected to an incident.
 // This stores the image file path and optional thumbnail path,
 // but does not store the actual image binary in the database, however depending on protobuf impl. this may change.
@@ -9,9 +11,12 @@ export async function createIncidentImage(
     incidentId: string,
     filePath: string,
     thumbnailPath: string | null,
-    source: string
+    source: string,
+    suppliedDatabase?: SQLiteDatabase
 ) {
-    const database = await getDatabase();
+    const database =
+        suppliedDatabase ??
+        await getDatabase();
 
     await database.runAsync(
         `INSERT INTO incident_images (
@@ -28,14 +33,20 @@ export async function createIncidentImage(
         source
     );
 }
+
 //Retrieves all incident images from the database.
-export async function getAllIncidentImages() {
-    const database = await getDatabase();
+export async function getAllIncidentImages(
+    suppliedDatabase?: SQLiteDatabase
+) {
+    const database =
+        suppliedDatabase ??
+        await getDatabase();
 
     return await database.getAllAsync(`
         SELECT * FROM incident_images
     `);
 }
+
 //Retrieves all image records of a specific incident.
 export async function getIncidentImagesByIncidentId(incidentId: string) {
     const database = await getDatabase();

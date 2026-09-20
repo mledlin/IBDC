@@ -1,29 +1,62 @@
 // database/database.ts
 // Handles the shared SQLite database connection and initializes all database tables.
-// This file should only contain database setup logic
+// This file should only contain database setup logic.
 // Specific methods should be placed in their respective DAO files.
+
+// Pro tip: DOnt auto-format this file... SQL becomes a mess.
+
 import * as SQLite from "expo-sqlite";
 
 let db: SQLite.SQLiteDatabase | null = null;
 
-export async function getDatabase() {
+/**
+ * Initializes the application's primary database.
+ */
+export async function initDatabase(): Promise<void> {
+    const database =
+        await getDatabase();
+
+    await initializeDatabase(database);
+}
+
+/**
+ * Returns the app's hard-coded primary database.
+ */
+export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
     if (db) {
         return db;
     }
 
-    db = await SQLite.openDatabaseAsync("ibdc.db");
-
-    await db.execAsync(`
-        PRAGMA foreign_keys = ON;
-        PRAGMA journal_mode = WAL;
-    `);
+    db = await openDatabase("ibdc.db");
 
     return db;
 }
 
-export async function initDatabase() {
-    const database = await getDatabase();
+/**
+ * This will get a database by name. Added to enable testing databases that dont impact the real one.
+ */
+export async function openDatabase(
+    databaseName: string
+): Promise<SQLite.SQLiteDatabase> {
+    const database =
+        await SQLite.openDatabaseAsync(databaseName);
 
+    await database.execAsync(`
+        PRAGMA foreign_keys = ON;
+        PRAGMA journal_mode = WAL;
+    `);
+
+    return database;
+}
+
+/**
+ * Creates all application tables and indexes in the supplied database.
+ *
+ * This allows production and test databases to use exactly the same schema.
+ */
+export async function initializeDatabase(
+    database: SQLite.SQLiteDatabase
+): Promise<void> {
     await database.execAsync(`
         CREATE TABLE IF NOT EXISTS sessions (
             id TEXT PRIMARY KEY NOT NULL,
@@ -60,7 +93,7 @@ export async function initDatabase() {
             source TEXT NOT NULL DEFAULT 'device',
             FOREIGN KEY (incident_id) REFERENCES incidents(id)
         );
-        
+
         CREATE TABLE IF NOT EXISTS devices (
             id TEXT PRIMARY KEY NOT NULL,
             bluetooth_address TEXT UNIQUE NOT NULL,
@@ -70,13 +103,13 @@ export async function initDatabase() {
             storage TEXT,
             firmware_version TEXT
         );
-        
+
         CREATE TABLE IF NOT EXISTS settings (
             id INTEGER PRIMARY KEY NOT NULL,
             image_capture INTEGER NOT NULL DEFAULT 1,
             day_limit INTEGER
         );
-        
+
         CREATE INDEX IF NOT EXISTS idx_incidents_session_id
         ON incidents(session_id);
 
