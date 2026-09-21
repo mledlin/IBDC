@@ -11,22 +11,10 @@ import {useRouter} from "expo-router";
 import {useSafeAreaInsets} from "react-native-safe-area-context";
 import React from "react";
 import {Ionicons} from '@expo/vector-icons';
-import {useDevice} from "@/context/DeviceContext";
+import {useDevice, DeviceInfo, ConnectedStatus} from "@/context/DeviceContext";
 import {useTheme} from '@/context/ThemeContext';
 
-type ConnectedStatus = 'connected' | 'disconnected' | 'pairing';
 
-/**
- * Describes the data shown for the current device.
- */
-interface DeviceInfo {
-    name: string;
-    status: ConnectedStatus;
-    battery: number;
-    storage: { used: number; total: number };
-    firmwareVersion: string;
-    lastSynced: string;
-}
 
 /**
  * DEBUG DATA
@@ -35,12 +23,13 @@ interface DeviceInfo {
  * is currently available from context.
  */
 const demoDevice: DeviceInfo = {
-    name: 'IBDC Proto X',
-    status: 'connected',
-    battery: 78,
-    storage: {used: 3.4, total: 8},
-    firmwareVersion: 'v1.0',
-    lastSynced: '2 min ago',
+    id: 'None',
+    name: 'No Device',
+    status: 'disconnected',
+    battery: 0,
+    storage: {used: 0, total: 1},
+    firmwareVersion: '-',
+    lastSynced: 'Never',
 };
 
 /**
@@ -120,7 +109,7 @@ export default function MainScreen() {
     const insets = useSafeAreaInsets();
     const {device} = useDevice();
     const currentDevice = device ?? demoDevice;
-    const storagePercent = (currentDevice.storage.used / currentDevice.storage.total) * 100;
+    const storagePercent = Math.floor((currentDevice.storage.used / currentDevice.storage.total) * 100);
 
     return (
         <View style={[styles.safe, {paddingTop: insets.top, backgroundColor: theme.colors.background}]}>
@@ -328,8 +317,8 @@ const styles = StyleSheet.create({
     metricHead: {flexDirection: "row", alignItems: "center", marginBottom: 8 },
     metricLabel: {flexDirection: "row", alignItems: "center", gap: 6},
     metricTitle: {fontSize: 13, fontWeight: "600"},
-    metricValue: {fontsize: 15, fontweight: "800", marginLeft: 5},
-    deviceMeta: {fontsize: 11, fontWeight: "600", marginTop: 2},
+    metricValue: {fontSize: 15, fontWeight: "800", marginLeft: 5},
+    deviceMeta: {fontSize: 11, fontWeight: "600", marginTop: 2},
     batteryWrapper: {flexDirection: 'row', alignItems: 'center', gap: 8},
     batteryOuter: {flex: 1, height: 8, borderRadius: 4, overflow: 'hidden'},
     batteryFill: {height: '100%', borderRadius: 4},

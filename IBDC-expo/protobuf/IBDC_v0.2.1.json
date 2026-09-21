@@ -1,0 +1,189 @@
+{
+  "nested": {
+    "IBDC": {
+      "nested": {
+        "EventNotification": {
+          "fields": {
+            "eventId": {
+              "type": "uint32",
+              "id": 1,
+              "protoName": "event_id"
+            },
+            "distanceCm": {
+              "type": "uint32",
+              "id": 2,
+              "protoName": "distance_cm"
+            },
+            "timeOffsetMs": {
+              "type": "uint32",
+              "id": 3,
+              "protoName": "time_offset_ms"
+            },
+            "imageCount": {
+              "type": "uint32",
+              "id": 4,
+              "protoName": "image_count"
+            },
+            "imageFormat": {
+              "type": "ImageFormat",
+              "id": 5,
+              "protoName": "image_format"
+            }
+          }
+        },
+        "ImageFormat": {
+          "values": {
+            "IMAGE_FORMAT_UNSPECIFIED": 0,
+            "IMAGE_FORMAT_JPEG": 1,
+            "IMAGE_FORMAT_PNG": 2
+          }
+        },
+        "ImageInfo": {
+          "fields": {
+            "eventId": {
+              "type": "uint32",
+              "id": 1,
+              "protoName": "event_id"
+            },
+            "imageIndex": {
+              "type": "uint32",
+              "id": 2,
+              "protoName": "image_index"
+            },
+            "imageSizeBytes": {
+              "type": "uint32",
+              "id": 3,
+              "protoName": "image_size_bytes"
+            },
+            "totalChunks": {
+              "type": "uint32",
+              "id": 4,
+              "protoName": "total_chunks"
+            },
+            "imageFormat": {
+              "type": "ImageFormat",
+              "id": 5,
+              "protoName": "image_format"
+            }
+          }
+        },
+        "ImageChunk": {
+          "fields": {
+            "eventId": {
+              "type": "uint32",
+              "id": 1,
+              "protoName": "event_id"
+            },
+            "imageIndex": {
+              "type": "uint32",
+              "id": 2,
+              "protoName": "image_index"
+            },
+            "chunkSequence": {
+              "type": "uint32",
+              "id": 3,
+              "protoName": "chunk_sequence"
+            },
+            "isLastChunk": {
+              "type": "bool",
+              "id": 4,
+              "protoName": "is_last_chunk"
+            },
+            "payload": {
+              "type": "bytes",
+              "id": 5
+            },
+            "totalChunks": {
+              "type": "uint32",
+              "id": 6,
+              "protoName": "total_chunks"
+            }
+          }
+        },
+        "ImageTransferRequest": {
+          "fields": {
+            "eventId": {
+              "type": "uint32",
+              "id": 1,
+              "protoName": "event_id"
+            },
+            "startFromImage": {
+              "type": "uint32",
+              "id": 2,
+              "protoName": "start_from_image"
+            },
+            "startFromChunk": {
+              "type": "uint32",
+              "id": 3,
+              "protoName": "start_from_chunk"
+            }
+          }
+        },
+        "EventTransferAck": {
+          "fields": {
+            "eventId": {
+              "type": "uint32",
+              "id": 1,
+              "protoName": "event_id"
+            }
+          }
+        },
+        "Settings": {
+          "fields": {
+            "imagesPerEvent": {
+              "type": "uint32",
+              "id": 1,
+              "protoName": "images_per_event"
+            }
+          }
+        },
+        "DeviceStatus": {
+          "fields": {
+            "protocolVersion": {
+              "type": "uint32",
+              "id": 1,
+              "protoName": "protocol_version"
+            },
+            "batteryPercent": {
+              "type": "uint32",
+              "id": 2,
+              "protoName": "battery_percent"
+            },
+            "pendingEvents": {
+              "type": "uint32",
+              "id": 3,
+              "protoName": "pending_events"
+            },
+            "storageAvailablePercent": {
+              "type": "uint32",
+              "id": 4,
+              "protoName": "storage_available_percent"
+            }
+          }
+        },
+        "PendingEventListRequest": {
+          "fields": {}
+        },
+        "PendingEventList": {
+          "fields": {
+            "eventIds": {
+              "rule": "repeated",
+              "type": "uint32",
+              "id": 1,
+              "protoName": "event_ids"
+            }
+          }
+        },
+        "EventInfoRequest": {
+          "fields": {
+            "eventId": {
+              "type": "uint32",
+              "id": 1,
+              "protoName": "event_id"
+            }
+          }
+        }
+      }
+    }
+  }
+}

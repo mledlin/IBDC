@@ -3,6 +3,9 @@
 import { getDatabase } from "./database";
 import { getAllIncidents } from "./IncidentDao";
 import { getAllIncidentImages, getMockImageSource} from "./ImageDao";
+import { Directory, Paths} from "expo-file-system";
+
+const INCIDENT_IMAGE_DIRECTROY = new Directory(Paths.document, "incident_images");
 
 // This represents how each Session entry in the Session Table is be shaped
 export type DatabaseSessionRow = {
@@ -37,6 +40,15 @@ export async function deleteAllSessions() {
         await database.runAsync(`DELETE FROM incident_images`);
         await database.runAsync(`DELETE FROM incidents`);
         await database.runAsync(`DELETE FROM sessions`);
+
+        if (INCIDENT_IMAGE_DIRECTROY.exists){
+            INCIDENT_IMAGE_DIRECTROY.delete();
+        }
+
+        INCIDENT_IMAGE_DIRECTROY.create({
+            intermediates: true,
+            idempotent: true,
+        });
     } catch (error) {
         console.error("Failed to delete session data", error);
         throw error;
@@ -58,15 +70,14 @@ export async function getSessionHistoryData() {
             .map((incident: any) => {
                 const incidentImages = images
                     .filter((image: any) => image.incident_id === incident.id)
-                    .map((image: any) => ({
-                        id: image.id,
-                        file_path: image.file_path,
-
-                        // This is mock and should be replaced with the following in future
-                        // implementation, where file_path is local file directory.
-                        uri: getMockImageSource(image.file_path),
-                        // uri: { uri: image.file_path }
-                    }));
+                    .map((image: any) => {
+                        const mockSource = getMockImageSource(image.file_path);
+                        return {
+                            id: image.id,
+                            file_path: image.file_path,
+                            uri: mockSource ?? {uri: image.file_path},
+                        };
+                    });
 
                 return {
                     ...incident,
