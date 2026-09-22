@@ -1,4 +1,5 @@
 import {BleManager, Device, Subscription} from "react-native-ble-plx";
+import { PermissionsAndroid, Platform, } from "react-native";
 import { Buffer } from "buffer";
 import { BleAdapter, BleDeviceInfo } from "./BleAdapter";
 
@@ -34,6 +35,39 @@ export class RealBleAdapter implements BleAdapter {
         this.manager = new BleManager();
     }
 
+    private async requestPermissions(): Promise<boolean> {
+        if(Platform.OS == "ios") {
+            return true;
+        }
+        if(Platform.OS !== "android") {
+            return false;
+        }
+
+        const apiLevel = typeof Platform.Version == "number" ? Platform.Version : parseInt(Platform.Version, 10);
+        //Android 12 / API 31+
+        if (apiLevel >= 31) {
+        const result = await PermissionsAndroid.requestMultiple([
+            PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+            PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+        ]);
+
+        const scanGranted = result[
+            PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN
+        ] === PermissionsAndroid.RESULTS.GRANTED;
+
+        const connectedGranted = result[
+            PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT
+        ] === PermissionsAndroid.RESULTS.GRANTED;
+
+        return(
+            scanGranted && connectedGranted
+        );
+    }
+    // for Andorid ll and below, BLE scanning requied location permission on these Android versions.
+    const locationPermission = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION);
+    return (locationPermission === PermissionsAndroid.RESULTS.GRANTED);
+    }
+
     /**
      * Scans for nearby IBDC devices. 
      * 
@@ -42,7 +76,12 @@ export class RealBleAdapter implements BleAdapter {
      * the app will not be able to discover it.  
      */
     async scan(): Promise<BleDeviceInfo[]> {
-       // this.stopScan();
+        const permissionGranted = await this.requestPermissions();
+        if (!permissionGranted){
+            throw new Error("BLE permission not granted");
+        }
+        //make sure an old scan is not running. 
+        this.stopScan();
         this.discoveredDevices.clear();
         console.log("Starting BLE scan for IBDC devices...");
         return new Promise<BleDeviceInfo[]>((resolve, reject) => {
@@ -61,7 +100,8 @@ export class RealBleAdapter implements BleAdapter {
                     if(!device){
                         return;
                     }
-
+                    // if the Ble scan collects (scans) the same device more than once
+                    // We use a map to remove any duplicates. 
                     const discoveredDevice: BleDeviceInfo = {
                         id: device.id, 
                         name: 
@@ -80,7 +120,8 @@ export class RealBleAdapter implements BleAdapter {
                         );
                 }
             );
-
+            // Scan duration is set here to timeout after SCAN_DURATION_MS
+            // SCAN_DURATION_MS is set to 5 seconds. 
             this.scanTimeout = setTimeout(()=> {
                // this.finishScan();
             }, SCAN_DURATION_MS);
@@ -88,30 +129,153 @@ export class RealBleAdapter implements BleAdapter {
            
     }
 
+    /**
+     * Stops the current BLE scan, if the scan is waiting for the results,
+     * the scan will return what it has discovered so far. 
+     */
+    stopScan(): void {
+        this.manager.stopDeviceScan();
+        if (this.scanTimeout){
+            clearTimeout(this.scanTimeout);
+            this.scanTimeout = null;
+        }
+        if(this.scanResolve){
+            const devices = Array.from(this.discoveredDevices.values());
+            const resolve = this.scanResolve; 
+            this.clearScanState();
+            resolve(devices);
+        }
+    }
+
+    /**
+     * Reset the internal scan bookeeping. 
+     */
+    private clearScanState(): void {
+        this.scanResolve = null; 
+        this.scanReject = null;
+        this.scanTimeout = null;
+    }
+
+    /**
+     * Connects to a specific BLE device.
+     */
     async connect(deviceId: string): Promise<void>{
-
+        try {
+            //stop scanning before trying to connect.
+            this.stopScan();
+            console.log("Attempting to connect to IBDC device:", deviceId);
+            const device = await this.manager.connectToDevice(deviceId);
+            console.log("BLE connection established.");
+            //Both Android and iOS need service discovery after establishing the physical BLE connection. 
+            const discoveredDevice = await device.discoverAllServicesAndCharacteristics();
+            this.connectedDevice = discoveredDevice;
+            console.log("IBDC services and characteristics discovered.")
+            //listen for unexpected disconnections.
+            this.setUpDisconnectListener();
+            //subscribe to TX so the phone can revice messages from the IBDC deivce. 
+            this.subscribeToTx();
+            console.log("IBDC device fully connected:", deviceId);
+        } catch (error) { 
+            console.error("Failed to connect to IBDC deivce:", error);
+            this.connectedDevice = null; 
+            throw error;
+        }
     }
 
+    /**
+     * Watches the device for sudden disconnection. 
+     */
+    private setUpDisconnectListener(): void {
+        if(!this.connectedDevice) {
+            return;
+        }
+        this.disconnectSubscription?.remove();
+        const deviceId = this.connectedDevice.id;
+        this.disconnectSubscription = this.manager.onDeviceDisconnected(deviceId, 
+            (error, device) => {
+                if(error) {
+                    console.warn("IBDC device disconnected.", error);
+                } else {
+                    console.log("IBDC deivce disconnected:", device?.id ?? deviceId);
+                }
+                this.notificationSubscription?.remove();
+                this.notificationSubscription = null;
+                this.connectedDevice = null;
+            }
+        );
+    }
+
+    /**
+     * Stop listening to TX notifications.
+     */
     async disconnect(): Promise<void> {
-        
+        if(!this.connectedDevice){
+            return;
+        }
+        const deviceId = this.connectedDevice.id;
+        console.log("Disconnecting from IBDC deivce:", deviceId);
+        //stop listening for TX notifications.
+        this.notificationSubscription?.remove();
+        this.notificationSubscription = null; 
+        //remove our disconnected listener before mannulally diconnecting. 
+        this.disconnectSubscription?.remove();
+        this.disconnectSubscription = null; 
+        try{
+            await this.manager.cancelDeviceConnection(deviceId);
+            console.log("Disconnected from IBDC device:", deviceId);
+        } catch (error) {
+            console.error ("BLE disconnect error:", error);
+            throw error;
+        } finally {
+            this.connectedDevice = null; 
+        }
     }
 
+    /**
+     * send raw bytes to the IBDC device.
+     * Note: IBDCCommunicationService is responsible for 
+     * the protobuff encoding BEFORE this method. 
+     */
     async sendData(data: Uint8Array): Promise<void> {
-        
+       if(!this.connectedDevice) {
+        throw new Error("Cannot send BLE data: no IBDC deivice connected.");
+       }
+       const base64String = Buffer.from(data).toString("base64");
+       try {
+        await this.connectedDevice.writeCharacteristicWithResponseForService(SERVICE_UUID, RX_UUID, base64String);
+        console.log('Sent ${data.length} BLE bytes to IBCD deivce.');
+       } catch (error){
+        console.error("Failed to send BLE data:", error);
+        throw error;
+       }
     }
     
+    /**
+     * Register the callback that recieves data coming from the IBDC device. 
+     */
     onDataReceived(callback: (data: Uint8Array) => void): void {
         
     }
 
+    /**
+     * 
+     * @returns 
+     */
     isConnected(): boolean {
         return true;
     }
 
+    /**
+     * 
+     * @returns 
+     */
     getConnectedDeviceId(): string | null {
         return this.connectedDevice?.id ?? null;
     }
 
+    /**
+     * 
+     */
     private subscribeToTx(): void {
 
     }
