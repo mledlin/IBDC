@@ -77,12 +77,18 @@ export class ImageIngestService {
     };
  
     private handleImageChunk = (chunk: ImageChunk) => {
+
+        // Test here ->
+        // Determine if received chunk is expected by ensuring one of the recently received events has a matching eventId
         const pendingEvent = this.pendingEvents.get(chunk.eventId);
         if (!pendingEvent) {
             console.warn(`ImageIngestService: ImageChunk for unknown event ${chunk.eventId}, ignoring.`);
             return;
         }
- 
+        // ---
+
+        // Test here ->
+        // Either add current chunk to an existing image or create a new image starting with this chunk
         let pendingImage = pendingEvent.images.get(chunk.imageIndex);
         if (!pendingImage) {
             // Chunk arrived before ImageInfo - start tracking from the chunk's own totalChunks.
@@ -91,7 +97,10 @@ export class ImageIngestService {
         }
  
         pendingImage.chunks.set(chunk.chunkSequence, chunk.payload);
- 
+        // ---
+
+        // Test if conditional here ->
+        // Determine is image is finished being put together.
         if (chunk.isLastChunk || pendingImage.chunks.size >= pendingImage.totalChunks) {
             console.log("ImageIngestService: Complete image")
             this.finishImage(chunk.eventId, chunk.imageIndex, pendingEvent, pendingImage).catch((error) => {
@@ -101,6 +110,7 @@ export class ImageIngestService {
                 );
             });
         }
+        // --
     };
  
     private async finishImage(
