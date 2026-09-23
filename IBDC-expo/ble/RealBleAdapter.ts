@@ -1,4 +1,4 @@
-import {BleManager, Device, Subscription} from "react-native-ble-plx";
+import {BleManager, Device, State, Subscription} from "react-native-ble-plx";
 import { PermissionsAndroid, Platform, } from "react-native";
 import { Buffer } from "buffer";
 import { BleAdapter, BleDeviceInfo } from "./BleAdapter";
@@ -15,7 +15,7 @@ export class RealBleAdapter implements BleAdapter {
     private notificationSubscription: Subscription | null = null;
     private disconnectSubscription: Subscription | null = null;
 
-    private receiveCalback: 
+    private receiveCallback: 
         | ((data: Uint8Array) => void)
         | null = null;
 
@@ -80,6 +80,7 @@ export class RealBleAdapter implements BleAdapter {
         if (!permissionGranted){
             throw new Error("BLE permission not granted");
         }
+        await this.waitforBluetoothPoweredOn();
         //make sure an old scan is not running. 
         this.stopScan();
         this.discoveredDevices.clear();
@@ -93,7 +94,7 @@ export class RealBleAdapter implements BleAdapter {
                 (error, device) => {
                     if (error) {
                         console.error("BLE scan error:", error);
-                       // this.failscan(error);
+                        this.failScan(error);
                         return;
                     }
 
@@ -123,7 +124,7 @@ export class RealBleAdapter implements BleAdapter {
             // Scan duration is set here to timeout after SCAN_DURATION_MS
             // SCAN_DURATION_MS is set to 5 seconds. 
             this.scanTimeout = setTimeout(()=> {
-               // this.finishScan();
+               this.finishScan();
             }, SCAN_DURATION_MS);
         });
            
@@ -254,15 +255,14 @@ export class RealBleAdapter implements BleAdapter {
      * Register the callback that recieves data coming from the IBDC device. 
      */
     onDataReceived(callback: (data: Uint8Array) => void): void {
-        
+        this.receiveCallback = callback;
     }
 
     /**
-     * 
-     * @returns 
+     * Returns wheather an IBDC device is connected. 
      */
     isConnected(): boolean {
-        return true;
+        return (this.connectedDevice !== null);
     }
 
     /**
@@ -277,6 +277,83 @@ export class RealBleAdapter implements BleAdapter {
      * 
      */
     private subscribeToTx(): void {
+        if (!this.connectedDevice){
+            throw new Error("Cannot subscribe to TX: no device connected.");
+        }
+        this.notificationSubscription?.remove();
+        console.log("Subscribing to IBDC TX...");
+        this.notificationSubscription = this.connectedDevice.monitorCharacteristicForService(SERVICE_UUID, TX_UUID, 
+            (error, characteristic) => {
+                if(error) {
+                    console.error("Tx notification error:", error); 
+                    return;
+                }
+                if(!characteristic?.value){
+                    return;
+                }
+                const buffer = Buffer.from(characteristic.value, "base64");
+                const bytes = new Uint8Array(buffer);
+                console.log(`Received ${bytes.length} BLE bytes`);
+            }
+        );
+    }
 
+    /**
+     * Finish a sucessfull scan (happy case)
+     */
+    private finishScan(): void {
+        this.manager.stopDeviceScan();
+        if(this.scanTimeout){
+            clearTimeout(this.scanTimeout);
+            this.scanTimeout = null;
+        }
+        const devices = Array.from(this.discoveredDevices.values());
+        console.log(`Ble Scan finished. FOund ${devices.length} device(s).`);
+        const resolve = this.scanResolve;
+        this.clearScanState();
+        resolve?.(devices);
+    }
+
+    private failScan(error: Error): void {
+        this.manager.stopDeviceScan();
+        if(this.scanTimeout){
+            clearTimeout(this.scanTimeout);
+            this.scanTimeout = null;
+        }
+        const reject = this.scanReject;
+        this.clearScanState();
+        reject?.(error);
+    }
+
+    /**
+     * iOS-Specific. Waits for Bluetooth to actually become ready before scanning. 
+     * CoreBluetooth may not be immediately powered on with BLE manager starts.
+     */
+    private async waitforBluetoothPoweredOn(): Promise<void> {
+        const currentState = await this.manager.state();
+        if(currentState === State.PoweredOn) {
+            return;
+        }
+
+        return new Promise<void>((resolve, reject) => {
+            const subscription = this.manager.onStateChange(
+                (state) => {
+                    if(state === State.PoweredOn){
+                        subscription.remove();
+                        resolve();
+                    }
+
+                    if(
+                        state === State.PoweredOff ||
+                        state === State.Unsupported || 
+                        state === State.Unauthorized
+                    ) {
+                        subscription.remove();
+                        reject(new Error(`Bluetooth unavailable: Current State: ${state}`));
+                    }
+                }, 
+                true
+            );
+        });
     }
 }
