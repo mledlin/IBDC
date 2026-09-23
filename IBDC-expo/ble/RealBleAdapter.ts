@@ -80,7 +80,7 @@ export class RealBleAdapter implements BleAdapter {
         if (!permissionGranted){
             throw new Error("BLE permission not granted");
         }
-        await this.waitforBluetoothPoweredOn();
+        await this.waitForBluetoothPoweredOn();
         //make sure an old scan is not running. 
         this.stopScan();
         this.discoveredDevices.clear();
@@ -179,6 +179,7 @@ export class RealBleAdapter implements BleAdapter {
         } catch (error) { 
             console.error("Failed to connect to IBDC deivce:", error);
             this.connectedDevice = null; 
+            this.cancelScan(error instanceof Error ? error: new Error ("BLE connection failed."));
             throw error;
         }
     }
@@ -202,6 +203,10 @@ export class RealBleAdapter implements BleAdapter {
                 this.notificationSubscription?.remove();
                 this.notificationSubscription = null;
                 this.connectedDevice = null;
+
+                if(this.scanResolve){
+                    this.cancelScan(new Error("Scan cancelled becasue the device disconnected"))
+                }
             }
         );
     }
@@ -211,6 +216,9 @@ export class RealBleAdapter implements BleAdapter {
      */
     async disconnect(): Promise<void> {
         if(!this.connectedDevice){
+            if (this.scanResolve || this.scanReject) {
+                this.cancelScan(new Error("Scan cancelled because no BLE device was connected."));
+            }
             return;
         }
         const deviceId = this.connectedDevice.id;
@@ -244,7 +252,7 @@ export class RealBleAdapter implements BleAdapter {
        const base64String = Buffer.from(data).toString("base64");
        try {
         await this.connectedDevice.writeCharacteristicWithResponseForService(SERVICE_UUID, RX_UUID, base64String);
-        console.log('Sent ${data.length} BLE bytes to IBCD deivce.');
+        console.log(`Sent ${data.length} BLE bytes to IBCD deivce.`);
        } catch (error){
         console.error("Failed to send BLE data:", error);
         throw error;
@@ -294,6 +302,13 @@ export class RealBleAdapter implements BleAdapter {
                 const buffer = Buffer.from(characteristic.value, "base64");
                 const bytes = new Uint8Array(buffer);
                 console.log(`Received ${bytes.length} BLE bytes`);
+
+                if (!this.receiveCallback){
+                    console.warn("Recieved BLE data, but no OnDataRecieved listener is registered.");
+                    return;
+                }
+
+                this.receiveCallback?.(bytes);
             }
         );
     }
@@ -325,11 +340,28 @@ export class RealBleAdapter implements BleAdapter {
         reject?.(error);
     }
 
+    private cancelScan(error: Error): void {
+        if (!this.scanResolve && !this.scanReject) {
+            return;
+        }
+
+        this.manager.stopDeviceScan();
+        if (this.scanTimeout) {
+            clearTimeout(this.scanTimeout);
+            this.scanTimeout = null;
+        }
+
+        const reject = this.scanReject;
+        this.clearScanState();
+        this.discoveredDevices.clear();
+        reject?.(error);
+    }
+
     /**
      * iOS-Specific. Waits for Bluetooth to actually become ready before scanning. 
      * CoreBluetooth may not be immediately powered on with BLE manager starts.
      */
-    private async waitforBluetoothPoweredOn(): Promise<void> {
+    private async waitForBluetoothPoweredOn(): Promise<void> {
         const currentState = await this.manager.state();
         if(currentState === State.PoweredOn) {
             return;
