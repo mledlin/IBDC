@@ -4,11 +4,15 @@ import { Buffer } from "buffer";
 import { BleAdapter, BleDeviceInfo } from "./BleAdapter";
 
 const SERVICE_UUID = "D4A51F4B-93EF-4AB1-B2B6-0E445CC297BA";
-const RX_UUID = "D4A51F4C-93Ef-4AB1-B2B6-0E445CC297BA";
+const RX_UUID = "D4A51F4C-93EF-4AB1-B2B6-0E445CC297BA";
 const TX_UUID = "D4A51F4D-93EF-4AB1-B2B6-0E445CC297BA";
-
+//5 second scan durration. 
 const SCAN_DURATION_MS = 5000;
 
+/**
+ * This class is responsible fro permissions, Bluetooth state, scanning, connect/disconnect, GATT service discovery,
+ * RX writes, TX notifications, and raw Uint8Binary transport. 
+ */
 export class RealBleAdapter implements BleAdapter {
     private manager: BleManager; 
     private connectedDevice: Device | null = null; 
@@ -161,6 +165,13 @@ export class RealBleAdapter implements BleAdapter {
      * Connects to a specific BLE device.
      */
     async connect(deviceId: string): Promise<void>{
+        const permissionGranted = await this.requestPermissions();
+        if (!permissionGranted){
+            throw new Error("BLE permission not granted.")
+        }
+
+        await this.waitForBluetoothPoweredOn();
+
         try {
             //stop scanning before trying to connect.
             this.stopScan();
@@ -178,10 +189,17 @@ export class RealBleAdapter implements BleAdapter {
             console.log("IBDC device fully connected:", deviceId);
         } catch (error) { 
             console.error("Failed to connect to IBDC deivce:", error);
-            this.connectedDevice = null; 
-            this.cancelScan(error instanceof Error ? error: new Error ("BLE connection failed."));
+            this.cleanUpCOnnectionState();
             throw error;
         }
+    }
+
+    private cleanUpCOnnectionState(): void {
+        this.notificationSubscription?.remove();
+        this.notificationSubscription = null; 
+        this.disconnectSubscription?.remove();
+        this.disconnectSubscription = null;
+        this.connectedDevice = null;
     }
 
     /**
@@ -200,13 +218,7 @@ export class RealBleAdapter implements BleAdapter {
                 } else {
                     console.log("IBDC deivce disconnected:", device?.id ?? deviceId);
                 }
-                this.notificationSubscription?.remove();
-                this.notificationSubscription = null;
-                this.connectedDevice = null;
-
-                if(this.scanResolve){
-                    this.cancelScan(new Error("Scan cancelled becasue the device disconnected"))
-                }
+                this.cleanUpCOnnectionState();
             }
         );
     }
@@ -236,7 +248,7 @@ export class RealBleAdapter implements BleAdapter {
             console.error ("BLE disconnect error:", error);
             throw error;
         } finally {
-            this.connectedDevice = null; 
+            this.cleanUpCOnnectionState();
         }
     }
 
@@ -304,11 +316,11 @@ export class RealBleAdapter implements BleAdapter {
                 console.log(`Received ${bytes.length} BLE bytes`);
 
                 if (!this.receiveCallback){
-                    console.warn("Recieved BLE data, but no OnDataRecieved listener is registered.");
+                    console.warn("Recieved BLE data, but no OnDataReceived listener is registered.");
                     return;
                 }
 
-                this.receiveCallback?.(bytes);
+                this.receiveCallback(bytes);
             }
         );
     }
@@ -326,6 +338,7 @@ export class RealBleAdapter implements BleAdapter {
         console.log(`Ble Scan finished. FOund ${devices.length} device(s).`);
         const resolve = this.scanResolve;
         this.clearScanState();
+        this.discoveredDevices.clear();
         resolve?.(devices);
     }
 
