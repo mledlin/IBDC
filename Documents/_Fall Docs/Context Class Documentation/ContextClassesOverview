@@ -1,0 +1,17 @@
+React Native Context Documentation
+https://react.dev/reference/react/useContext
+
+Role of Context Classes
+Each context class encapsulates values that can be passed down to child React jsx components. In our program, we have the
+following context classes: [DeviceContext, ThemeContext].
+
+DeviceContext - Encapsulates the methods and state variables associated with the IBDC device. Device
+context exposes:
+ - State variables for the connected device
+ - Methods for handling Bluetooth Low Energy connection
+
+ThemeContext - Encapsulates top-level user interface style values that are passed down to each component specified
+in the module. These styles applied at the top level and passed to the jsx children components ensure a consistent UI
+throughout the application.
+
+
