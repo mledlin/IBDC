@@ -34,6 +34,7 @@ import {
 } from "react-native";
 
 import {useTheme} from "@/context/ThemeContext";
+import {useDevice} from "@/context/DeviceContext"
 import ThemePicker from "@/components/ui/ThemePicker";
 import {useSafeAreaInsets} from "react-native-safe-area-context";
 
@@ -48,9 +49,9 @@ import {useSafeAreaInsets} from "react-native-safe-area-context";
  */
 export default function SettingsPage() {
     const {theme} = useTheme();
+    const {deviceMode, setDeviceMode} = useDevice();
     const [isClearingTestData, setIsClearingTestData] = useState(false);
-    // TODO Load from a properties file on startup!
-    const [settingOne, setting1] = useState(true);
+    const [isSwitchingDevice, setIsSwitchingDevice] = useState(false);
 
     /**
      * Available age thresholds for bulk deleting older stored data.
@@ -255,12 +256,34 @@ export default function SettingsPage() {
 
                 <Text style={[styles.title, {color: theme.colors.text}]}>SETTINGS</Text>
 
-
+                <Text style={[styles.sectionLabel, {color: theme.colors.text}]}>DEVICE SOURCE</Text>
                 <View style={styles.settingsToggle}>
-                    <Switch value={settingOne} onValueChange={setting1} thumbColor={theme.colors.primary}/>
-                    <Text style={[styles.settingLabel, {color: theme.colors.text}]}>Unknown Setting 1</Text>
+                    <Switch
+                     value={deviceMode === 'real'} 
+                     disabled={isSwitchingDevice}
+                     onValueChange={async enabled => {
+                        setIsSwitchingDevice(true);
+                        try{
+                            await setDeviceMode(enabled ? 'real' : 'mock');
+                        }catch (error){
+                            const message = 
+                            error instanceof Error && error.message.includes("createClient")
+                            ? "Real BLE requires a development Build. Expo Go cannot run react-native-ble-plx."
+                            : error instanceof Error 
+                                ? error.message
+                                :String(error);
+                            Alert.alert('Device switch failed', message);
+                        }finally {
+                            setIsSwitchingDevice(false);
+                        }
+                     }} 
+                     thumbColor={theme.colors.primary}
+                     />
+                    <Text style={[styles.settingLabel, {color: theme.colors.text}]}>{deviceMode === 'real' ? 'Real IBDC device' : 'Simulated IBDC device'}</Text>
                 </View>
-
+                 <Text style={{color: theme.colors.textSecondary, marginBottom: 16}}>
+                    Switching disconnects the current device. Scan again on Pair Device.
+                </Text>       
 
                 {/* Theme picker */}
                 <Text style={[styles.sectionLabel, {color: theme.colors.text}]}>APPEARANCE</Text>

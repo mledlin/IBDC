@@ -5,14 +5,14 @@
  * component, and exposes a custom hook for safely accessing device state.
  */
 
-import React, {createContext, useContext, useEffect, useState} from "react";
+import React, {createContext, useContext, useEffect, useRef, useState} from "react";
 import { BleAdapter, BleDeviceInfo } from "@/ble/BleAdapter";
 import { MockBleAdapter } from "@/ble/MockBleAdapter";
 import { IBDCCommunicationService, DeviceStatus as IBDCDeviceStatus } from "@/services/IBDCCommunicationService";
 import { SimulatedIBDC } from "@/ble/SimulatedIBDC";
 import { ImageIngestService } from "@/services/ImageIngestService";
 
-
+export type DeviceMode = 'mock' | 'real';
 export type ConnectedStatus = 'connected' | 'disconnected' | 'pairing';
 
 /**
@@ -39,6 +39,8 @@ export interface DeviceInfo {
  */
 type DeviceContextType = {
   device: DeviceInfo | null;
+  deviceMode: DeviceMode;
+  setDeviceMode: (mode: DeviceMode) => Promise<void>;
   devices: BleDeviceInfo[];
   isConnected: boolean;
   scan: () => Promise<void>;
@@ -61,7 +63,7 @@ const DeviceContext = createContext<DeviceContextType | undefined>(undefined);
 // kept as concrete MockBleRefrence because SimulatedIBDC needs simulateIncomming(),
 // which isn't a part of the BleAdapter interface or the real implementation.
 const mockBLEAdapter = new MockBleAdapter();
-const bleAdapter: BleAdapter = mockBLEAdapter;
+let bleAdapter: BleAdapter = mockBLEAdapter;
 
 // Sits between bleAdapter and this context (and any other domain services),
 const communicationService = new IBDCCommunicationService(bleAdapter);
@@ -82,6 +84,25 @@ const simulatedDevice = new SimulatedIBDC(mockBLEAdapter);
 export function DeviceProvider({ children }: { children: React.ReactNode }) {
   const [device, setDevice] = useState<DeviceInfo | null>(null);
   const [devices, setDevices] = useState<BleDeviceInfo[]>([]);
+  const [deviceMode, setMode] = useState<DeviceMode>('mock');
+  const modeRef = useRef<DeviceMode>('mock');
+
+  async function changeMode(mode: DeviceMode): Promise<void> {
+    if (mode !== modeRef.current) {
+      if (modeRef.current == 'mock') simulatedDevice.stop();
+      await bleAdapter.disconnect();
+      //load the native BLE module only when the real device is selected.
+      const nextAdapter: BleAdapter = mode === 'mock' 
+      ? mockBLEAdapter 
+      : new (require('@/ble/RealBleAdapter').RealBleAdapter)();
+      bleAdapter = nextAdapter;
+      communicationService.setAdapter(nextAdapter);
+      modeRef.current = mode;
+      setMode(mode);
+      setDevice(null);
+      setDevices([]);
+    }
+  }
 
   // keep connceted device state in sync with decoded DeviceStatus pushes. 
   // only update stat is a device is currently set; ignore otherwise
@@ -116,13 +137,11 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function connect(deviceId: string): Promise<void> {
-    await bleAdapter.connect(deviceId);
-
     const selectedDevice = devices.find((d) => d.id === deviceId);
     if (!selectedDevice) {
       throw new Error(`Device with ID ${deviceId} not found in scanned devices.`);
     }
-
+    await bleAdapter.connect(deviceId);
     const initalState = simulatedDevice.getState();
 
     setDevice({
@@ -130,20 +149,21 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
       name: selectedDevice.name || "Unknown IBDC Device",
       status: 'connected',
       //Temporary mock values for battery, storage, firmwareVersion, and lastSynced. eventually these will be retrieved from the device itself.
-      battery: initalState.batteryPercent,
+      battery: initalState?.batteryPercent ?? 0,
       storage: { 
-        used: 100 - initalState.storageAvailablePercent, 
+        used: initalState ? 100 - initalState.storageAvailablePercent : 0, 
         total: 100 },
-      firmwareVersion: initalState.firmwareVersionLabel,
+      firmwareVersion: initalState?.firmwareVersionLabel ?? "Unknown",
       lastSynced: new Date().toISOString(),
-      pendingEvents: initalState.pendingEventCount,
-      imagesPerEventOnDevice: initalState.imagesPerEventSetting,
+      pendingEvents: initalState?.pendingEventCount,
+      imagesPerEventOnDevice: initalState?.imagesPerEventSetting,
     });
 
-    simulatedDevice.start();
+    if (modeRef.current === 'mock') simulatedDevice.start();
   }
+
   async function disconnect() {
-    simulatedDevice.stop();
+    if (modeRef.current === 'mock') simulatedDevice.stop();
     await bleAdapter.disconnect();
     setDevice(null);
   }
@@ -151,14 +171,14 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
   // Development testing hook: Makes mock device simulate a detection event with imageCount photos
   // hardcoded, will need to be updated later to reflect real images per event.
   async function triggerTestEvent(imageCount: number = 3): Promise<void>{
-    if (!device) {
+    if (!device || modeRef.current !== 'mock') {
       throw new Error("cannot trigger a test event: no device is connected");
     }
     await simulatedDevice.triggerEvent({imageCount})
   }
 
   return (
-    <DeviceContext.Provider value={{ device, devices, isConnected: bleAdapter.isConnected(), scan, connect, disconnect, communicationService, triggerTestEvent }}>
+    <DeviceContext.Provider value={{ device, deviceMode, setDeviceMode: changeMode, devices, isConnected: bleAdapter.isConnected(), scan, connect, disconnect, communicationService, triggerTestEvent }}>
       {children}
     </DeviceContext.Provider>
   );
