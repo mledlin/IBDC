@@ -68,7 +68,8 @@ type PendingEventListListener = (message: PendingEventList) => void;
 type Unsubscribe = () => void;
 
 export class IBDCCommunicationService {
-    // we should set ble to readonly in final product. 
+    // This can become read only when mock/real adapter switching is removed
+    // from the final production application. 
     private ble: BleAdapter;
     private eventNotificationListeners = new Set<EventNotificationListener>();
     private deviceStatusListeners = new Set<DeviceStatusListener>();

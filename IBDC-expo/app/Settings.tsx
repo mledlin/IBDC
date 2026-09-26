@@ -49,10 +49,11 @@ import {useSafeAreaInsets} from "react-native-safe-area-context";
  */
 export default function SettingsPage() {
     const {theme} = useTheme();
-    const {deviceMode, setDeviceMode} = useDevice();
+    const {deviceMode, setDeviceMode, desiredImagesPerEvent, setImagesPerEvent} = useDevice();
     const [isClearingTestData, setIsClearingTestData] = useState(false);
     const [isSwitchingDevice, setIsSwitchingDevice] = useState(false);
 
+    const [isUpdatingImagesPerEvent, setIsUpdatingImagesPerEvent,] = useState(false);
     /**
      * Available age thresholds for bulk deleting older stored data.
      */
@@ -112,6 +113,21 @@ export default function SettingsPage() {
             setDeleteOlderThanIndex(deleteOlderThanIndex + 1);
         }
     };
+
+    /**
+     * Change the user's prefered number of images per event.
+     */
+    async function updateImagesPerEvent(newCount: number): Promise<void> {
+        try{
+            setIsUpdatingImagesPerEvent(true);
+            await setImagesPerEvent(newCount);
+        }catch(error){
+            console.error("Settings: failed to update images per event", error);
+            Alert.alert("Settings Error", error instanceof Error ? error.message : String(error));
+        }finally {
+            setIsUpdatingImagesPerEvent(false);
+        }
+    }
 
     /**
      * Builds the cutoff date used for deleting older data.
@@ -283,7 +299,19 @@ export default function SettingsPage() {
                 </View>
                  <Text style={{color: theme.colors.textSecondary, marginBottom: 16}}>
                     Switching disconnects the current device. Scan again on Pair Device.
-                </Text>       
+                </Text>    
+                <Text style={[styles.sectionLabel, {color: theme.colors.text,}]}>DEVICE SETTINGS</Text> 
+                <View style={styles.retentionSection}>
+                    <Text style={[styles.retentionLabel, {color: theme.colors.text,}]}>Images Per Event
+                        </Text><View style = {styles.retentionSection}><TouchableOpacity
+                        onPress={()=> 
+                            void updateImagesPerEvent(desiredImagesPerEvent - 1)
+                        } 
+                        disabled={desiredImagesPerEvent <= 1 || isUpdatingImagesPerEvent} style={styles.arrowButton}>
+                            <Text style={[styles.arrowText, {color: desiredImagesPerEvent <= 1|| isUpdatingImagesPerEvent ? theme.colors.textSecondary : theme.colors.text,},]}>{"\u25c0"}
+                                </Text></TouchableOpacity>
+                                
+                                </View></View>  
 
                 {/* Theme picker */}
                 <Text style={[styles.sectionLabel, {color: theme.colors.text}]}>APPEARANCE</Text>

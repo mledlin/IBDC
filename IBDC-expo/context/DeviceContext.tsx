@@ -6,9 +6,10 @@
  */
 
 import React, {createContext, useContext, useEffect, useRef, useState} from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BleAdapter, BleDeviceInfo } from "@/ble/BleAdapter";
 import { MockBleAdapter } from "@/ble/MockBleAdapter";
-import { IBDCCommunicationService, DeviceStatus as IBDCDeviceStatus } from "@/services/IBDCCommunicationService";
+import { IBDCCommunicationService, DeviceStatus as IBDCDeviceStatus, PendingEventList } from "@/services/IBDCCommunicationService";
 import { SimulatedIBDC } from "@/ble/SimulatedIBDC";
 import { ImageIngestService } from "@/services/ImageIngestService";
 
@@ -29,6 +30,10 @@ export interface DeviceInfo {
   pendingEvents?: number; // Number of events on the device not yet acknowledged by the phone. Populated from decoded DeviceStatus messages once the device reports it.
   imagesPerEventOnDevice?: number;
 }
+
+const IMAGES_PER_EVENT_KEY = "imagesPerEvent";
+// Default when user has never saved a preferance.
+const DEFAULT_IMAGES_PER_EVENT = 10;
 
 /**
  * device:
@@ -52,6 +57,8 @@ type DeviceContextType = {
   // message type that flows over BLE.
   communicationService: IBDCCommunicationService;
   triggerTestEvent: (imageCount?: number) => Promise<void>;
+  desiredImagesPerEvent: number;
+  setImagesPerEvent: (count: number) => Promise<void>; 
 };
 
 /**
@@ -86,9 +93,32 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
   const [devices, setDevices] = useState<BleDeviceInfo[]>([]);
   const [deviceMode, setMode] = useState<DeviceMode>('mock');
   const modeRef = useRef<DeviceMode>('mock');
-
+  const [desiredImagesPerEvent,setDesiredImagesPerEvent,] = useState(DEFAULT_IMAGES_PER_EVENT);
+  const desiredImagesPerEventRef = useRef(DEFAULT_IMAGES_PER_EVENT);
+  const settingsLoadedRef = useRef(false);
+   useEffect(()=>{
+    async function loadDeviceSettings() {
+      try{ 
+        const stroedValue = await AsyncStorage.getItem(IMAGES_PER_EVENT_KEY);
+        if(stroedValue !== null){
+          const parsedValue = Number(stroedValue);
+          if(Number.isInteger(parsedValue) && parsedValue > 0) {
+            setDesiredImagesPerEvent(parsedValue);
+            desiredImagesPerEventRef.current = parsedValue;
+          }
+        }
+      }catch(error){
+        console.error("DeviceContext: failed to load images-per-evetn setting:", error);
+      }finally{
+        settingsLoadedRef.current = true;
+      }
+    }
+        void loadDeviceSettings();
+      }, []);
+  //Adapter switching: Will not be needed in final implementation. 
+  // Used to swtich between mock device and real for demonstration and testing. 
   async function changeMode(mode: DeviceMode): Promise<void> {
-    if (mode !== modeRef.current) {
+    if (mode === modeRef.current) { return; }
       if (modeRef.current == 'mock') simulatedDevice.stop();
       await bleAdapter.disconnect();
       //load the native BLE module only when the real device is selected.
@@ -102,8 +132,27 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
       setDevice(null);
       setDevices([]);
     }
+  
+  async function setImagesPerEvent(count: number): Promise<void> {
+    if(!Number.isInteger(count) || count < 1){
+      throw new Error("Images per Evetn must at least be 1");
+    }
+    setDesiredImagesPerEvent(count);
+    desiredImagesPerEventRef.current= count;
+    await AsyncStorage.setItem(IMAGES_PER_EVENT_KEY, String(count));
+
+    //if there is already an active BLE connection, update the device immediately
+    // if disconnected, the app will reconcile this setting the next time DeviceStatus arrives.
+
+    if(bleAdapter.isConnected()){
+      console.log( `DeviceContext: sending images=per=event setting ${count}`);
+    
+    await communicationService.writeSettings({imagesPerEventSetting: count,});
+  }
   }
 
+
+  // DeviceStatus Messages:
   // keep connceted device state in sync with decoded DeviceStatus pushes. 
   // only update stat is a device is currently set; ignore otherwise
   //
@@ -126,23 +175,78 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
           
         };
       });
+      if (!settingsLoadedRef.current){
+        return;
+      }
+      const desired = desiredImagesPerEventRef.current;
+      if(status.imagesPerEventSetting !== desired){
+        console.log(`DeviceContext: images-per-event mismatch.`);
+        communicationService.writeSettings({imagesPerEventSetting: desired,}).catch((error)=> {
+          console.error("DeviceContext: failed to synchronize images-per-event settings:", error);
+        })
+      }
     });
-
     return unsubscribe;
   }, []);
 
+  /**
+   * Pending-event recovery:
+   * Handle the PendingEventList Returned by the IBDC device at connection/ reconnection.
+   * Each Id represents an event that the deivce believes has not
+   * yet been completely acknowleged by the application. 
+   * We will request EventNotification metadata for each one,
+   * Then ImageIngestService will recieve the resulting 
+   * EventNotification and continure through the normal image transfer pipeline. 
+   */
+  async function handlePendingEvents(eventIds: number[]): Promise<void> {
+    if (eventIds.length === 0) {
+      console.log("DeviceContext: no pending events on device.");
+      return;
+    }
+    console.log("DeviceContext: recovering pending events:", eventIds);
+    // For now, request sequentially rather than sending over all the request all at once. 
+    // This may be something we can optimize later if the other team has the hardware support multiple simultaneous transfers. 
+    for(const eventId of eventIds){
+      try{
+        console.log(`DeviceContest: requesting pennding event ${eventId}`);
+        await communicationService.requestEventInfo(eventId);
+      } catch(error){
+        console.error(`DeviceContext: failed to request pending evetn ${eventId}:`, error);
+      }
+    }
+  }
+
+  /**
+   *  Subscribe to PendingEventList message from the device. 
+   */
+  useEffect(() => {
+    const unsubscribe = communicationService.onPendingEventList((pendingList: PendingEventList) => {
+          void handlePendingEvents(pendingList.eventIds);
+        }
+      );
+    return unsubscribe;
+  }, []);
+
+
+  /**
+   *  Scanning
+   */
   async function scan(): Promise<void> {
     const foundDevices = await bleAdapter.scan();
     setDevices(foundDevices);
   }
 
+  /**
+   *  Connection
+   */
   async function connect(deviceId: string): Promise<void> {
-    const selectedDevice = devices.find((d) => d.id === deviceId);
+    const selectedDevice = devices.find((canidate) => canidate.id === deviceId);
     if (!selectedDevice) {
       throw new Error(`Device with ID ${deviceId} not found in scanned devices.`);
     }
     await bleAdapter.connect(deviceId);
-    const initalState = simulatedDevice.getState();
+    // Simulated device state only exist in mock mode.
+    const initalState = modeRef.current === "mock" ? simulatedDevice.getState() : undefined;
 
     setDevice({
       id: deviceId,
@@ -159,7 +263,15 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
       imagesPerEventOnDevice: initalState?.imagesPerEventSetting,
     });
 
-    if (modeRef.current === 'mock') simulatedDevice.start();
+    if (modeRef.current === 'mock') {simulatedDevice.start();}
+    // Every successful connection/reconnection begins with a sync request. 
+    // The device responds with a PendingEventList
+    try {
+      console.log("DeviceContext: requesting pending events after communication.");
+      await communicationService.requestPendingEvents();
+    }catch(error){
+      console.error("DeviceContext: failed to request pending events:", error);
+    }
   }
 
   async function disconnect() {
@@ -178,7 +290,21 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <DeviceContext.Provider value={{ device, deviceMode, setDeviceMode: changeMode, devices, isConnected: bleAdapter.isConnected(), scan, connect, disconnect, communicationService, triggerTestEvent }}>
+    <DeviceContext.Provider value={
+      { 
+        device, 
+        deviceMode, 
+        setDeviceMode: changeMode, 
+        devices, 
+        isConnected: bleAdapter.isConnected(), 
+        scan, 
+        connect, 
+        disconnect, 
+        communicationService, 
+        triggerTestEvent, 
+        desiredImagesPerEvent, 
+        setImagesPerEvent, 
+        }}>
       {children}
     </DeviceContext.Provider>
   );
