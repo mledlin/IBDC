@@ -1,0 +1,21 @@
+Meeting Minutes – Team 4
+Date 9/23/2026
+Time: 2:51 PM (Synchronous)
+Duration: 2 hours
+Participants: Christopher Paquin, Matthew Edlin, Colin Tugend
+
+Topics Covered:
+The team discussed difficulties testing code that depends on native functionality and hardware.
+
+Colin is working on Task 186, chunk validation tests, but dependencies on DAOs and Expo file access are
+slowing progress as he explores using interfaces and mocks. Christopher and Matthew agreed that solving
+these supporting problems can easily pull them away from their original tasks.
+
+Matthew finished implementing the RealBLEAdapter but lacks a compatible device for testing, so he plans to
+add a settings button to switch between real and mock modes and connect error handling to UI alerts.
+
+Summary:
+This meeting helped us catch up on what each other is doing and ensured we stayed on track.
+
+Action Items:
+None
