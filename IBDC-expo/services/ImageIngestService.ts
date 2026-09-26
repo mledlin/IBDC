@@ -1,12 +1,12 @@
 // Bridges incomming BLE event/image messages to on-disk files and database rows
-import {Directory, File, Paths} from "expo-file-system";
 import { IBDCCommunicationService, EventNotification, ImageInfo, ImageChunk } from "./IBDCCommunicationService";
 import { createSession } from "@/database/SessionDao";
 import { createIncident } from "@/database/IncidentDao";
 import { createIncidentImage} from "@/database/ImageDao";
 import { concatUint8Arrays } from "@/utils/base64";
+import { ExpoImageStorage } from "@/services/ExpoImageStorage";
 
-const IMAGE_DIRECTORY = new Directory(Paths.document, "incident_images");
+
 
 interface PendingImage {
     totalChunks: number;
@@ -19,6 +19,11 @@ interface PendingEvent {
     detectedAt: string;
     images: Map<number, PendingImage>;
     imagePaths: Map<number,string>;
+}
+
+export interface ImageStorage {
+    // Returns the name of the file
+    saveImage: (fileName: string, data: Uint8Array) => string,
 }
 
 function extensionForFormat(imageFormat: string | undefined): string {
@@ -35,11 +40,19 @@ export class ImageIngestService {
     private readonly communicationService: IBDCCommunicationService;
     private pendingEvents = new Map<number, PendingEvent>();
 
-    constructor(communicationService: IBDCCommunicationService) {
+    private imageStorage: ImageStorage;
+
+    // Pass in the image store here. In production, the Expo based native file system. For testing, the mock
+    constructor(communicationService: IBDCCommunicationService, imageStorage?: ImageStorage) {
         this.communicationService = communicationService;
         this.communicationService.onEventNotifications(this.handleEventNotification);
         this.communicationService.onImageInfo(this.handleImageInfo);
         this.communicationService.onImageChunk(this.handleImageChunk);
+        if (imageStorage) {
+            this.imageStorage = imageStorage;
+        }
+        this.imageStorage = new ExpoImageStorage();
+
     }
 
     private handleEventNotification = (event: EventNotification) => {
@@ -75,7 +88,7 @@ export class ImageIngestService {
             chunks: existing?.chunks ?? new Map(),
         });
     };
- 
+
     private handleImageChunk = (chunk: ImageChunk) => {
         const pendingEvent = this.pendingEvents.get(chunk.eventId);
         if (!pendingEvent) {
@@ -122,20 +135,12 @@ export class ImageIngestService {
         }
  
         const assembled = concatUint8Arrays(orderedChunks);
- 
-        try {
-            // makes this safe to call on every image, not just the first.
-            IMAGE_DIRECTORY.create({ intermediates: true, idempotent: true });
-        } catch (error) {
-            console.error("ImageIngestService: failed to create incident_images directory:", error);
-            return;
-        }
- 
         const extension = extensionForFormat(pendingImage.imageFormat);
-        const file = new File(IMAGE_DIRECTORY, `event_${eventId}_image_${imageIndex}.${extension}`);
-        file.write(assembled);
+
+        const imageName: string = `event_${eventId}_image_${imageIndex}.${extension}`;
+        const fileUri: string = this.imageStorage.saveImage(imageName, assembled);
  
-        pendingEvent.imagePaths.set(imageIndex, file.uri);
+        pendingEvent.imagePaths.set(imageIndex, fileUri);
         pendingEvent.images.delete(imageIndex);
  
         if (pendingEvent.imagePaths.size === pendingEvent.imageCount) {
