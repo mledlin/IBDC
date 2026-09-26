@@ -271,8 +271,8 @@ export default function SettingsPage() {
                 contentContainerStyle={styles.scrollContent}>
 
                 <Text style={[styles.title, {color: theme.colors.text}]}>SETTINGS</Text>
-
                 <Text style={[styles.sectionLabel, {color: theme.colors.text}]}>DEVICE SOURCE</Text>
+                <View style={styles.retentionSection}>
                 <View style={styles.settingsToggle}>
                     <Switch
                      value={deviceMode === 'real'} 
@@ -295,23 +295,51 @@ export default function SettingsPage() {
                      }} 
                      thumbColor={theme.colors.primary}
                      />
-                    <Text style={[styles.settingLabel, {color: theme.colors.text}]}>{deviceMode === 'real' ? 'Real IBDC device' : 'Simulated IBDC device'}</Text>
+                    <Text 
+                    style={[styles.settingLabel, {color: theme.colors.text}]}>{deviceMode === 'real' ? 'Real IBDC device' : 'Simulated IBDC device'}</Text>
                 </View>
                  <Text style={{color: theme.colors.textSecondary, marginBottom: 16}}>
                     Switching disconnects the current device. Scan again on Pair Device.
-                </Text>    
-                <Text style={[styles.sectionLabel, {color: theme.colors.text,}]}>DEVICE SETTINGS</Text> 
+                </Text>
+                </View>
+                <Text style={[
+                    styles.sectionLabel, 
+                    {color: theme.colors.text,}]}>
+                        DEVICE SETTINGS
+                </Text> 
+
                 <View style={styles.retentionSection}>
-                    <Text style={[styles.retentionLabel, {color: theme.colors.text,}]}>Images Per Event
-                        </Text><View style = {styles.retentionSection}><TouchableOpacity
+                    <Text style={[styles.retentionLabel, {color: theme.colors.text,}]}>
+                        Images Per Event
+                    </Text>
+                    <View style = {styles.retentionSelector}>
+                        <TouchableOpacity
                         onPress={()=> 
                             void updateImagesPerEvent(desiredImagesPerEvent - 1)
-                        } 
+                            } 
                         disabled={desiredImagesPerEvent <= 1 || isUpdatingImagesPerEvent} style={styles.arrowButton}>
-                            <Text style={[styles.arrowText, {color: desiredImagesPerEvent <= 1|| isUpdatingImagesPerEvent ? theme.colors.textSecondary : theme.colors.text,},]}>{"\u25c0"}
-                                </Text></TouchableOpacity>
-                                
-                                </View></View>  
+                            <Text style={[styles.arrowText, {color: desiredImagesPerEvent <= 1|| isUpdatingImagesPerEvent ? theme.colors.textSecondary : theme.colors.text,},]}>
+                                {"\u25c0"}
+                            </Text>
+                        </TouchableOpacity>
+                        <Text style={[styles.retentionValue, {color: theme.colors.text,},]}>
+                            {desiredImagesPerEvent}
+                        </Text>
+                        <TouchableOpacity
+                        onPress={()=> 
+                            void updateImagesPerEvent(desiredImagesPerEvent + 1)
+                        }
+                        disabled={isUpdatingImagesPerEvent}
+                        style={styles.arrowButton}>
+                            <Text style={[styles.arrowText, {color: isUpdatingImagesPerEvent ? theme.colors.textSecondary : theme.colors.text,}]}>
+                                {"\u25B6"}
+                            </Text>
+                        </TouchableOpacity>
+                        </View>
+                            <Text style={[styles.settingDescription, {color: theme.colors.textSecondary,},]}>
+                                Number of photos the IBDC device captures for each incident.
+                            </Text>
+                        </View>  
 
                 {/* Theme picker */}
                 <Text style={[styles.sectionLabel, {color: theme.colors.text}]}>APPEARANCE</Text>
@@ -450,6 +478,11 @@ const styles = StyleSheet.create({
         flexGrow: 1,
         paddingTop: 60,
         paddingBottom: 24,
+    },
+    settingDescription: {
+        marginTop: 8,
+        textAlign: "center", 
+        fontSize: 14, 
     },
     container: {
         flex: 1,
