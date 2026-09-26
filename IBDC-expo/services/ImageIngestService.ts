@@ -1,9 +1,6 @@
 // Bridges incomming BLE event/image messages to on-disk files and database rows
 import {Directory, File, Paths} from "expo-file-system";
 import { IBDCCommunicationService, EventNotification, ImageInfo, ImageChunk } from "./IBDCCommunicationService";
-import { createSession } from "@/database/SessionDao";
-import { createIncident } from "@/database/IncidentDao";
-import { createIncidentImage} from "@/database/ImageDao";
 import { concatUint8Arrays } from "@/utils/base64";
 import { ExpoImageStorage } from "@/services/ExpoImageStorage";
 import { DAOAdapter } from "./DAOAdapter";
