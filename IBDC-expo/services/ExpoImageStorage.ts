@@ -13,7 +13,14 @@ export class ExpoImageStorage implements ImageStorage {
     }
 
     public saveImage(fileName: string, data: Uint8Array): string {
-        this.dir.create({intermediates: true, idempotent: true });
+        // Change this code
+        // makes this safe to call on every image, not just the first.
+        try {
+            this.dir.create({intermediates: true, idempotent: true });
+        } catch(error) {
+            console.error("ImageIngestService: failed to create incident_images directory:", error);
+        }
+
         const file = new File(this.dir, fileName);
         file.write(data);
         return file.uri;

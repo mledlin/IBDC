@@ -1,15 +1,11 @@
 // Bridges incomming BLE event/image messages to on-disk files and database rows
-import {Directory, File, Paths} from "expo-file-system";
 import { IBDCCommunicationService, EventNotification, ImageInfo, ImageChunk } from "./IBDCCommunicationService";
 import { createSession } from "@/database/SessionDao";
 import { createIncident } from "@/database/IncidentDao";
 import { createIncidentImage} from "@/database/ImageDao";
 import { concatUint8Arrays } from "@/utils/base64";
 import { ExpoImageStorage } from "@/services/ExpoImageStorage";
-import {Image} from "react-native";
 
-
-let IMAGE_DIRECTORY = new Directory(Paths.document, "incident_images");
 
 
 interface PendingImage {
@@ -93,7 +89,6 @@ export class ImageIngestService {
         });
     };
 
-    // Test here
     private handleImageChunk = (chunk: ImageChunk) => {
         const pendingEvent = this.pendingEvents.get(chunk.eventId);
         if (!pendingEvent) {
@@ -140,27 +135,10 @@ export class ImageIngestService {
         }
  
         const assembled = concatUint8Arrays(orderedChunks);
- 
-        try {
-            // Change this code
-            // makes this safe to call on every image, not just the first.
-            //IMAGE_DIRECTORY.create({ intermediates: true, idempotent: true });
-            //this.imageStorage.createDirectory();
-        } catch (error) {
-            console.error("ImageIngestService: failed to create incident_images directory:", error);
-            return;
-        }
- 
         const extension = extensionForFormat(pendingImage.imageFormat);
-        // Change this code into something like
-        /**
-         * this.imageSaver.getImage(image_storage: storage, file_name: string)
-         * this.imageSaver.saveImage(assembled)
-         */
-        //const file = new File(IMAGE_DIRECTORY, `event_${eventId}_image_${imageIndex}.${extension}`);
+
         const imageName: string = `event_${eventId}_image_${imageIndex}.${extension}`;
         const fileUri: string = this.imageStorage.saveImage(imageName, assembled);
-        //file.write(assembled);
  
         pendingEvent.imagePaths.set(imageIndex, fileUri);
         pendingEvent.images.delete(imageIndex);
