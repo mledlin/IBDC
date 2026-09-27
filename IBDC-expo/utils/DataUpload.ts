@@ -79,7 +79,8 @@ export async function uploadSession(
 
     if (!response.ok) {
         throw new Error(
-            `Failed to upload session ${session.id}. Status: ${response.status}`,
+            `Failed to upload session ${session.id}. Status: ${response.status}. ` +
+            `Response: ${JSON.stringify(responseBody)}`,
         );
     }
 
