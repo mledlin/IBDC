@@ -4,6 +4,7 @@ import { getDatabase } from "./database";
 // Creates a new image record connected to an incident.
 // This stores the image file path and optional thumbnail path,
 // but does not store the actual image binary in the database, however depending on protobuf impl. this may change.
+
 export async function createIncidentImage(
     id: string,
     incidentId: string,

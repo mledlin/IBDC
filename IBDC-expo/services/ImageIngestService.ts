@@ -1,10 +1,9 @@
 // Bridges incomming BLE event/image messages to on-disk files and database rows
 import { IBDCCommunicationService, EventNotification, ImageInfo, ImageChunk } from "./IBDCCommunicationService";
-import { createSession } from "@/database/SessionDao";
-import { createIncident } from "@/database/IncidentDao";
-import { createIncidentImage} from "@/database/ImageDao";
 import { concatUint8Arrays } from "@/utils/base64";
 import { ExpoImageStorage } from "@/services/ExpoImageStorage";
+import { DAOAdapter } from "./DAOAdapter";
+
 
 
 
@@ -22,9 +21,34 @@ interface PendingEvent {
 }
 
 export interface ImageStorage {
-    // Returns the name of the file
+    // Returns the uri where the file was saved
     saveImage: (fileName: string, data: Uint8Array) => string,
 }
+
+export interface DAOAccessor {
+    createSession: (sessionId: string, createdTime: string) => Promise<void>,
+    createIncident: (id: string,
+                     sessionId: string,
+                     latitude: number | null,
+                     longitude: number | null,
+                     licensePlate: string | null,
+                     bestImageId: string | null,
+                     injurySeverity: string | null,
+                     driverPresent: number,
+                     driverInformation: string | null,
+                     extraComment: string | null,
+                     vehicleMake: string | null,
+                     vehicleModel: string | null,
+                     vehicleColor: string | null,
+                     vehicleYear: string | null,
+                     createdTime: string) => Promise<void>,
+    createIncidentImage: (id: string,
+                          incidentId: string,
+                          filePath: string,
+                          thumbnail: any,
+                          source: string) => Promise<void>
+}
+
 
 function extensionForFormat(imageFormat: string | undefined): string {
     switch (imageFormat) {
@@ -41,16 +65,25 @@ export class ImageIngestService {
     private pendingEvents = new Map<number, PendingEvent>();
 
     private imageStorage: ImageStorage;
+    private daoAccessor: DAOAccessor;
 
     // Pass in the image store here. In production, the Expo based native file system. For testing, the mock
-    constructor(communicationService: IBDCCommunicationService, imageStorage?: ImageStorage) {
+    constructor(communicationService: IBDCCommunicationService, imageStorage?: ImageStorage,
+                daoAccess?: DAOAccessor) {
         this.communicationService = communicationService;
         this.communicationService.onEventNotifications(this.handleEventNotification);
         this.communicationService.onImageInfo(this.handleImageInfo);
         this.communicationService.onImageChunk(this.handleImageChunk);
+
+        // These are optionally passed in for testing
         if (imageStorage) {
             this.imageStorage = imageStorage;
         }
+        if (daoAccess) {
+            this.daoAccessor = daoAccess;
+        }
+
+        this.daoAccessor = new DAOAdapter();
         this.imageStorage = new ExpoImageStorage();
 
     }
@@ -160,6 +193,7 @@ export class ImageIngestService {
  
     private async finalizeIncident(eventId: number, pendingEvent: PendingEvent): Promise<void> {
         console.log("Finalizing Incident", eventId);
+
         const sessionId = `session-${eventId}-${Date.now()}`;
         const incidentId = `incident-${eventId}-${Date.now()}`;
  
@@ -167,7 +201,7 @@ export class ImageIngestService {
         // Maybe we can use a day time frame or when the device is first connected to eod?
         // Will need to be reviewed later.
         try{
-        await createSession(sessionId, pendingEvent.detectedAt);
+        await this.daoAccessor.createSession(sessionId, pendingEvent.detectedAt);
         }catch(error){
             console.error("Database Finalized Failed", error);
             throw error;
@@ -176,7 +210,7 @@ export class ImageIngestService {
         const firstImageIndex = Math.min(...pendingEvent.imagePaths.keys());
         const bestImageId = `${incidentId}-image-${firstImageIndex}`; 
 
-        await createIncident(
+        await this.daoAccessor.createIncident(
             incidentId,
             sessionId,
             null, // latitude - not yet available from device/GPS
@@ -195,7 +229,7 @@ export class ImageIngestService {
         );
  
         for (const [imageIndex, filePath] of pendingEvent.imagePaths.entries()) {
-            await createIncidentImage(
+            await this.daoAccessor.createIncidentImage(
                 `${incidentId}-image-${imageIndex}`,
                 incidentId,
                 filePath,
