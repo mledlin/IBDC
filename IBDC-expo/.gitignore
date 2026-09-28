@@ -48,3 +48,4 @@ app-example
 
 # Coverage
 /coverage
+coverage/
