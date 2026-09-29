@@ -81,6 +81,7 @@ export class IBDCCommunicationService {
     }
 
     private handleIncoming = (data: Uint8Array) => {
+        console.log("Handling incoming data within the IBDCCommunicationService");
         if (data.length === 0) {
             console.warn("IBDCCommunicationService: Received empty data from BLE device, ignoring.");
             return;
@@ -99,6 +100,8 @@ export class IBDCCommunicationService {
         try {
             switch (payload) {
                 case "eventNotification": {
+                    console.log("Event Notification detected within IBDCCommunicationService.handleIncoming. Passing to" +
+                        "its eventNotification listeners. ");
                     const decodedEventNotification = decoded.eventNotification as unknown as EventNotification;
                     this.eventNotificationListeners.forEach(listener => listener(decodedEventNotification));
                     break;

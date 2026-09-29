@@ -93,6 +93,7 @@ export class MockBleAdapter implements BleAdapter {
      * Simulates receiving data from the BLE device and invokes the registered callback.
      */
     simulateIncomingData(payloadField: string, data: Record<string, unknown>): void {
+        console.log("Simulating incoming data through the MockBleAdapter")
         if (!this.connectedDeviceId) {
             console.warn("Cannot simulate incoming data: Not connected to a BLE device.");
             return;

@@ -1,7 +1,6 @@
 import {Directory, File, Paths} from "expo-file-system";
 import { ImageStorage, ImageIngestService } from "@/services/ImageIngestService"
-import { IBDCCommunicationService } from "@/services/IBDCCommunicationService";
-import {BleAdapter} from "@/ble/BleAdapter";
+
 
 export class ExpoImageStorage implements ImageStorage {
     // The place images are stored to
@@ -27,4 +26,5 @@ export class ExpoImageStorage implements ImageStorage {
     }
 
 }
+
 

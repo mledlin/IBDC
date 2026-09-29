@@ -67,9 +67,8 @@ export class ImageIngestService {
     private imageStorage: ImageStorage;
     private daoAccessor: DAOAccessor;
 
-    // Pass in the image store here. In production, the Expo based native file system. For testing, the mock
-    constructor(communicationService: IBDCCommunicationService, imageStorage?: ImageStorage,
-                daoAccess?: DAOAccessor) {
+    constructor(communicationService: IBDCCommunicationService, imageStorage: ImageStorage,
+                daoAccess: DAOAccessor) {
         this.communicationService = communicationService;
         this.communicationService.onEventNotifications(this.handleEventNotification);
         this.communicationService.onImageInfo(this.handleImageInfo);
@@ -78,15 +77,18 @@ export class ImageIngestService {
         // These are optionally passed in for testing
         if (imageStorage) {
             this.imageStorage = imageStorage;
-        }
+        } else this.imageStorage = new ExpoImageStorage();
         if (daoAccess) {
             this.daoAccessor = daoAccess;
-        }
+        } else this.daoAccessor = new DAOAdapter();
 
-        this.daoAccessor = new DAOAdapter();
-        this.imageStorage = new ExpoImageStorage();
+
+
 
     }
+
+
+
 
     private handleEventNotification = (event: EventNotification) => {
         const receivedAt = Date.now();
@@ -94,6 +96,8 @@ export class ImageIngestService {
         console.log(
             "ImageIngestService: EventNotification", event.eventId, "images:", event.imageCount
         );
+
+        // Test/Ensure each parameter passed here is instantiated into its correct type and the expected field exist
         this.pendingEvents.set(event.eventId, {
             imageCount: event.imageCount,
             detectedAt,
@@ -101,10 +105,12 @@ export class ImageIngestService {
             imagePaths: new Map(),
         });
 
+        // Test each parameter is passed into this function as expected
         this.communicationService.requestImageTransfer(event.eventId, 0, 0).catch((error) => {
             console.log(`ImageIngestService: failed to request images for event ${event.eventId}:`, error)
         });
     };
+
 
     private handleImageInfo = (info: ImageInfo) => {
         const pendingEvent = this.pendingEvents.get(info.eventId);

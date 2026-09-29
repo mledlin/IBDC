@@ -151,6 +151,7 @@ export class SimulatedIBDC {
 
     /**Simulates a detection event on demand */
     async triggerEvent(overrides?: EventOverrides): Promise<void> {
+        console.log("Event triggered in SimulatedIBDC")
         const pool = await this.ensureMockImagesLoaded();
 
         const eventId = this.nextEventId++;
