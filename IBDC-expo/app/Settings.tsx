@@ -531,6 +531,23 @@ export default function SettingsPage() {
                         </Text>
                     </View>
                     <TouchableOpacity
+                    style={[
+                        styles.addMockButton,
+                        {backgroundColor: theme.colors.primary,
+                            borderRadius: theme.radii.md,
+                        },
+                    ]}
+                    onPress={() => {}}
+                    >
+                        <Text
+                        style = {[
+                            styles.actionButtonText,
+                            {color: theme.colors.primaryForeground},
+                        ]}
+                        >
+                            Test Server Upload </Text>
+                            </TouchableOpacity>
+                    <TouchableOpacity
                         style={[
                             styles.addMockButton,
                             {
