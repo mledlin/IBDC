@@ -360,6 +360,23 @@ export default function SettingsPage() {
                 <View style={styles.debugSection}>
                     <Text style={[styles.inBoxSectionLabel, {color: theme.colors.text}]}>DEBUG FEATURES</Text>
                     <TouchableOpacity
+                    style={[
+                        styles.addMockButton,
+                        {backgroundColor: theme.colors.primary,
+                            borderRadius: theme.radii.md,
+                        },
+                    ]}
+                    onPress={() => {}}
+                    >
+                        <Text
+                        style = {[
+                            styles.actionButtonText,
+                            {color: theme.colors.primaryForeground},
+                        ]}
+                        >
+                            Test Server Upload </Text>
+                            </TouchableOpacity>
+                    <TouchableOpacity
                         style={[
                             styles.addMockButton,
                             {
