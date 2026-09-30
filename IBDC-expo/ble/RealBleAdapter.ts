@@ -189,6 +189,15 @@ export class RealBleAdapter implements BleAdapter {
             console.log("IBDC device fully connected:", deviceId);
         } catch (error) { 
             console.error("Failed to connect to IBDC deivce:", error);
+            try{
+                if(this.connectedDevice){
+                    await this.manager.cancelDeviceConnection(
+                        this.connectedDevice.id
+                    );
+                }
+            }catch(error) {
+                console.warn("Failed to clean up BLE connection:", error);
+            }
             this.cleanUpCOnnectionState();
             throw error;
         }
