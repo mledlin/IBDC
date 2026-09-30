@@ -11,6 +11,8 @@ import { MockBleAdapter } from "@/ble/MockBleAdapter";
 import { IBDCCommunicationService, DeviceStatus as IBDCDeviceStatus } from "@/services/IBDCCommunicationService";
 import { SimulatedIBDC } from "@/ble/SimulatedIBDC";
 import { ImageIngestService } from "@/services/ImageIngestService";
+import { ExpoImageStorage} from "@/services/ExpoImageStorage";
+import {DAOAdapter} from "@/services/DAOAdapter";
 
 
 export type ConnectedStatus = 'connected' | 'disconnected' | 'pairing';
@@ -65,8 +67,10 @@ const bleAdapter: BleAdapter = mockBLEAdapter;
 
 // Sits between bleAdapter and this context (and any other domain services),
 const communicationService = new IBDCCommunicationService(bleAdapter);
+const imageStorage = new ExpoImageStorage();
+const DAOAccess = new DAOAdapter();
 
-new ImageIngestService(communicationService);
+new ImageIngestService(communicationService, imageStorage, DAOAccess);
 
 const simulatedDevice = new SimulatedIBDC(mockBLEAdapter);
 

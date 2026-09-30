@@ -1,13 +1,15 @@
 import { ImageChunk, PendingEventList, IBDCCommunicationService  } from "@/services/IBDCCommunicationService"
 import { SimulatedIBDC } from "@/ble/SimulatedIBDC";
 import { MockBleAdapter } from "@/ble/MockBleAdapter";
-import { ImageIngestService, ImageStorage, DAOAccessor } from "@/services/ImageIngestService";
+import { ImageIngestService } from "@/services/ImageIngestService";
+import {ImageStorage} from "@/services/ExpoImageStorage";
+import {DAOAccessor} from "@/services/DAOAdapter";
 
 // Objects defined at file level for each test function to reference
 let mockBleAdapter: MockBleAdapter;
 let ibdc: SimulatedIBDC;
 let commsService: IBDCCommunicationService;
-// Define mock data base and image storage
+// Define mock database and image storage
 // Mock image store
 let storage: Map<string, Uint8Array>;
 let ingestService: ImageIngestService;
