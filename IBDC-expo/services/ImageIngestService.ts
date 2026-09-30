@@ -1,8 +1,8 @@
 // Bridges incomming BLE event/image messages to on-disk files and database rows
-import { IBDCCommunicationService, EventNotification, ImageInfo, ImageChunk } from "./IBDCCommunicationService";
-import { concatUint8Arrays } from "@/utils/base64";
-import { ExpoImageStorage } from "@/services/ExpoImageStorage";
-import { DAOAdapter } from "./DAOAdapter";
+import {EventNotification, IBDCCommunicationService, ImageChunk, ImageInfo} from "./IBDCCommunicationService";
+import {concatUint8Arrays} from "@/utils/base64";
+import {ImageStorage} from "@/services/ExpoImageStorage";
+import {DAOAccessor} from "./DAOAdapter";
 
 
 
@@ -18,35 +18,6 @@ interface PendingEvent {
     detectedAt: string;
     images: Map<number, PendingImage>;
     imagePaths: Map<number,string>;
-}
-
-export interface ImageStorage {
-    // Returns the uri where the file was saved
-    saveImage: (fileName: string, data: Uint8Array) => string,
-}
-
-export interface DAOAccessor {
-    createSession: (sessionId: string, createdTime: string) => Promise<void>,
-    createIncident: (id: string,
-                     sessionId: string,
-                     latitude: number | null,
-                     longitude: number | null,
-                     licensePlate: string | null,
-                     bestImageId: string | null,
-                     injurySeverity: string | null,
-                     driverPresent: number,
-                     driverInformation: string | null,
-                     extraComment: string | null,
-                     vehicleMake: string | null,
-                     vehicleModel: string | null,
-                     vehicleColor: string | null,
-                     vehicleYear: string | null,
-                     createdTime: string) => Promise<void>,
-    createIncidentImage: (id: string,
-                          incidentId: string,
-                          filePath: string,
-                          thumbnail: any,
-                          source: string) => Promise<void>
 }
 
 
@@ -73,18 +44,8 @@ export class ImageIngestService {
         this.communicationService.onEventNotifications(this.handleEventNotification);
         this.communicationService.onImageInfo(this.handleImageInfo);
         this.communicationService.onImageChunk(this.handleImageChunk);
-
-        // These are optionally passed in for testing
-        if (imageStorage) {
-            this.imageStorage = imageStorage;
-        } else this.imageStorage = new ExpoImageStorage();
-        if (daoAccess) {
-            this.daoAccessor = daoAccess;
-        } else this.daoAccessor = new DAOAdapter();
-
-
-
-
+        this.imageStorage = imageStorage;
+        this.daoAccessor = daoAccess;
     }
 
 

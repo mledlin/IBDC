@@ -1,6 +1,9 @@
 import {Directory, File, Paths} from "expo-file-system";
-import { ImageStorage, ImageIngestService } from "@/services/ImageIngestService"
 
+export type ImageStorage = {
+    // Returns the uri where the file was saved
+    saveImage: (fileName: string, data: Uint8Array) => string,
+}
 
 export class ExpoImageStorage implements ImageStorage {
     // The place images are stored to
@@ -10,6 +13,8 @@ export class ExpoImageStorage implements ImageStorage {
     constructor() {
         this.dir = new Directory(Paths.document, "incident_images");
     }
+
+
 
     public saveImage(fileName: string, data: Uint8Array): string {
         // Change this code
