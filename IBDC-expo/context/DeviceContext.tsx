@@ -11,7 +11,7 @@ import { MockBleAdapter } from "@/ble/MockBleAdapter";
 import { IBDCCommunicationService, DeviceStatus as IBDCDeviceStatus } from "@/services/IBDCCommunicationService";
 import { SimulatedIBDC } from "@/ble/SimulatedIBDC";
 import { ImageIngestService } from "@/services/ImageIngestService";
-import { ExpoImageStorage} from "@/services/ExpoImageStorage";
+import { ExpoImageStorage } from "@/services/ExpoImageStorage";
 import {DAOAdapter} from "@/services/DAOAdapter";
 
 
