@@ -14,6 +14,7 @@ import {
     getAllSessions,
     deleteAllSessions,
     deleteSessionsOlderThan,
+    getSessionHistoryData,
 } from "@/database/SessionDao";
 
 import {
@@ -32,7 +33,7 @@ import {
     TouchableOpacity,
     Alert, ScrollView,
 } from "react-native";
-
+import {DefaultServerUploadAdapter} from "@/utils/ServerUploadAdapter"
 import {useTheme} from "@/context/ThemeContext";
 import ThemePicker from "@/components/ui/ThemePicker";
 import {useSafeAreaInsets} from "react-native-safe-area-context";
@@ -217,7 +218,32 @@ export default function SettingsPage() {
             );
         }
     };
+    /**
+     * Test for locally prepared session for server upload
+     */
+    const handleTestServerUpload = async () => {
+        try {
+            const sessions = await getSessionHistoryData();
 
+            if(sessions.length === 0){
+                Alert.alert("No Sessions", "No sessions available to upload.");
+                return;
+            }
+            const session = sessions[0];
+
+            const adapter = new DefaultServerUploadAdapter();
+            const adaptedSession = adapter.adaptSession(session);
+
+            console.log("Uploaded Payload:", JSON.stringify(adaptedSession.payload, null, 2));
+            console.log("Uploaded Files:", adaptedSession.files);
+
+            Alert.alert("Upload Test", "Session succesfully prepped for upload.");
+        }
+        catch (error) {
+            console.error("Upload test failed:", error);
+            Alert.alert("Upload Failed", "Session could not be prepared");
+        }
+    };
     const handleClearTestRideData = () => {
         Alert.alert("Clear Test Ride Data?", 
             "This will permenetly delete every ride session, incident, and saved incident photo. App settings and paired decices will not be chnaged.", 
@@ -366,7 +392,7 @@ export default function SettingsPage() {
                             borderRadius: theme.radii.md,
                         },
                     ]}
-                    onPress={() => {}}
+                    onPress={handleTestServerUpload}
                     >
                         <Text
                         style = {[
