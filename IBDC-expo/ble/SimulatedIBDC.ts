@@ -1,7 +1,7 @@
 import { ProtobufService } from "@/protobuf/ProtobufService";
 import {MockBleAdapter} from "@/ble/MockBleAdapter";
 import { BleDeviceInfo } from "./BleAdapter";
-import { SimulatedIBDCImageLoader } from "./SimulatedIBDCImageLoader";
+import {LoadImageData, SimulatedIBDCImageLoader} from "./SimulatedIBDCImageLoader";
 
 // Max bytes per simulated BLE ImageChunk payload. I made it smaller to force multiple payload for testing. 
 // real payloads will be ~180-240 bytes. 
@@ -44,7 +44,7 @@ export class SimulatedIBDC {
     private state: SimulatedDeviceState;
     private statusIntervalId: ReturnType<typeof setInterval> | null = null;
     private nextEventId = 1;
-    private imageLoader: SimulatedIBDCImageLoader;
+    private imageLoader: LoadImageData;
 
     //Images "captured" for events that have been notified but not yet ACKed
     //by the app, by event ID
@@ -53,7 +53,7 @@ export class SimulatedIBDC {
     
     private eventIntervalId: ReturnType<typeof setInterval> | null = null;
 
-    constructor(adapter: MockBleAdapter, imageLoader: SimulatedIBDCImageLoader, deviceInfo?: BleDeviceInfo,
+    constructor(adapter: MockBleAdapter, imageLoader: LoadImageData, deviceInfo?: BleDeviceInfo,
                 initialState?: Partial<SimulatedDeviceState>){
         this.adapter = adapter;
         this.deviceInfo = deviceInfo ?? {...DEFAULT_DEVICE_INFO};
