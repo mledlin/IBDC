@@ -13,6 +13,7 @@ import { SimulatedIBDC } from "@/ble/SimulatedIBDC";
 import { ImageIngestService } from "@/services/ImageIngestService";
 import { ExpoImageStorage } from "@/services/ExpoImageStorage";
 import {DAOAdapter} from "@/services/DAOAdapter";
+import { SimulatedIBDCImageLoader } from "@/ble/SimulatedIBDCImageLoader"
 
 
 export type ConnectedStatus = 'connected' | 'disconnected' | 'pairing';
@@ -67,12 +68,15 @@ const bleAdapter: BleAdapter = mockBLEAdapter;
 
 // Sits between bleAdapter and this context (and any other domain services),
 const communicationService = new IBDCCommunicationService(bleAdapter);
+
+// Abstractions built around hardware coupling
 const imageStorage = new ExpoImageStorage();
+const imageLoader = new SimulatedIBDCImageLoader();
 const DAOAccess = new DAOAdapter();
 
 new ImageIngestService(communicationService, imageStorage, DAOAccess);
 
-const simulatedDevice = new SimulatedIBDC(mockBLEAdapter);
+const simulatedDevice = new SimulatedIBDC(mockBLEAdapter, imageLoader);
 
 /**
  * Wraps part of the application with shared device state.
