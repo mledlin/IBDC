@@ -1,9 +1,10 @@
-import { ImageChunk, PendingEventList, IBDCCommunicationService  } from "@/services/IBDCCommunicationService"
+import { IBDCCommunicationService  } from "@/services/IBDCCommunicationService"
 import { SimulatedIBDC } from "@/ble/SimulatedIBDC";
 import { MockBleAdapter } from "@/ble/MockBleAdapter";
 import { ImageIngestService } from "@/services/ImageIngestService";
-import {ImageStorage} from "@/services/ExpoImageStorage";
-import {DAOAccessor} from "@/services/DAOAdapter";
+import { ImageStorage } from "@/services/ExpoImageStorage";
+import { DAOAccessor } from "@/services/DAOAdapter";
+import { LoadImageData } from "@/ble/SimulatedIBDCImageLoader";
 
 // Objects defined at file level for each test function to reference
 let mockBleAdapter: MockBleAdapter;
@@ -14,16 +15,27 @@ let commsService: IBDCCommunicationService;
 let storage: Map<string, Uint8Array>;
 let ingestService: ImageIngestService;
 
+
 let DAOaccessor: DAOAccessor;
 // Test the image with specified name is written with the correct bytes
 let imageStorage: ImageStorage;
+
+let loader: LoadImageData;
 
 // Instantiate each object before testing
 beforeAll(async () => {
     console.log("working in BeforeAll")
     mockBleAdapter = new MockBleAdapter();
-    ibdc = new SimulatedIBDC(mockBleAdapter);
-    commsService = new IBDCCommunicationService(mockBleAdapter);
+    const loader: LoadImageData = {
+        loadImagesAsBytes(): Promise<Uint8Array[]> {
+            return Promise.resolve([
+                new Uint8Array([1, 2, 3]),
+                new Uint8Array([4, 5, 6])
+            ]);
+        }
+    };
+    ibdc = new SimulatedIBDC(mockBleAdapter, loader);
+    commsService = new IBDCCommunicationService(mockBleAdapter); // Pass in peripherals
     storage = new Map<string, Uint8Array>
     imageStorage = { saveImage: jest.fn((fileName: string, data: Uint8Array): string => {
         storage.set(fileName, data);
