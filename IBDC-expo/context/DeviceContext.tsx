@@ -282,11 +282,11 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
 
   // Development testing hook: Makes mock device simulate a detection event with imageCount photos
   // hardcoded, will need to be updated later to reflect real images per event.
-  async function triggerTestEvent(imageCount: number = 3): Promise<void>{
+  async function triggerTestEvent(imageCount?: number): Promise<void>{
     if (!device || modeRef.current !== 'mock') {
       throw new Error("cannot trigger a test event: no device is connected");
     }
-    await simulatedDevice.triggerEvent({imageCount})
+    await simulatedDevice.triggerEvent({imageCount: imageCount ?? simulatedDevice.getState().imagesPerEventSetting,})
   }
 
   return (

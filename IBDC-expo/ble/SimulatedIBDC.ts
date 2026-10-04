@@ -49,10 +49,22 @@ interface EventOverrides {
     imageFormat?: "IMAGE_FORMAT_JPEG" | "IMAGE_FORMAT_PNG" | "IMAGE_FORMAT_UNSPECIFIED";
 }
 
-interface SimulatedEventImages {
+interface SimulatedPendingEvent {
+    eventId: number, 
+    distanceCm: number, 
+    timeOffsetMs: number, 
+    imageCount: number, 
+    imageFormat: 
+        | "IMAGE_FORMAT_JPEG"
+        | "IMAGE_FORMAT_PNG"
+        | "IMAGE_FORMAT_UNSPECIFIED";
     images: Uint8Array[];
-    imageFormat: "IMAGE_FORMAT_JPEG" | "IMAGE_FORMAT_PNG" | "IMAGE_FORMAT_UNSPECIFIED";
 }
+
+//interface SimulatedEventImages {
+//    images: Uint8Array[];
+//    imageFormat: "IMAGE_FORMAT_JPEG" | "IMAGE_FORMAT_PNG" | "IMAGE_FORMAT_UNSPECIFIED";
+//}
 
 const DEFAULT_DEVICE_INFO: BleDeviceInfo = {
     id: "v0.1.pb_v0.3.2",
@@ -82,7 +94,7 @@ export class SimulatedIBDC {
 
     //Images "caputred" for events that have been notified but not yet ACKed
     //by the app, by event ID
-    private eventImages = new Map<number, SimulatedEventImages>();
+    private pendingEvents = new Map<number, SimulatedPendingEvent>();
     private mockImageBytesPromise: Promise<Uint8Array[]> | null = null;
     
     private eventIntervalId: ReturnType<typeof setInterval> | null = null;
@@ -154,22 +166,33 @@ export class SimulatedIBDC {
         const pool = await this.ensureMockImagesLoaded();
 
         const eventId = this.nextEventId++;
-        const imageCount = overrides?.imageCount ?? 3;
+        const imageCount = overrides?.imageCount ?? this.state.imagesPerEventSetting;
         const imageFormat = overrides?.imageFormat ?? "IMAGE_FORMAT_JPEG";
         this.state.pendingEventCount += 1;
+        const distanceCm = overrides?.distanceCm ?? Math.floor(50 + Math.random() *200);
+        const timeOffsetMs = overrides?.timeOffsetMs ?? Math.floor(Math.random() *500);
 
         const images: Uint8Array[] = [];
         for (let i = 0; i < imageCount; i++) {
             images.push(pool[i % pool.length]);
         }
-        this.eventImages.set(eventId, {images, imageFormat});
-        this.adapter.simulateIncomingData("eventNotification", {
+        const event: SimulatedPendingEvent = {
             eventId, 
-            distanceCm: overrides?.distanceCm ?? Math.floor(50 + Math.random() *200), 
-            timeOffsetMs: overrides?.timeOffsetMs ?? Math.floor(Math.random() * 500),
-            imageCount,
-            imageFormat,
-        });
+            distanceCm, 
+            timeOffsetMs, 
+            imageCount, 
+            imageFormat, 
+            images,
+        };
+
+        this.updatePendingEventCount();
+
+        this.sendEventNotification(event);
+    }
+
+    private sendEventNotification(event: SimulatedPendingEvent): void{
+        console.log(`SimulatedIBDC: sending EventNotification for evetn ${event.eventId}`);
+        this.adapter.simulateIncomingData("eventNotification", {eventId: event.eventId, distanceCm: event.distanceCm, timeOffsetMs: event.timeOffsetMs, imageCount: event.imageCount, imageFormat: event.imageFormat, });
     }
     /**
      * Decodes AppToDevice envelpoes sent via BleAdapeter.sendData and reacts to them. 
@@ -199,8 +222,17 @@ export class SimulatedIBDC {
             }
             case "eventTransferAck": {
                 const ack = decoded.eventTransferAck as { eventId: number };
-                this.acknowledgeEvent();
-                this.eventImages.delete(ack.eventId);
+                console.log(`SimulatedIBDC: EventTransferAck recieved for event ${ack.eventId}`);
+                if(!this.pendingEvents.has(ack.eventId)){console.warn(`SimulatedIBDC: ACK received for unknown event ${ack.eventId}`); break;}
+                this.pendingEvents.delete(ack.eventId);
+                this.updatePendingEventCount();
+                this.pushDeviceStatus();
+                break;
+            }
+            case "pendingEventListRequest": {
+                const eventIds = Array.from(this.pendingEvents.keys());
+                console.log("SimulatedIBDC: PendingEventListRequest received. Pending:", eventIds);
+                this.adapter.simulateIncomingData("pendingEventList", {eventIds,});
                 break;
             }
             default:
