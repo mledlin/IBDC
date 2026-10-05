@@ -33,7 +33,8 @@ import {
     TouchableOpacity,
     Alert, ScrollView,
 } from "react-native";
-import {DefaultServerUploadAdapter} from "@/utils/ServerUploadAdapter"
+import {DefaultServerUploadAdapter} from "@/utils/ServerUploadAdapter";
+import {uploadSession} from "@/utils/DataUpload";
 import {useTheme} from "@/context/ThemeContext";
 import ThemePicker from "@/components/ui/ThemePicker";
 import {useSafeAreaInsets} from "react-native-safe-area-context";
@@ -233,14 +234,27 @@ export default function SettingsPage() {
 
             const adapter = new DefaultServerUploadAdapter();
             const adaptedSession = adapter.adaptSession(session);
-
-            console.log("Uploaded Payload:", JSON.stringify(adaptedSession.payload, null, 2));
-            console.log("Uploaded Files:", adaptedSession.files);
-
-            Alert.alert("Upload Test", "Session succesfully prepped for upload.");
+            //Local Tests To Ensure Data Integrity In Console
+           // console.log("Uploaded Payload:", JSON.stringify(adaptedSession.payload, null, 2));
+           //console.log("Uploaded Files:", adaptedSession.files);
+            
+           //Temporarily excluding mock images from the upload
+           const testSession = {
+            ...session,
+            incidents: session.incidents.map((incident: any) => ({
+                ...incident,
+                imageFiles: [],
+            })),
+           };
+           const result = await uploadSession(testSession, {
+                endpoint: "http://10.0.2.2:3000/upload",
+           });
+           
+           console.log("Server Upload Result:", result);
+            Alert.alert("Upload Successful", `Session ${result.sessionId} uploaded successfully.`);
         }
         catch (error) {
-            console.error("Upload test failed:", error);
+            console.error("Server upload failed:", error);
             Alert.alert("Upload Failed", "Session could not be prepared");
         }
     };
