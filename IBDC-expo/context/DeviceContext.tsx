@@ -12,7 +12,7 @@ import { IBDCCommunicationService, DeviceStatus as IBDCDeviceStatus } from "@/se
 import { SimulatedIBDC } from "@/ble/SimulatedIBDC";
 import { ImageIngestService } from "@/services/ImageIngestService";
 import { ExpoImageStorage } from "@/services/ExpoImageStorage";
-import {DAOAdapter} from "@/services/DAOAdapter";
+import { DAOAdapter } from "@/services/DAOAdapter";
 import { SimulatedIBDCImageLoader } from "@/ble/SimulatedIBDCImageLoader"
 
 

@@ -209,5 +209,9 @@ export class ImageIngestService {
  
         this.pendingEvents.delete(eventId);
     }
+
+    public getPendingEventSize() {
+        return this.pendingEvents.size;
+    }
 }
  

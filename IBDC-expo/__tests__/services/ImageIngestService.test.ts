@@ -1,78 +1,6 @@
-import { IBDCCommunicationService  } from "@/services/IBDCCommunicationService"
-import { SimulatedIBDC } from "@/ble/SimulatedIBDC";
-import { MockBleAdapter } from "@/ble/MockBleAdapter";
-import { ImageIngestService } from "@/services/ImageIngestService";
-import { ImageStorage } from "@/services/ExpoImageStorage";
-import { DAOAccessor } from "@/services/DAOAdapter";
-import { LoadImageData } from "@/ble/SimulatedIBDCImageLoader";
+import { IBDCCommsToAppEndpointProvider } from "@/__tests__/factories/IBDCCommsToAppEndpointProvider";
 
-// Objects defined at file level for each test function to reference
-let mockBleAdapter: MockBleAdapter;
-let ibdc: SimulatedIBDC;
-let commsService: IBDCCommunicationService;
-// Define mock database and image storage
-// Mock image store
-let storage: Map<string, Uint8Array>;
-let ingestService: ImageIngestService;
-
-
-let DAOaccessor: DAOAccessor;
-// Test the image with specified name is written with the correct bytes
-let imageStorage: ImageStorage;
-
-let loader: LoadImageData;
-
-// Instantiate each object before testing
-beforeAll(async () => {
-    console.log("working in BeforeAll")
-    mockBleAdapter = new MockBleAdapter();
-    const loader: LoadImageData = {
-        loadImagesAsBytes(): Promise<Uint8Array[]> {
-            return Promise.resolve([
-                new Uint8Array([1, 2, 3]),
-                new Uint8Array([4, 5, 6])
-            ]);
-        }
-    };
-    ibdc = new SimulatedIBDC(mockBleAdapter, loader);
-    commsService = new IBDCCommunicationService(mockBleAdapter); // Pass in peripherals
-    storage = new Map<string, Uint8Array>
-    imageStorage = { saveImage: jest.fn((fileName: string, data: Uint8Array): string => {
-        storage.set(fileName, data);
-        return fileName;
-    })}
-    // Doesn't test actual DAO access or success status, only ensure the passed in values are correct
-    DAOaccessor = {
-        createSession: (sessionId: string, createdTime: string) => {
-            return Promise.resolve();
-        },
-        createIncident: (id: string,
-                         sessionId: string,
-                         latitude: number | null,
-                         longitude: number | null,
-                         licensePlate: string | null,
-                         bestImageId: string | null,
-                         injurySeverity: string | null,
-                         driverPresent: number,
-                         driverInformation: string | null,
-                         extraComment: string | null,
-                         vehicleMake: string | null,
-                         vehicleModel: string | null,
-                         vehicleColor: string | null,
-                         vehicleYear: string | null,
-                         createdTime: string) => {
-            return Promise.resolve();
-        },
-        createIncidentImage: (id: string,
-                              incidentId: string,
-                              filePath: string,
-                              thumbnail: any,
-                              source: string) =>  {
-            return Promise.resolve();
-        }
-    }
-    ingestService = new ImageIngestService(commsService, imageStorage, DAOaccessor);
-})
+const testing_environment: IBDCCommsToAppEndpointProvider = new IBDCCommsToAppEndpointProvider();
 
 
 test("handleEventNotification", async () => {
@@ -91,14 +19,11 @@ test("handleEventNotification", async () => {
         }>,
         imagePaths: new Map<number,string>
     }
-    await ibdc.triggerEvent()
-
+    await testing_environment.ibdc.triggerEvent();
+    expect(testing_environment.imageIngestService.getPendingEventSize()).toEqual(1);
 
     // Pass in a malformed object and:
     // expect pendingEvents.At(eventID).toBe(error)
-
-
-
 })
 
 test("handleImageInfo", async () => {
