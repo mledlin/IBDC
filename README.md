@@ -18,6 +18,7 @@ This application has been developed by 4 students at Arizona State University du
 7. Branch Status
 8. Current Issues
 9. Future Tasks
+10. Testing and Quality Plan
 
 Appendix 1 - Expo Development Environment
 Appendix 2 - Dependency Breakdown
@@ -83,6 +84,47 @@ In the event of any error:
 - Restart the emulator
 - Restart expo
 
+### Generate an Android APK
+
+You can use an Expo EAS Build to generate APK files in the cloud. You'll need to make an EAS account and tell 
+Christopher the email for it so he can invite you to the dev team.
+
+Before You Start:
+
+- Create your own Expo account at https://expo.dev/signup.
+- Send Christopher the email address of your Expo account so he can invite you.
+- Accept the team invitation.
+- Pull the latest dev branch project.
+
+This WILL NOT WORK until you are part of the expo team.
+
+Build Steps:
+- Update the dependancies.
+
+```Bash
+npm install
+```
+
+- Sign in with your own Expo account.
+
+```Bash
+npx eas login
+```
+
+5. Start the Android APK build. Note this takes a LONG time.
+
+```Bash
+npx eas build --platform android --profile preview
+```
+
+Use the existing Android keystore if prompted. Do not generate a replacement keystore for this project.
+
+Install the APK:
+
+When the build finishes, EAS provides a download link. Download and install the APK. 
+
+The installed APK runs without Expo Go or a running development server.
+
 ## 6. Current Status
 
 The current version operates on both IOS and Android and has a functional User interface that meets with the approval of the sponsor. Navigation between screens works as does data flow from the database to the UI. The database is not yet optimized as it was just implemented and tested. The look and feel of the app has been implemented through themes in the settings menu. There are 2 options currently and more can be added easily for demonstration and customization.
@@ -120,7 +162,7 @@ UI:
 - Add a donate button for the Rob Dollar foundation. (Not requested by Sponsor. Just an idea)
 - UI Polish needed to appear more professional.
 - Settings page needs to be updated with real settings such as image capture quantity.
-- Ability to delete sessions, incidents or data by age must be added.
+- Ability to delete sessions, incidents, or data by age must be added.
 - Main Page placeholder image needs to be replaced.
 - Add incident history storage size indication somewhere.
 - Add deterministic mock data additions for testing purposes.
@@ -146,6 +188,77 @@ Other:
 - Potentially develop an analytics server to handle data that the device collects.
 - Develop code to extract the license plate characters from an image.
 
+
+## 10. Testing and Quality Plan
+
+Testing is being developed alongside the application to verify that features work as expected on both Android and IOS. 
+The Software Quality Plan defines the requirements, quality metrics, and testing methods for the project. All Test Cases.xlsx 
+contains the individual test cases, inputs, and expected results. The TypeScript & React Test Plan provides additional 
+information about the automated test setup.
+
+Automated Testing:
+
+We use Jest with jest-expo to test application logic. React Native Testing Library supports testing screen content and 
+user interactions. Mocks provide controlled inputs for dependencies such as Bluetooth, GPS, database access, and file 
+operations.
+
+Run tests from the IBDC-Expo folder, in the same directory as package.json.
+
+```Bash
+npm test
+```
+
+You can also run a specific test file.
+
+```Bash
+npm test -- RideSessionFilters.test.ts
+```
+
+Tests cover areas such as:
+
+- Bluetooth connection state and recovery after disconnecting.
+- Protobuf message handling and device status information.
+- Image chunk validation, image assembly, and interrupted transfers.
+- Event acknowledgment after evidence has been validated and saved.
+- Database relationships and saved incident data.
+- Ride history filters and page sizes.
+- Incident completeness and saved changes appearing on the ride session screen.
+- PDF reports containing the correct incident information.
+
+Each test should create the data it needs and run independently. When a feature changes or a bug is fixed, the related 
+tests should be updated and run again.
+
+Testing on Devices:
+
+Some functionality must be tested in an installed application because it depends on native database access, file 
+operations, permissions, or Bluetooth hardware.
+
+- Use Android emulators and IOS simulators to check navigation and layouts across different screen configurations.
+- Use installed development builds to test native functionality.
+- Use physical phones connected to the IBDC device to verify Bluetooth communication.
+- Record the device or emulator configuration, operating system version and application build with the results.
+- Run applicable checks on both Android and IOS.
+
+**Note** Passing a test with a mock does not prove the same functionality works on a phone. Native integration and 
+physical-device testing are needed to verify those parts of the application.
+
+Quality Review:
+
+Test results will be compared with the acceptance targets in the Software Quality Plan. 
+
+Server communication tests will be defined once the agreement with the outside team establishes 
+what data must be sent and how the server should respond.
+
+Human UX Testing:
+
+We will also test with people outside the development team to evaluate how the application feels to use. Participants 
+will be asked to complete common tasks such as finding an incident, selecting an image, saving changes, and exporting 
+a report.
+
+We will record where participants get confused, need help or suggest improvements. These findings will be summarized in 
+a report to the sponsor. Human UX testing will help guide improvements but will not produce an automatic pass or fail 
+for the user experience. Functional problems found during these sessions will still be recorded as defects and evaluated 
+against the project requirements.
 
 ## Appendix 1 - Expo Development Environment
 
