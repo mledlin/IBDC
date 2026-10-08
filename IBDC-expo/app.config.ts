@@ -16,6 +16,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
 
+    extra: {
+        ...config.extra,
+        eas: {
+            ...config.extra?.eas,
+            projectId: "eec80285-5a92-4669-81c6-9859b568f679",
+        },
+    },
+
     ios: {
         supportsTablet: true,
         bundleIdentifier: "com.anonymous.IBDC-expo",
