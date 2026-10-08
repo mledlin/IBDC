@@ -244,7 +244,7 @@ export class SimulatedIBDC {
             }
             case "settings": {
                 const settings = decoded.settings as { imagesPerEventSetting: number };
-                if(settings.imagesPerEventSetting !== undefined) {
+                if(settings.imagesPerEventSetting === undefined) {
                     console.warn(`SimulatedIBDC: Settings received with imagesPerEventSetting = ${settings.imagesPerEventSetting}`);
                     break;
                 }
