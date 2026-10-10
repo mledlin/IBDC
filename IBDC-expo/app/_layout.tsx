@@ -65,7 +65,7 @@ function AppStack() {
                     fontSize: 18,
                 },
                 headerShadowVisible: false,
-                headerLargeTitleEnabled: true,
+                headerLargeTitleEnabled: false,
 
                 /**
                  * Header title shown at the top of each screen.
@@ -76,8 +76,6 @@ function AppStack() {
                             flexDirection: "row",
                             alignItems: "center",
                             gap: 8,
-                            paddingBottom: 30,
-                            paddingTop: insets.top/3,
                         }}
                     >
                         <Image
