@@ -105,12 +105,12 @@ const server = http.createServer((req, res) => {
         return;
     }
     //Returns received uploads.
-    if(req.mnethod === "GET" && req.url === "/api/uploads"){
+    if(req.method === "GET" && req.url === "/api/uploads"){
         res.writeHead(200);
         res.end(JSON.stringify(uploads));
         return;
     }
-    
+
     if (req.method === "POST" && req.url === "/upload") {
         let body = "";
 
@@ -121,7 +121,7 @@ const server = http.createServer((req, res) => {
         req.on("end", () => {
             try {
                 const data = JSON.parse(body);
-
+                uploads.push(data);
                 console.log("Received Upload:");
                 console.log(JSON.stringify(data, null, 2));
 
