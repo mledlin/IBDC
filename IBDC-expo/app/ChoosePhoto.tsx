@@ -8,11 +8,13 @@
 
 import { router, useLocalSearchParams} from "expo-router";
 import { useEffect, useState } from "react";
-import { getIncidentImagesByIncidentId, getMockImageSource } from "@/database/ImageDao";
+import { getIncidentImagesByIncidentId, getMockImageSource, createIncidentImage } from "@/database/ImageDao";
 import { updateIncidentBestImage } from "@/database/IncidentDao";
-import { Text, View, StyleSheet, FlatList, TouchableOpacity, Image, Dimensions, ImageSourcePropType } from "react-native";
+import { Text, View, StyleSheet, FlatList, TouchableOpacity, Image, Dimensions, ImageSourcePropType, Alert } from "react-native";
 import { useTheme } from "@/context/ThemeContext";
 import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
+import {Directory, File, Paths } from "expo-file-system";
 const{ width} = Dimensions.get("window");
 const CARD_WIDTH = width * 0.78;
 const SIDE_SPACING = 16;
@@ -102,6 +104,11 @@ const {incident_id } = useLocalSearchParams();
   
 }
 }
+
+/** 
+* Open photo library and save selection to incident.
+* async function handleChooseFromGallery(){} 
+*/
     return (
       <View style={[styles.container, { backgroundColor: theme.colors.background },]}>
         <View style={[styles.headerCard, { backgroundColor: theme.colors.primary, borderColor: theme.colors.border },]}>
@@ -151,7 +158,28 @@ const {incident_id } = useLocalSearchParams();
           </TouchableOpacity>
         )}
       />
-
+      <TouchableOpacity
+        style={[
+          styles.galleryButton,
+          {backgroundColor: theme.colors.primary}
+        ]}
+        //onPress={handleChooseFromGallery}
+        activeOpacity={0.85}
+          >
+          <Ionicons
+          name = "images-outline"
+          size={20}
+          color={theme.colors.primaryForeground} />
+          <Text
+          style={[
+            styles.galleryButtonText,
+            {color: theme.colors.primaryForeground}
+          ]}
+          >
+            Choose From Gallery
+            </Text>
+            </TouchableOpacity>
+        
       <View style={styles.hintRow}>
         <Ionicons
           name="swap-horizontal-outline"
@@ -279,6 +307,21 @@ const {incident_id } = useLocalSearchParams();
       pickBadgeText: {
         fontSize: 13,
         fontWeight: "700",
+      },
+      galleryButton: {
+        marginHorizontal: 16,
+        marginTop: 8,
+        marginBottom: 12,
+        paddingVertical: 16,
+        borderRadius: 14,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 10,
+      },
+      galleryButtonText: {
+      fontSize: 15,
+      fontWeight: "700",
       },
       hintRow: {
         flexDirection: "row",
