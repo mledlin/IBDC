@@ -1,0 +1,31 @@
+Meeting Minutes – Team 4
+Date 9/20/2026
+Time: 2:57 PM (Asynchronus)
+Duration: 7 hours
+Participants: Team 4: Christopher Paquin, Matthew Edlin, Jair Franco, Colin Tugend
+
+Topics Covered:
+Discussed database problems that Chris was running into. He was trying to run test on a mock
+database but the database was running on app code and not native code so the database dependencies
+were being mocked behind the scenes by expo and it wouldn't work. Colin helped look into the issue
+and found out that we'd need a different approach to make this work. Jair suggested using the BLE
+adapter class and evaluating data entering the database rather than whats already in it which
+provided a solid option. Ultimately, we decided to table database testing for now as most options
+were ineffective.
+
+Matthew discussed his progress on a new pull request.
+
+Summary:
+Our meeting helped us to understand app versus native code and how testing differed by platform.
+
+Action Item List: Meet with sponsor
+Action Owner: Team 4
+Action Item Dates: 9/24/26
+
+Action Item List: Develop inter-device comms
+Action Owner: Matthew Edlin
+Action Item Dates: 10/4/2026
+
+Action Item List: Pursue testing plan
+Action Owner: Team 4
+Action Item Dates: 10/4/2026

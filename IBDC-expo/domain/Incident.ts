@@ -55,14 +55,14 @@ export type IncidentImage = {
 export function isIncidentComplete(incident: Incident): boolean {
     const hasText = (value: unknown): boolean =>
         typeof value === "string" && value.trim().length > 0;
+
     return (
         Array.isArray(incident.imageFiles) &&
         incident.imageFiles.length > 0 &&
-        incident.selectedImageId != null &&
+        hasText(incident.best_image_id) &&
         incident.latitude != null &&
         incident.longitude != null &&
         hasText(incident.created_time) &&
-        hasText(incident.license_plate) &&
-        hasText(incident.extra_comment)
+        hasText(incident.license_plate)
     );
 }

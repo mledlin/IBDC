@@ -7,6 +7,14 @@ import { ExpoConfig, ConfigContext } from 'expo/config';
  */
 export default ({ config }: ConfigContext): ExpoConfig => ({
     ...config,
+    owner: "paqattacks-team",
+    extra: {
+        ...config.extra,
+        eas: {
+            ...config.extra?.eas,
+            projectId: "ef9497ce-9ce8-4d26-9ad6-89a8872ab1cd",
+        },
+    },
     name: "IBDC-expo",
     slug: "IBDC-expo",
     version: "1.0.0",
