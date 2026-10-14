@@ -112,7 +112,7 @@ export default function MainScreen() {
     const storagePercent = Math.floor((currentDevice.storage.used / currentDevice.storage.total) * 100);
 
     return (
-        <View style={[styles.safe, {paddingTop: insets.top, backgroundColor: theme.colors.background}]}>
+        <View style={[styles.safe, {paddingTop: insets.top * 2.5, backgroundColor: theme.colors.background}]}>
             <ScrollView
                 style={styles.scroll}
                 contentContainerStyle={styles.content}
