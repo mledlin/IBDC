@@ -107,8 +107,66 @@ const {incident_id } = useLocalSearchParams();
 
 /** 
 * Open photo library and save selection to incident.
-* async function handleChooseFromGallery(){} 
 */
+async function handleChooseFromGallery(){
+  if (typeof incident_id !== "string"){
+    return;
+  }
+
+  try {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: false,
+      quality: 1,
+    });
+
+    if (result.canceled || !result.assets.length){
+      return;
+    }
+    const selectedImage = result.assets[0];
+    const imageId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+    const imageDirectory = new Directory(
+      Paths.document, 
+      "incident_images"
+    );
+
+    imageDirectory.create({
+      intermediates: true,
+      idempotent: true, 
+    });
+    const sourceFile = new File(selectedImage.uri);
+
+    const extension =
+      selectedImage.mimeType === "image/png" ? "png" :
+      selectedImage.mimeType === "image/heic" ? "heic" :
+      selectedImage.mimeType === "image/heif" ? "heif" :
+      selectedImage.mimeType === "image/webp" ? "webp" :
+      "jpg";
+    
+      const destinationFile = new File(
+        imageDirectory, 
+       `${imageId}.${extension}`
+      );
+      sourceFile.copy(destinationFile);
+
+      await createIncidentImage(
+        imageId,
+        incident_id,
+        destinationFile.uri,
+        null,
+        "gallery"
+      );
+
+      await updateIncidentBestImage(incident_id, imageId);
+      console.log("Gallery Image Saved To: ", destinationFile.uri);
+      router.back();
+  } catch (error) {
+    console.error("Failed to select image: ", error);
+    Alert.alert("Image Selection Failed", "Unable To Save Image");
+  }
+} 
+
     return (
       <View style={[styles.container, { backgroundColor: theme.colors.background },]}>
         <View style={[styles.headerCard, { backgroundColor: theme.colors.primary, borderColor: theme.colors.border },]}>
@@ -163,7 +221,7 @@ const {incident_id } = useLocalSearchParams();
           styles.galleryButton,
           {backgroundColor: theme.colors.primary}
         ]}
-        //onPress={handleChooseFromGallery}
+        onPress={handleChooseFromGallery}
         activeOpacity={0.85}
           >
           <Ionicons
