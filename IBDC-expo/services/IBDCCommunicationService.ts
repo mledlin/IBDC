@@ -39,6 +39,11 @@ export interface DeviceStatus {
   imagesPerEventSetting: number;
 }
 
+// AppToDevice.Settings uses imagesPerEvent; imagesPerEventSetting belongs to DeviceStatus.
+export interface DeviceSettings {
+  imagesPerEvent: number;
+}
+
 export interface ImageInfo {
   eventId: number;
   imageIndex: number;
@@ -187,8 +192,8 @@ export class IBDCCommunicationService {
     }
 
     /** Write settings (e.g. images captured per event) to the device */
-    async writeSettings(settings: Record<string, unknown>): Promise<void> {
-        await this.send("settings", settings);
+    async writeSettings(settings: DeviceSettings): Promise<void> {
+        await this.send("settings", {...settings});
     }
 
     /** Ask the device for the list of events not yet acknowledged by the app */

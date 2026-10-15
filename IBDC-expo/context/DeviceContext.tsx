@@ -147,7 +147,7 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
     if(bleAdapter.isConnected()){
       console.log( `DeviceContext: sending images=per=event setting ${count}`);
     
-    await communicationService.writeSettings({imagesPerEventSetting: count,});
+    await communicationService.writeSettings({imagesPerEvent: count});
   }
   }
 
@@ -181,7 +181,7 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
       const desired = desiredImagesPerEventRef.current;
       if(status.imagesPerEventSetting !== desired){
         console.log(`DeviceContext: images-per-event mismatch.`);
-        communicationService.writeSettings({imagesPerEventSetting: desired,}).catch((error)=> {
+        communicationService.writeSettings({imagesPerEvent: desired}).catch((error)=> {
           console.error("DeviceContext: failed to synchronize images-per-event settings:", error);
         })
       }

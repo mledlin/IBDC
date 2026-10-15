@@ -3,6 +3,7 @@ import { File } from "expo-file-system"
 import { ProtobufService } from "@/protobuf/ProtobufService";
 import {MockBleAdapter} from "@/ble/MockBleAdapter";
 import { BleDeviceInfo } from "./BleAdapter";
+import type {DeviceSettings} from "@/services/IBDCCommunicationService";
 
 // Max bytes per simulated BLE ImageChunk payload. I made it smaller to force multiple payload for testing. 
 // real payloads will be ~180-240 bytes. 
@@ -243,16 +244,16 @@ export class SimulatedIBDC {
                 break;
             }
             case "settings": {
-                const settings = decoded.settings as { imagesPerEventSetting: number };
-                if(settings.imagesPerEventSetting === undefined) {
-                    console.warn(`SimulatedIBDC: Settings received with imagesPerEventSetting = ${settings.imagesPerEventSetting}`);
+                const settings = decoded.settings as Partial<DeviceSettings>;
+                if(settings.imagesPerEvent === undefined) {
+                    console.warn("SimulatedIBDC: Settings received without imagesPerEvent.");
                     break;
                 }
-                if(!Number.isInteger(settings.imagesPerEventSetting)|| settings.imagesPerEventSetting < 1) {
-                    console.warn(`SimulatedIBDC: Invalid imagesPerEventSetting = ${settings.imagesPerEventSetting}`);
+                if(!Number.isInteger(settings.imagesPerEvent)|| settings.imagesPerEvent < 1) {
+                    console.warn(`SimulatedIBDC: Invalid imagesPerEvent = ${settings.imagesPerEvent}`);
                     break;
                 }
-                this.state.imagesPerEventSetting = settings.imagesPerEventSetting;
+                this.state.imagesPerEventSetting = settings.imagesPerEvent;
                 console.log(`SimulatedIBDC: Updated imagesPerEventSetting to ${this.state.imagesPerEventSetting}`);
                 this.pushDeviceStatus();
                 break;
