@@ -1,34 +1,40 @@
 import { IBDCCommsToAppEndpointProvider } from "@/__tests__/factories/IBDCCommsToAppEndpointProvider";
+import { EventNotification, ImageChunk, ImageInfo } from "@/services/IBDCCommunicationService";
 
 const testing_environment: IBDCCommsToAppEndpointProvider = new IBDCCommsToAppEndpointProvider();
 
+test("mapIncomingImagesToEventById", async () => {
 
-test("handleEventNotification", async () => {
-    // Pass in correct object and:
-    // expect pendingEvents.At(eventID).toBe(defined)
-    // expect pendingEvents.At(eventID).toEqual(the object passed in)
-    console.log("Testing handleEventNotification");
-    const eventID: number = 1;
-    let pendingEvent = {
-        imageCount: 2,
-        detectedAt: new Date().toISOString(),
-        images:  new Map<number, {
-            totalChunks: number;
-            imageFormat?: string;
-            chunks: Map<number, Uint8Array>;
-        }>,
-        imagePaths: new Map<number,string>
-    }
-    await testing_environment.ibdc.triggerEvent();
-    expect(testing_environment.imageIngestService.getPendingEventSize()).toEqual(1);
+    const eventPromise = new Promise<EventNotification>((resolve) => {
+        testing_environment.ibdcCommsService.onEventNotifications(
+            (message: EventNotification) => {
+                resolve(message);
+            }
+        );
+    });
 
-    // Pass in a malformed object and:
-    // expect pendingEvents.At(eventID).toBe(error)
-})
+    const imageInfoPromise = new Promise<ImageInfo>((resolve) => {
+        testing_environment.ibdcCommsService.onImageInfo(
+            (message: ImageInfo) => {
+                resolve(message);
+            }
+        );
+    });
 
-test("handleImageInfo", async () => {
+    // Trigger after registering listeners
+    testing_environment.triggerEvent();
 
-})
+    // Current event and imageInfo objects. These are passed to the ImageIngestService
+    const [event, imageInfo] = await Promise.all([
+        eventPromise,
+        imageInfoPromise
+    ]);
+
+    expect(testing_environment.imageIngestService.getPendingEventSize()).toBe(1);
+    expect(testing_environment.imageIngestService.getPendingEvents().get(event.eventId)).toBeDefined();
+    // @ts-ignore able to ignore because in this scenario, there should always be three images
+    expect(testing_environment.imageIngestService.getPendingEvents().get(event.eventId).images.size).toBe(3);
+});
 
 test("handleImageChunk", async () => {
 

@@ -213,5 +213,9 @@ export class ImageIngestService {
     public getPendingEventSize() {
         return this.pendingEvents.size;
     }
+
+    public getPendingEvents() {
+        return this.pendingEvents;
+    }
 }
  
