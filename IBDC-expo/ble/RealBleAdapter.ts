@@ -18,6 +18,7 @@ export class RealBleAdapter implements BleAdapter {
     private connectedDevice: Device | null = null; 
     private notificationSubscription: Subscription | null = null;
     private disconnectSubscription: Subscription | null = null;
+    private disconnectListeners = new Set<(deviceId: string) => void>();
 
     private receiveCallback: 
         | ((data: Uint8Array) => void)
@@ -211,6 +212,15 @@ export class RealBleAdapter implements BleAdapter {
         this.connectedDevice = null;
     }
 
+    onDisconnected(callback: (deviceId: string) => void): () => void {
+        this.disconnectListeners.add(callback);
+        return () => this.disconnectListeners.delete(callback);
+    }
+
+    private notifyDisconnected(deviceId: string): void {
+        this.disconnectListeners.forEach((listener) => listener(deviceId));
+    }
+
     /**
      * Watches the device for sudden disconnection. 
      */
@@ -228,6 +238,7 @@ export class RealBleAdapter implements BleAdapter {
                     console.log("IBDC deivce disconnected:", device?.id ?? deviceId);
                 }
                 this.cleanUpCOnnectionState();
+                this.notifyDisconnected(deviceId);
             }
         );
     }
@@ -258,6 +269,7 @@ export class RealBleAdapter implements BleAdapter {
             throw error;
         } finally {
             this.cleanUpCOnnectionState();
+            this.notifyDisconnected(deviceId);
         }
     }
 

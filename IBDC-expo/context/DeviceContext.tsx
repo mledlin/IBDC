@@ -96,6 +96,25 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
   const [desiredImagesPerEvent,setDesiredImagesPerEvent,] = useState(DEFAULT_IMAGES_PER_EVENT);
   const desiredImagesPerEventRef = useRef(DEFAULT_IMAGES_PER_EVENT);
   const settingsLoadedRef = useRef(false);
+  const disconnectListenerRef = useRef<(() => void) | null>(null);
+
+  function subscribeToAdapterDisconnect(adapter: BleAdapter): void {
+    disconnectListenerRef.current?.();
+    disconnectListenerRef.current = adapter.onDisconnected((deviceId) => {
+      setDevice((currentDevice) => {
+        if (!currentDevice || currentDevice.id !== deviceId) {
+          return currentDevice;
+        }
+        return {...currentDevice, status: 'disconnected'};
+      });
+    });
+  }
+
+  useEffect(() => {
+    subscribeToAdapterDisconnect(bleAdapter);
+    return () => disconnectListenerRef.current?.();
+  }, []);
+
    useEffect(()=>{
     async function loadDeviceSettings() {
       try{ 
@@ -126,6 +145,7 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
       ? mockBLEAdapter 
       : new (require('@/ble/RealBleAdapter').RealBleAdapter)();
       bleAdapter = nextAdapter;
+      subscribeToAdapterDisconnect(nextAdapter);
       communicationService.setAdapter(nextAdapter);
       modeRef.current = mode;
       setMode(mode);
@@ -277,7 +297,6 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
   async function disconnect() {
     if (modeRef.current === 'mock') simulatedDevice.stop();
     await bleAdapter.disconnect();
-    setDevice(null);
   }
 
   // Development testing hook: Makes mock device simulate a detection event with imageCount photos

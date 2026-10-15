@@ -7,6 +7,8 @@ export class MockBleAdapter implements BleAdapter {
 
     private recieveCallback: ((data: Uint8Array) => void) | null = null;
 
+    private disconnectListeners = new Set<(deviceId: string) => void>();
+
     // Device-side callback for app -> device sends : Not part of the BLE Adapter interface
     private deviceReceiveCallback: ((data: Uint8Array) => void) | null = null;
 
@@ -44,7 +46,11 @@ export class MockBleAdapter implements BleAdapter {
      * Simulates disconnecting from a BLE device.
      */
     async disconnect(): Promise<void> {
+        const disconnectedDeviceId = this.connectedDeviceId;
         this.connectedDeviceId = null;
+        if (disconnectedDeviceId) {
+            this.disconnectListeners.forEach((listener) => listener(disconnectedDeviceId));
+        }
     }
 
     /**
@@ -68,6 +74,11 @@ export class MockBleAdapter implements BleAdapter {
      */
     onDataReceived(callback: (data: Uint8Array) => void): void {
         this.recieveCallback = callback;
+    }
+
+    onDisconnected(callback: (deviceId: string) => void): () => void {
+        this.disconnectListeners.add(callback);
+        return () => this.disconnectListeners.delete(callback);
     }
 
     // Registers a callback that receives bytes the app sends via sendData()

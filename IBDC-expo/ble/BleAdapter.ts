@@ -13,6 +13,7 @@ export interface BleAdapter {
     disconnect(): Promise<void>;
     sendData(data: Uint8Array): Promise<void>;
     onDataReceived(callback: (data: Uint8Array) => void): void;
+    onDisconnected(callback: (deviceId: string) => void): () => void;
     isConnected(): boolean;
     getConnectedDeviceId(): string | null;
 }
