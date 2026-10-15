@@ -75,7 +75,7 @@ let bleAdapter: BleAdapter = mockBLEAdapter;
 // Sits between bleAdapter and this context (and any other domain services),
 const communicationService = new IBDCCommunicationService(bleAdapter);
 
-new ImageIngestService(communicationService);
+const imageIngestService = new ImageIngestService(communicationService);
 
 const simulatedDevice = new SimulatedIBDC(mockBLEAdapter);
 
@@ -265,6 +265,16 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
       throw new Error(`Device with ID ${deviceId} not found in scanned devices.`);
     }
     await bleAdapter.connect(deviceId);
+    try {
+      await imageIngestService.createConnectionSession(new Date());
+    } catch (error) {
+      try {
+        await bleAdapter.disconnect();
+      } catch (disconnectError) {
+        console.error("DeviceContext: failed to disconnect after session creation failed:", disconnectError);
+      }
+      throw error;
+    }
     // Simulated device state only exist in mock mode.
     const initalState = modeRef.current === "mock" ? simulatedDevice.getState() : undefined;
 

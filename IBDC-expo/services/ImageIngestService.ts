@@ -42,6 +42,7 @@ export class ImageIngestService {
                 createdTime: session.created_time,
             }));
         },
+        createSession,
     });
     // Events currently being downloaded. Key = device eventId.
     private pendingEvents = new Map<number, PendingEvent>();
@@ -51,6 +52,10 @@ export class ImageIngestService {
         this.communicationService.onEventNotifications(this.handleEventNotification);
         this.communicationService.onImageInfo(this.handleImageInfo);
         this.communicationService.onImageChunk(this.handleImageChunk);
+    }
+
+    public async createConnectionSession(connectionTime: Date): Promise<string> {
+        return this.sessionManager.createSession(connectionTime);
     }
 
     private handleEventNotification = (event: EventNotification) => {
@@ -162,11 +167,7 @@ export class ImageIngestService {
     private async finalizeIncident(eventId: number, pendingEvent: PendingEvent): Promise<void> {
         console.log("Finalizing Incident", eventId);
         const occurrenceTime = new Date(pendingEvent.detectedAt);
-        let sessionId = await this.sessionManager.determineSession(occurrenceTime);
-        if (!sessionId) {
-            sessionId = `session-${eventId}-${Date.now()}`;
-            await createSession(sessionId, pendingEvent.detectedAt);
-        }
+        const sessionId = await this.sessionManager.getOrCreateSession(occurrenceTime);
         const incidentId = `incident-${eventId}-${Date.now()}`;
  
         //Best image just gets set to the first image, will need to find a better way later. 
