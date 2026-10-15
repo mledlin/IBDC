@@ -1,10 +1,11 @@
 // Bridges incomming BLE event/image messages to on-disk files and database rows
 import {Directory, File, Paths} from "expo-file-system";
 import { IBDCCommunicationService, EventNotification, ImageInfo, ImageChunk } from "./IBDCCommunicationService";
-import { createSession } from "@/database/SessionDao";
+import { createSession, getAllSessions } from "@/database/SessionDao";
 import { createIncident } from "@/database/IncidentDao";
 import { createIncidentImage} from "@/database/ImageDao";
 import { concatUint8Arrays } from "@/utils/base64";
+import { SessionManager } from "@/hooks/SessionManager";
 
 const IMAGE_DIRECTORY = new Directory(Paths.document, "incident_images");
 
@@ -33,6 +34,15 @@ function extensionForFormat(imageFormat: string | undefined): string {
 
 export class ImageIngestService {
     private readonly communicationService: IBDCCommunicationService;
+    private readonly sessionManager = new SessionManager({
+        async getAllSessions() {
+            const sessions = await getAllSessions();
+            return sessions.map((session) => ({
+                id: session.id,
+                createdTime: session.created_time,
+            }));
+        },
+    });
     // Events currently being downloaded. Key = device eventId.
     private pendingEvents = new Map<number, PendingEvent>();
 
@@ -151,18 +161,14 @@ export class ImageIngestService {
  
     private async finalizeIncident(eventId: number, pendingEvent: PendingEvent): Promise<void> {
         console.log("Finalizing Incident", eventId);
-        const sessionId = `session-${eventId}-${Date.now()}`;
+        const occurrenceTime = new Date(pendingEvent.detectedAt);
+        let sessionId = await this.sessionManager.determineSession(occurrenceTime);
+        if (!sessionId) {
+            sessionId = `session-${eventId}-${Date.now()}`;
+            await createSession(sessionId, pendingEvent.detectedAt);
+        }
         const incidentId = `incident-${eventId}-${Date.now()}`;
  
-        // Auto-create a new session per event (no active-ride-session concept wired in yet).
-        // Maybe we can use a day time frame or when the device is first connected to eod?
-        // Will need to be reviewed later.
-        try{
-        await createSession(sessionId, pendingEvent.detectedAt);
-        }catch(error){
-            console.error("Database Finalized Failed", error);
-            throw error;
-        }
         //Best image just gets set to the first image, will need to find a better way later. 
         const firstImageIndex = Math.min(...pendingEvent.imagePaths.keys());
         const bestImageId = `${incidentId}-image-${firstImageIndex}`; 
