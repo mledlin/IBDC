@@ -33,6 +33,7 @@ function extensionForFormat(imageFormat: string | undefined): string {
 
 export class ImageIngestService {
     private readonly communicationService: IBDCCommunicationService;
+    // Events currently being downloaded. Key = device eventId.
     private pendingEvents = new Map<number, PendingEvent>();
 
     constructor(communicationService: IBDCCommunicationService) {
@@ -43,6 +44,11 @@ export class ImageIngestService {
     }
 
     private handleEventNotification = (event: EventNotification) => {
+        // Protects against recieving the same EventNotification more thatn once while the event is alrealdy being downloaded
+        if (this.pendingEvents.has(event.eventId)){
+            console.warn(`ImageIngestService: event ${event.eventId} is already being processed, ignoring ducplicate EventNotification.`);
+            return;
+        }
         const receivedAt = Date.now();
         const detectedAt = new Date(receivedAt - event.timeOffsetMs).toISOString();
         console.log(
@@ -192,6 +198,8 @@ export class ImageIngestService {
         await this.communicationService.sendEventTransferAck(eventId);
  
         this.pendingEvents.delete(eventId);
+
+        console.log(`ImageIngestService: event ${eventId} saved and acknowleged`)
     }
 }
  

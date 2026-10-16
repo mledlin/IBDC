@@ -68,7 +68,9 @@ type PendingEventListListener = (message: PendingEventList) => void;
 type Unsubscribe = () => void;
 
 export class IBDCCommunicationService {
-    private readonly ble: BleAdapter;
+    // This can become read only when mock/real adapter switching is removed
+    // from the final production application. 
+    private ble: BleAdapter;
     private eventNotificationListeners = new Set<EventNotificationListener>();
     private deviceStatusListeners = new Set<DeviceStatusListener>();
     private imageInfoListeners = new Set<ImageInfoListener>();
@@ -78,6 +80,17 @@ export class IBDCCommunicationService {
     constructor(ble: BleAdapter) {
         this.ble = ble;
         this.ble.onDataReceived(this.handleIncoming);
+    }
+
+    /**
+     *  Keep existing message listenters while switching transports
+     *  NOTE: In final product, this should be removed, as there will only be one
+     *  BLE Adapter, the mockAdapter is for testing and should not be left in 
+     *  the finished product. 
+     */
+    setAdapter(ble: BleAdapter): void{
+        this.ble = ble;
+        ble.onDataReceived(this.handleIncoming);
     }
 
     private handleIncoming = (data: Uint8Array) => {
