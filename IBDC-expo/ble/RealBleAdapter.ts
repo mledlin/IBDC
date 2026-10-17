@@ -6,12 +6,14 @@ import { BleAdapter, BleDeviceInfo } from "./BleAdapter";
 const SERVICE_UUID = "D4A51F4B-93EF-4AB1-B2B6-0E445CC297BA";
 const RX_UUID = "D4A51F4C-93EF-4AB1-B2B6-0E445CC297BA";
 const TX_UUID = "D4A51F4D-93EF-4AB1-B2B6-0E445CC297BA";
-//5 second scan durration. 
+/** Duration of a device discovery scan, in milliseconds. */
 const SCAN_DURATION_MS = 5000;
 
 /**
- * This class is responsible fro permissions, Bluetooth state, scanning, connect/disconnect, GATT service discovery,
- * RX writes, TX notifications, and raw Uint8Binary transport. 
+ * BLE adapter backed by `react-native-ble-plx` for communication with IBDC hardware.
+ *
+ * Handles platform permissions, Bluetooth readiness, discovery, GATT setup, writes,
+ * notifications, and transport of raw byte arrays.
  */
 export class RealBleAdapter implements BleAdapter {
     private manager: BleManager; 
@@ -36,12 +38,17 @@ export class RealBleAdapter implements BleAdapter {
     
     private discoveredDevices = new Map<string, BleDeviceInfo>();
     
+    /** Creates a BLE manager used for hardware communication. */
     constructor() {
         this.manager = new BleManager();
     }
 
+    /**
+     * Requests the Bluetooth permissions required by the current platform.
+     * @returns Whether the required permissions were granted.
+     */
     private async requestPermissions(): Promise<boolean> {
-        if(Platform.OS == "ios") {
+        if(Platform.OS === "ios") {
             return true;
         }
         if(Platform.OS !== "android") {
@@ -74,11 +81,10 @@ export class RealBleAdapter implements BleAdapter {
     }
 
     /**
-     * Scans for nearby IBDC devices. 
-     * 
-     * This scan is filtering using the IBDC service UUID. 
-     * This also means that if the deivce doesn't advertize this SERIVCE_UUID, 
-     * the app will not be able to discover it.  
+     * Scans for nearby devices advertising the IBDC service UUID.
+     * Devices that do not advertise this service are not discovered.
+     * @returns A promise that resolves with the devices found during the scan.
+     * @throws If permissions are denied, Bluetooth is unavailable, or scanning fails.
      */
     async scan(): Promise<BleDeviceInfo[]> {
         const permissionGranted = await this.requestPermissions();
@@ -153,9 +159,7 @@ export class RealBleAdapter implements BleAdapter {
         }
     }
 
-    /**
-     * Reset the internal scan bookeeping. 
-     */
+    /** Clears the stored callbacks and timer for the current scan. */
     private clearScanState(): void {
         this.scanResolve = null; 
         this.scanReject = null;
@@ -163,7 +167,9 @@ export class RealBleAdapter implements BleAdapter {
     }
 
     /**
-     * Connects to a specific BLE device.
+     * Connects to a device, discovers its services, and enables its TX notifications.
+     * @param deviceId Identifier of the device to connect to.
+     * @throws If permissions are denied or the connection/setup fails.
      */
     async connect(deviceId: string): Promise<void>{
         const permissionGranted = await this.requestPermissions();
@@ -204,6 +210,7 @@ export class RealBleAdapter implements BleAdapter {
         }
     }
 
+    /** Removes active subscriptions and clears the connected-device reference. */
     private cleanUpCOnnectionState(): void {
         this.notificationSubscription?.remove();
         this.notificationSubscription = null; 
@@ -212,17 +219,23 @@ export class RealBleAdapter implements BleAdapter {
         this.connectedDevice = null;
     }
 
+    /**
+     * Registers a handler for device disconnections.
+     * @param callback Handler invoked with the identifier of the disconnected device.
+     * @returns A function that unregisters this handler.
+     */
     onDisconnected(callback: (deviceId: string) => void): () => void {
         this.disconnectListeners.add(callback);
         return () => this.disconnectListeners.delete(callback);
     }
 
+    /** Notifies every registered listener that a device disconnected. */
     private notifyDisconnected(deviceId: string): void {
         this.disconnectListeners.forEach((listener) => listener(deviceId));
     }
 
     /**
-     * Watches the device for sudden disconnection. 
+     * Watches the connected device for an unexpected disconnection.
      */
     private setUpDisconnectListener(): void {
         if(!this.connectedDevice) {
@@ -244,7 +257,10 @@ export class RealBleAdapter implements BleAdapter {
     }
 
     /**
-     * Stop listening to TX notifications.
+     * Stops notifications and disconnects from the connected device.
+     * If no device is connected, any active scan is cancelled.
+     * @returns A promise that resolves when the disconnect operation completes.
+     * @throws If the platform fails to disconnect the device.
      */
     async disconnect(): Promise<void> {
         if(!this.connectedDevice){
@@ -274,9 +290,11 @@ export class RealBleAdapter implements BleAdapter {
     }
 
     /**
-     * send raw bytes to the IBDC device.
-     * Note: IBDCCommunicationService is responsible for 
-     * the protobuff encoding BEFORE this method. 
+     * Sends raw bytes to the connected IBDC device.
+     * `IBDCCommunicationService` is responsible for protobuf encoding before this call.
+     * @param data Encoded bytes to transmit.
+     * @returns A promise that resolves when the write completes.
+     * @throws If no device is connected or the write fails.
      */
     async sendData(data: Uint8Array): Promise<void> {
        if(!this.connectedDevice) {
@@ -293,30 +311,30 @@ export class RealBleAdapter implements BleAdapter {
     }
     
     /**
-     * Register the callback that recieves data coming from the IBDC device. 
+     * Registers the callback that receives bytes from the connected device.
+     * @param callback Handler invoked with each received byte sequence.
      */
     onDataReceived(callback: (data: Uint8Array) => void): void {
         this.receiveCallback = callback;
     }
 
     /**
-     * Returns wheather an IBDC device is connected. 
+     * Checks whether an IBDC device is connected.
+     * @returns `true` if connected; otherwise, `false`.
      */
     isConnected(): boolean {
         return (this.connectedDevice !== null);
     }
 
     /**
-     * 
-     * @returns 
+     * Gets the identifier of the currently connected device.
+     * @returns The connected device identifier, or `null` if disconnected.
      */
     getConnectedDeviceId(): string | null {
         return this.connectedDevice?.id ?? null;
     }
 
-    /**
-     * 
-     */
+    /** Subscribes to the device TX characteristic and forwards notification bytes. */
     private subscribeToTx(): void {
         if (!this.connectedDevice){
             throw new Error("Cannot subscribe to TX: no device connected.");
@@ -347,7 +365,7 @@ export class RealBleAdapter implements BleAdapter {
     }
 
     /**
-     * Finish a sucessfull scan (happy case)
+     * Completes the active scan successfully and resolves it with discovered devices.
      */
     private finishScan(): void {
         this.manager.stopDeviceScan();
@@ -363,6 +381,7 @@ export class RealBleAdapter implements BleAdapter {
         resolve?.(devices);
     }
 
+    /** Stops an active scan and rejects its promise after a scan error. */
     private failScan(error: Error): void {
         this.manager.stopDeviceScan();
         if(this.scanTimeout){
@@ -374,6 +393,7 @@ export class RealBleAdapter implements BleAdapter {
         reject?.(error);
     }
 
+    /** Stops an active scan and rejects its promise with the cancellation reason. */
     private cancelScan(error: Error): void {
         if (!this.scanResolve && !this.scanReject) {
             return;
@@ -392,8 +412,10 @@ export class RealBleAdapter implements BleAdapter {
     }
 
     /**
-     * iOS-Specific. Waits for Bluetooth to actually become ready before scanning. 
-     * CoreBluetooth may not be immediately powered on with BLE manager starts.
+     * Waits until Bluetooth is powered on before starting BLE operations.
+     * CoreBluetooth may not be ready immediately after the manager starts.
+     * @returns A promise that resolves when Bluetooth is ready.
+     * @throws If Bluetooth enters an unavailable state.
      */
     private async waitForBluetoothPoweredOn(): Promise<void> {
         const currentState = await this.manager.state();

@@ -1,4 +1,4 @@
-// Bridges incomming BLE event/image messages to on-disk files and database rows
+/** Bridges incoming BLE event and image messages to files and database records. */
 import {Directory, File, Paths} from "expo-file-system";
 import { IBDCCommunicationService, EventNotification, ImageInfo, ImageChunk } from "./IBDCCommunicationService";
 import { createSession, getAllSessions } from "@/database/SessionDao";
@@ -7,21 +7,36 @@ import { createIncidentImage} from "@/database/ImageDao";
 import { concatUint8Arrays } from "@/utils/base64";
 import { SessionManager } from "@/hooks/SessionManager";
 
+/** Directory used to persist image data received from the device. */
 const IMAGE_DIRECTORY = new Directory(Paths.document, "incident_images");
 
+/** Tracks chunks collected for an image that has not yet been assembled. */
 interface PendingImage {
+    /** Expected number of chunks in this image. */
     totalChunks: number;
+    /** Protobuf image-format enum name, when supplied by image metadata. */
     imageFormat?: string;
+    /** Received image chunks keyed by their zero-based sequence number. */
     chunks: Map<number, Uint8Array>;
 }
 
+/** Tracks metadata and downloaded image paths for an event in progress. */
 interface PendingEvent {
+    /** Number of images expected for the event. */
     imageCount: number;
+    /** ISO timestamp at which the event was detected. */
     detectedAt: string;
+    /** Images that are still being received or assembled, keyed by image index. */
     images: Map<number, PendingImage>;
+    /** Paths of completed image files, keyed by image index. */
     imagePaths: Map<number,string>;
 }
 
+/**
+ * Maps a protobuf image format to its filename extension.
+ * @param imageFormat Protobuf image-format enum name.
+ * @returns `png` for PNG images; `jpg` otherwise.
+ */
 function extensionForFormat(imageFormat: string | undefined): string {
     switch (imageFormat) {
         case "IMAGE_FORMAT_PNG":
@@ -32,6 +47,10 @@ function extensionForFormat(imageFormat: string | undefined): string {
     }
 }
 
+/**
+ * Receives device events and image chunks, persists complete incident images,
+ * creates corresponding database records, and acknowledges completed transfers.
+ */
 export class ImageIngestService {
     private readonly communicationService: IBDCCommunicationService;
     private readonly sessionManager = new SessionManager({
@@ -44,9 +63,13 @@ export class ImageIngestService {
         },
         createSession,
     });
-    // Events currently being downloaded. Key = device eventId.
+    /** Events currently being downloaded, keyed by device-assigned event identifier. */
     private pendingEvents = new Map<number, PendingEvent>();
 
+    /**
+     * Creates the ingest service and subscribes to relevant communication messages.
+     * @param communicationService Service that dispatches decoded device messages.
+     */
     constructor(communicationService: IBDCCommunicationService) {
         this.communicationService = communicationService;
         this.communicationService.onEventNotifications(this.handleEventNotification);
@@ -54,10 +77,16 @@ export class ImageIngestService {
         this.communicationService.onImageChunk(this.handleImageChunk);
     }
 
+    /**
+     * Creates or selects a session for a device connection.
+     * @param connectionTime Time at which the connection was established.
+     * @returns The identifier of the resulting session.
+     */
     public async createConnectionSession(connectionTime: Date): Promise<string> {
         return this.sessionManager.createSession(connectionTime);
     }
 
+    /** Starts tracking an event notification and requests its image transfer. */
     private handleEventNotification = (event: EventNotification) => {
         // Protects against recieving the same EventNotification more thatn once while the event is alrealdy being downloaded
         if (this.pendingEvents.has(event.eventId)){
@@ -81,6 +110,7 @@ export class ImageIngestService {
         });
     };
 
+    /** Records image metadata for an event currently being ingested. */
     private handleImageInfo = (info: ImageInfo) => {
         const pendingEvent = this.pendingEvents.get(info.eventId);
         console.log("ImageIngestService: ImageInfo", info.eventId,info.imageIndex, "chunks:", info.totalChunks);
@@ -97,6 +127,7 @@ export class ImageIngestService {
         });
     };
  
+    /** Stores an incoming image chunk and assembles the image once complete. */
     private handleImageChunk = (chunk: ImageChunk) => {
         const pendingEvent = this.pendingEvents.get(chunk.eventId);
         if (!pendingEvent) {
@@ -124,6 +155,10 @@ export class ImageIngestService {
         }
     };
  
+    /**
+     * Assembles an image from its ordered chunks, writes it to disk, and checks
+     * whether all images for the event are ready to finalize.
+     */
     private async finishImage(
         eventId: number,
         imageIndex: number,
@@ -164,6 +199,10 @@ export class ImageIngestService {
         }
     }
  
+    /**
+     * Creates the incident and image database records, acknowledges the event,
+     * and removes its completed transfer state.
+     */
     private async finalizeIncident(eventId: number, pendingEvent: PendingEvent): Promise<void> {
         console.log("Finalizing Incident", eventId);
         const occurrenceTime = new Date(pendingEvent.detectedAt);

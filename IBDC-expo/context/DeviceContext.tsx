@@ -1,8 +1,8 @@
 /**
  * Device context for sharing the currently selected or connected device across the application.
  *
- * This file defines the device data shape, creates the context, provides the context wrapper
- * component, and exposes a custom hook for safely accessing device state.
+ * This file defines the shared device data and BLE operations, provides the
+ * context wrapper component, and exposes a hook for accessing that context.
  */
 
 import React, {createContext, useContext, useEffect, useRef, useState} from "react";
@@ -13,51 +13,70 @@ import { IBDCCommunicationService, DeviceStatus as IBDCDeviceStatus, PendingEven
 import { SimulatedIBDC } from "@/ble/SimulatedIBDC";
 import { ImageIngestService } from "@/services/ImageIngestService";
 
+/** Selects between the hardware BLE adapter and the in-memory mock adapter. */
 export type DeviceMode = 'mock' | 'real';
+/** Connection state exposed for the selected device. */
 export type ConnectedStatus = 'connected' | 'disconnected' | 'pairing';
 
 /**
  * Describes the device information stored in shared context.
  */
 export interface DeviceInfo {
+  /** Platform identifier of the device. */
   id: string;
+  /** Display name of the device. */
   name: string;
+  /** Current connection state. */
   status: ConnectedStatus;
+  /** Remaining battery charge, as a percentage. */
   battery: number;
+  /** Device storage usage and capacity, represented as percentages. */
   storage: { used: number; total: number };
+  /** Reported or simulated firmware version. */
   firmwareVersion: string;
+  /** ISO timestamp of the most recent synchronization. */
   lastSynced: string;
-  pendingEvents?: number; // Number of events on the device not yet acknowledged by the phone. Populated from decoded DeviceStatus messages once the device reports it.
+  /** Number of device events not yet acknowledged by the app, when known. */
+  pendingEvents?: number;
+  /** Number of images configured per event on the device, when known. */
   imagesPerEventOnDevice?: number;
 }
 
+/** AsyncStorage key used to persist the preferred images-per-event setting. */
 const IMAGES_PER_EVENT_KEY = "imagesPerEvent";
-// Default when user has never saved a preferance.
+/** Images-per-event value used before a user has saved a preference. */
 const DEFAULT_IMAGES_PER_EVENT = 10;
 
 /**
- * device:
- * the currently selected or connected device, or null if none is set.
- *
- * setDevice:
- * state setter used to update the current device.
+ * Values and operations made available to components under {@link DeviceProvider}.
  */
 type DeviceContextType = {
+  /** Currently selected or connected device, or `null` if none is set. */
   device: DeviceInfo | null;
+  /** Active BLE mode. */
   deviceMode: DeviceMode;
+  /** Changes the active BLE mode and resets the selected device. */
   setDeviceMode: (mode: DeviceMode) => Promise<void>;
+  /** Devices found by the most recent scan. */
   devices: BleDeviceInfo[];
+  /** Whether the active adapter currently has a connection. */
   isConnected: boolean;
+  /** Scans for available BLE devices and updates the device list. */
   scan: () => Promise<void>;
+  /** Connects to a device returned by the most recent scan. */
   connect: (deviceId: string) => Promise<void>;
+  /** Disconnects from the currently connected device. */
   disconnect: () => Promise<void>;
-  // Exposed so other domain services (e.g. incident reporting) can subscribe
-  // directly to message types DeviceContext itself doesn't own, such as
-  // EventNotification, without DeviceContext needing to know about every
-  // message type that flows over BLE.
+  /**
+   * Communication service for subscribing to decoded BLE message types beyond
+   * the device state managed directly by this context.
+   */
   communicationService: IBDCCommunicationService;
+  /** Triggers a simulated detection event in mock mode. */
   triggerTestEvent: (imageCount?: number) => Promise<void>;
+  /** Desired images-per-event setting saved by the app. */
   desiredImagesPerEvent: number;
+  /** Persists the desired image count and synchronizes it with a connected device. */
   setImagesPerEvent: (count: number) => Promise<void>; 
 };
 
@@ -66,24 +85,24 @@ type DeviceContextType = {
  */
 const DeviceContext = createContext<DeviceContextType | undefined>(undefined);
 
-//!!real adatper will be used in production, mock adapter is for testing and development
-// kept as concrete MockBleRefrence because SimulatedIBDC needs simulateIncomming(),
-// which isn't a part of the BleAdapter interface or the real implementation.
+/** Shared mock adapter used by the simulator and selected in mock mode. */
 const mockBLEAdapter = new MockBleAdapter();
 let bleAdapter: BleAdapter = mockBLEAdapter;
 
-// Sits between bleAdapter and this context (and any other domain services),
+/** Shared protocol service used by the context and domain services. */
 const communicationService = new IBDCCommunicationService(bleAdapter);
 
+/** Persists completed image transfers received over the shared communication service. */
 const imageIngestService = new ImageIngestService(communicationService);
 
+/** Mock device paired with the shared mock adapter. */
 const simulatedDevice = new SimulatedIBDC(mockBLEAdapter);
 
 /**
  * Wraps part of the application with shared device state.
  *
- * This provider stores the current device in local state and makes both
- * the value and its setter available to all descendant components.
+ * This provider stores device connection state and BLE operations and makes
+ * them available to all descendant components.
  *
  * @param children The child components that should have access to device context.
  * @returns A context provider containing device state and update access.
@@ -98,6 +117,7 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
   const settingsLoadedRef = useRef(false);
   const disconnectListenerRef = useRef<(() => void) | null>(null);
 
+  /** Replaces the adapter's disconnection subscription with one for the given adapter. */
   function subscribeToAdapterDisconnect(adapter: BleAdapter): void {
     disconnectListenerRef.current?.();
     disconnectListenerRef.current = adapter.onDisconnected((deviceId) => {
@@ -116,6 +136,7 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
    useEffect(()=>{
+    /** Loads the saved image-count preference before device status synchronization. */
     async function loadDeviceSettings() {
       try{ 
         const stroedValue = await AsyncStorage.getItem(IMAGES_PER_EVENT_KEY);
@@ -134,8 +155,11 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
     }
         void loadDeviceSettings();
       }, []);
-  //Adapter switching: Will not be needed in final implementation. 
-  // Used to swtich between mock device and real for demonstration and testing. 
+  /**
+   * Switches BLE adapters and clears device state associated with the prior mode.
+   * @param mode Mode to activate.
+   * @returns A promise that resolves after the previous connection is closed.
+   */
   async function changeMode(mode: DeviceMode): Promise<void> {
     if (mode === modeRef.current) { return; }
       if (modeRef.current == 'mock') simulatedDevice.stop();
@@ -153,6 +177,11 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
       setDevices([]);
     }
   
+  /**
+   * Saves the desired image count and sends it to the device when connected.
+   * @param count Positive integer number of images per event.
+   * @throws If `count` is not a positive integer or persistence/sending fails.
+   */
   async function setImagesPerEvent(count: number): Promise<void> {
     if(!Number.isInteger(count) || count < 1){
       throw new Error("Images per Evetn must at least be 1");
@@ -218,6 +247,11 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
    * Then ImageIngestService will recieve the resulting 
    * EventNotification and continure through the normal image transfer pipeline. 
    */
+  /**
+   * Requests notification metadata for each unacknowledged event reported by
+   * the device, allowing the regular image-ingest flow to resume.
+   * @param eventIds Identifiers of pending device events.
+   */
   async function handlePendingEvents(eventIds: number[]): Promise<void> {
     if (eventIds.length === 0) {
       console.log("DeviceContext: no pending events on device.");
@@ -236,9 +270,7 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  /**
-   *  Subscribe to PendingEventList message from the device. 
-   */
+  /** Subscribes to pending-event lists so interrupted transfers can be recovered. */
   useEffect(() => {
     const unsubscribe = communicationService.onPendingEventList((pendingList: PendingEventList) => {
           void handlePendingEvents(pendingList.eventIds);
@@ -249,7 +281,8 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
 
 
   /**
-   *  Scanning
+   * Scans for devices using the active adapter and stores the results.
+   * @returns A promise that resolves when the scan completes.
    */
   async function scan(): Promise<void> {
     const foundDevices = await bleAdapter.scan();
@@ -257,7 +290,10 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
   }
 
   /**
-   *  Connection
+   * Connects to a device from the latest scan and starts event synchronization.
+   * @param deviceId Identifier of a device in the current scan results.
+   * @returns A promise that resolves after connection setup and the initial sync request.
+   * @throws If the device was not found or connection/session setup fails.
    */
   async function connect(deviceId: string): Promise<void> {
     const selectedDevice = devices.find((canidate) => canidate.id === deviceId);
@@ -304,13 +340,21 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  async function disconnect() {
+  /**
+   * Stops the mock simulator when applicable and disconnects the active adapter.
+   * @returns A promise that resolves when disconnection completes.
+   */
+  async function disconnect(): Promise<void> {
     if (modeRef.current === 'mock') simulatedDevice.stop();
     await bleAdapter.disconnect();
   }
 
-  // Development testing hook: Makes mock device simulate a detection event with imageCount photos
-  // hardcoded, will need to be updated later to reflect real images per event.
+  /**
+   * Triggers a test event from the simulated device.
+   * @param imageCount Optional number of images to include in the event.
+   * @returns A promise that resolves after the event is generated.
+   * @throws If no device is selected or the active mode is not mock.
+   */
   async function triggerTestEvent(imageCount?: number): Promise<void>{
     if (!device || modeRef.current !== 'mock') {
       throw new Error("cannot trigger a test event: no device is connected");
@@ -340,9 +384,10 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * Returns the current device context.
+ * Returns the shared device state and operations.
  *
- * @returns The shared device state and setter function.
+ * @returns The device state and operations exposed by {@link DeviceProvider}.
+ * @throws If called outside a {@link DeviceProvider}.
  */
 export function useDevice() {
   const context = useContext(DeviceContext);
