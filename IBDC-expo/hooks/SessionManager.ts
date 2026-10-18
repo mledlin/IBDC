@@ -3,7 +3,6 @@
  * a new session in the database should be created.
  */
 
-
 // This interface determines what type of data SessionManager should query in order to determine incoming data's home.
 export interface SessionInfo {
     id: string,
@@ -16,8 +15,6 @@ export interface SessionPersistence {
     getAllSessions(): Promise<SessionInfo[]>;
 }
 
-//
-
 export class SessionManager {
 
     private persistence: SessionPersistence;
@@ -27,42 +24,30 @@ export class SessionManager {
         this.persistence = sessionPersistence;
     }
 
-    // Determines which date M/D/Y an event occurred.
-    private isSameDate(incomingDate: Date, sessionDate: Date): boolean {
-        return (
-            incomingDate.getFullYear() === sessionDate.getFullYear() &&
-            incomingDate.getMonth() === sessionDate.getMonth() &&
-            incomingDate.getDate() === sessionDate.getDate()
-        );
-    }
 
     // Determines if the incoming data happened within 2 hours from the start of an existing session.
-    private isWithin2HoursAfterSessionInit(incomingDate: Date, sessionDate: Date): boolean {
+    private isWithin2HoursAfterSessionInit(
+        incomingDate: Date,
+        sessionDate: Date,
+    ): boolean {
         const difference = incomingDate.getTime() - sessionDate.getTime();
 
-        // The math here is converting milliseconds to hours
-        return difference >= 0 &&
-            difference <= 2 * 60 * 60 * 1000;
+        return difference >= 0 && difference <= 2 * 60 * 60 * 1000;
     }
 
-    /**
-     *
-     * @param incomingDate The Date object of the incoming data. This Date is used to determine which session the incoming
-     *                     data belongs to.
-     * @returns an existing session ID or undefined if no session exists
-     */
-    public async determineSession(incomingDate: Date): Promise<string | undefined> {
-
-        const sessions: SessionInfo[] = await this.persistence.getAllSessions();
+    public async determineSession(
+        incomingDate: Date,
+    ): Promise<string | undefined> {
+        const sessions = await this.persistence.getAllSessions();
 
         for (const session of sessions) {
             const sessionDate = new Date(session.createdTime);
-            if (this.isSameDate(incomingDate, sessionDate)) {
-                if (this.isWithin2HoursAfterSessionInit(incomingDate, sessionDate)) {
-                    return session.id;
-                }
+
+            if (this.isWithin2HoursAfterSessionInit(incomingDate, sessionDate)) {
+                return session.id;
             }
         }
+
         return undefined;
     }
 }

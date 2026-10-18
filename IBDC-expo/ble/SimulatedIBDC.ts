@@ -243,17 +243,18 @@ export class SimulatedIBDC {
                 break;
             }
             case "settings": {
-                const settings = decoded.settings as { imagesPerEventSetting: number };
-                if(settings.imagesPerEventSetting === undefined) {
-                    console.warn(`SimulatedIBDC: Settings received with imagesPerEventSetting = ${settings.imagesPerEventSetting}`);
+                const settings = decoded.settings as {
+                    imagesPerEvent: number;
+                };
+
+                const count = settings.imagesPerEvent;
+
+                if (!Number.isInteger(count) || count < 1 || count > 50) {
+                    console.warn("SimulatedIBDC: invalid imagesPerEvent", count);
                     break;
                 }
-                if(!Number.isInteger(settings.imagesPerEventSetting)|| settings.imagesPerEventSetting < 1) {
-                    console.warn(`SimulatedIBDC: Invalid imagesPerEventSetting = ${settings.imagesPerEventSetting}`);
-                    break;
-                }
-                this.state.imagesPerEventSetting = settings.imagesPerEventSetting;
-                console.log(`SimulatedIBDC: Updated imagesPerEventSetting to ${this.state.imagesPerEventSetting}`);
+
+                this.state.imagesPerEventSetting = count;
                 this.pushDeviceStatus();
                 break;
             }

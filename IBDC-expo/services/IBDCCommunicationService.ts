@@ -187,8 +187,18 @@ export class IBDCCommunicationService {
     }
 
     /** Write settings (e.g. images captured per event) to the device */
-    async writeSettings(settings: Record<string, unknown>): Promise<void> {
-        await this.send("settings", settings);
+    async writeSettings(
+        settings: { imagesPerEvent: number },
+    ): Promise<void> {
+        const count = settings.imagesPerEvent;
+
+        if (!Number.isInteger(count) || count < 1 || count > 50) {
+            throw new Error("Images per event must be a positive uint32.");
+        }
+
+        await this.send("settings", {
+            imagesPerEvent: count,
+        });
     }
 
     /** Ask the device for the list of events not yet acknowledged by the app */
