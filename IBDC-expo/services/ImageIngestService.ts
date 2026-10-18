@@ -99,6 +99,8 @@ export class ImageIngestService {
             return;
         }
         // ---
+        console.log("Handling chunk " + chunk.chunkSequence + " out of " +
+        chunk.totalChunks + " with image Id " + chunk.imageIndex);
 
         // Test here ->
         // Either add current chunk to an existing image or create a new image starting with this chunk

@@ -24,7 +24,7 @@ export class IBDCCommsToAppEndpointProvider {
     public ibdcCommsService: IBDCCommunicationService;
     // ------------------------------------------------
 
-    // Newly created abstractions injected into the above components, allowing for testing.
+    // Newly created abstractions injected into the above components for testing.
     public daoAdapter: DAOAdapter;
     public imageStorage: ImageStorage;
     public imageLoader: LoadImageData;
@@ -46,12 +46,18 @@ export class IBDCCommsToAppEndpointProvider {
         this.imageLoader = createMockImageLoader()
         this.ibdc = new SimulatedIBDC(this.bleAdapter, this.imageLoader)
         this.imageIngestService = new ImageIngestService(this.ibdcCommsService, this.imageStorage, this.daoAdapter)
-
-
     }
 
     public triggerEvent() {
         this.ibdc.triggerEvent();
+    }
+
+    public disconnect() {
+        this.bleAdapter.disconnect();
+    }
+
+    public reconnect() {
+        this.bleAdapter.connect("device").then(r => {})
     }
 
     // More public methods could be declared here to help with testing
