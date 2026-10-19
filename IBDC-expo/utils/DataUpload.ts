@@ -1,4 +1,5 @@
 import { getSessionHistoryData } from "@/database/SessionDao";
+import { convertImage } from "@/utils/ImageConverter";
 import {
     DefaultServerUploadAdapter,
     LocalRideSession,
@@ -42,17 +43,18 @@ export async function uploadSession(
             "metadata",
             JSON.stringify(adaptedSession.payload),
         );
-
-        adaptedSession.files.forEach((file) => {
+        for (const file of adaptedSession.files) {
+            const convertedUri = await convertImage(file.uri);
             formData.append(
-                file.fieldName,
+                file.fieldName
                 {
-                    uri: file.uri,
-                    name: file.name,
-                    type: file.type,
+                    uri: convertedUri,
+                    name: file.name.replace(/\.[^.]+$/, "") + ".jpg",
+                    type: "image/jpeg",
                 } as any,
             );
-        });
+        }
+    
 
         body = formData;
     } else {
