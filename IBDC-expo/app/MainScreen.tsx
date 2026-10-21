@@ -112,7 +112,7 @@ export default function MainScreen() {
     const storagePercent = Math.floor((currentDevice.storage.used / currentDevice.storage.total) * 100);
 
     return (
-        <View style={[styles.safe, {paddingTop: insets.top, backgroundColor: theme.colors.background}]}>
+        <View style={[styles.safe, { backgroundColor: theme.colors.background}]}>
             <ScrollView
                 style={styles.scroll}
                 contentContainerStyle={styles.content}
@@ -325,20 +325,20 @@ const styles = StyleSheet.create({
     batteryText: {fontSize: 11, fontWeight: '700'},
     button: {padding: 12, marginBottom: 4},
     buttonText: {fontWeight: 'bold', textAlign: 'center'},
-    imageCard: {
-        borderRadius: 24,
-        borderWidth: 1,
-        alignItems: 'center',
-        paddingTop: 22,
-        paddingHorizontal: 16,
-        paddingBottom: 28,
-        marginBottom: 18,
-        shadowColor: "#000",
-        shadowOpacity: 0.06,
-        shadowRadius: 10,
-        shadowOffset: {width: 0, height: 4},
-        elevation: 5,
-    },
+   imageCard: {
+  borderRadius: 24,
+  borderWidth: 1,
+  alignItems: "center",
+  paddingTop: 22,
+  paddingHorizontal: 16,
+  paddingBottom: 28,
+  marginBottom: 18,
+  shadowColor: "#000",
+  shadowOpacity: 0.06,
+  shadowRadius: 10,
+  shadowOffset: { width: 0, height: 4 },
+  elevation: 5,
+},
     productImage: {width: '100%', height: 290, marginBottom: 18},
     bottomNav: {
         flexDirection: "row",

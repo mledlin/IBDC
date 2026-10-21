@@ -14,7 +14,7 @@ import type { Tensor, TfliteModel } from "react-native-fast-tflite";
 import { COCO_LABELS } from "./COCOLabelMap";
 
 export const VEHICLE_MODEL_ID = "mediapipe-efficientdet-lite0-float32-1";
-export const DEFAULT_CONFIDENCE_THRESHOLD = 0.5;
+export const DEFAULT_CONFIDENCE_THRESHOLD = 0.3;
 export const VEHICLE_MODEL_INPUT_SIZE = 320;
 const MODEL_LABEL_COUNT = 90;
 const MODEL_BOX_COUNT = 19_206;
