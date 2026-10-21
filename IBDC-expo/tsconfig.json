@@ -2,15 +2,10 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
-    "types": [
-      "jest"
-    ],
+    "types": ["jest"],
     "paths": {
-      "@/*": [
-        "./*"
-      ]
-    },
-    "types": ["jest"]
+      "@/*": ["./*"]
+    }
   },
   "include": [
     "**/*.ts",

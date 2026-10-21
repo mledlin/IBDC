@@ -127,4 +127,26 @@ describe("Incident status", () => {
 
         expect(result).toBe(true);
     });
+
+    test("Rejects a selected image that does not belong to the incident", () => {
+        const incident = makeIncident({
+            best_image_id: "missing-image",
+        });
+
+        expect(isIncidentComplete(incident)).toBe(false);
+    });
+
+    test("Rejects invalid coords and timestamps", () => {
+        expect(
+            isIncidentComplete(makeIncident({ latitude: NaN })),
+        ).toBe(false);
+
+        expect(
+            isIncidentComplete(makeIncident({ longitude: 181 })),
+        ).toBe(false);
+
+        expect(
+            isIncidentComplete(makeIncident({ created_time: "invalid" })),
+        ).toBe(false);
+    });
 });
