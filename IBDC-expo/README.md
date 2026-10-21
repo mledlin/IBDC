@@ -32,18 +32,19 @@ In the event of any error:
 
 ## Expo Development Build steps
 
- - Replace `app.json` with `app_with_BLE.json` for a ready to go plugin launcher.
+The app uses native BLE and on-device TensorFlow Lite modules, so run it in an
+Expo development build rather than Expo Go. The required dev-client, BLE,
+TFLite, Nitro, and image-manipulation packages are declared in `package.json`.
 
-1. Enter the following to download and install the expo dev client.
+1. From `IBDC-expo`, install project dependencies:
+
 ```Bash
-npx expo install expo-dev-client
-```
-2. Enter the following to download and install the BLE library.
-```Bash
-npx expo install react-native-ble-plx
+npm install
 ```
 
-3. Build the app locally for whichever platform you wish:
+2. The EfficientDet-Lite0 model is bundled at
+`assets/models/efficientdet_lite0_float32_1.tflite`, and Metro is configured to
+bundle `.tflite` assets. After changing native dependencies, rebuild the app:
 
 #### Clean/Build equivalent
 
@@ -68,7 +69,44 @@ Device:
 npx expo run:ios --device
 ```
 
-4. Run IDBC on either an emulator or physical device!
+3. Start Metro for the installed development client:
+
+```Bash
+npx expo start --dev-client
+```
+
+`npx expo run:android [--device]` builds and installs the Android development
+app. iOS builds and device installation require macOS and Xcode.
+
+
+### Offline vehicle detection
+
+Incoming, fully assembled images are analyzed one at a time on-device with
+`react-native-fast-tflite`. The bundled model is Google's MediaPipe
+EfficientDet-Lite0 float32 COCO model, downloaded from the official model URL
+linked by the [Google MediaPipe Object Detector guide](https://developers.google.com/edge/mediapipe/solutions/vision/object_detector):
+
+`https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/float32/1/efficientdet_lite0.tflite`
+
+Its SHA-256 is
+`40338edf5ec70d43e318b0a716a84d4564cd1802759a7a07170c7e43796dbf58`.
+The model's embedded label map is reproduced in `services/COCOLabelMap.ts`
+and the service resolves vehicle class indices from those label names.
+The model also publishes this label map at
+`https://storage.googleapis.com/mediapipe-tasks/object_detector/labelmap.txt`.
+The float32 input tensor is `[1, 320, 320, 3]`, RGB, normalized per channel as
+`(pixel - 127.5) / 127.5`. Images are orientation-corrected, resized to fit,
+center-padded to 320×320, and mapped back to original-image pixel coordinates.
+The two float32 output tensors are the 19,206×90 class scores and 19,206×4
+encoded box locations. Anchors, box decoding, and class-aware non-maximum
+suppression use min/max levels 3/7, three scales, anchor scale 4, aspect ratios
+`[1:1, 1.4:0.7, 0.7:1.4]`, box scales `[10, 10, 5, 5]`, and a 0.5 IoU limit.
+
+The analysis threshold defaults to 0.5. Analysis state and detections are
+stored on each `incident_images` row. Existing rows remain `not_scheduled`
+until deliberately scheduled; the app does not backfill historical photos.
+Pending work and interrupted processing are recovered at startup. Failed
+analysis can be retried from the Choose Photo card.
 
 
 ### Ensure we are requesting these permissions

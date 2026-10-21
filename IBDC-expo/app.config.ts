@@ -68,6 +68,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
 
         ],
         "expo-asset",
+        "expo-dev-client",
         [
             "expo-location", // This has to do with the expo-location library and it's required permissions
             {

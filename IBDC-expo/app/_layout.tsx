@@ -15,6 +15,7 @@ import { ThemeProvider, useTheme } from "@/context/ThemeContext";
 import { initDatabase } from "@/database/database";
 import { useEffect } from "react";
 import {useSafeAreaInsets} from "react-native-safe-area-context";
+import { vehicleDetectionService } from "@/services/VehicleDetectionService";
 
 /**
  * Builds the application's navigation stack.
@@ -46,6 +47,13 @@ function AppStack() {
                 console.log("Database Init");
             } catch (error) {
                 console.error("Database init failed", error);
+                return;
+            }
+
+            try {
+                await vehicleDetectionService.recoverPendingJobs();
+            } catch (error) {
+                console.error("Vehicle analysis recovery failed", error);
             }
         }
 

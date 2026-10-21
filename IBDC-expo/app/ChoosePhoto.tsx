@@ -7,12 +7,20 @@
  */
 
 import { router, useLocalSearchParams} from "expo-router";
-import { useEffect, useState } from "react";
-import { getIncidentImagesByIncidentId, getMockImageSource } from "@/database/ImageDao";
+import { useEffect, useRef, useState } from "react";
+import {
+  getIncidentImagesByIncidentId,
+  getMockImageSource,
+  type AnalysisStatus,
+} from "@/database/ImageDao";
 import { updateIncidentBestImage } from "@/database/IncidentDao";
 import { Text, View, StyleSheet, FlatList, TouchableOpacity, Image, Dimensions, ImageSourcePropType } from "react-native";
 import { useTheme } from "@/context/ThemeContext";
 import { Ionicons } from "@expo/vector-icons";
+import {
+  getAnalysisBadge,
+  vehicleDetectionService,
+} from "@/services/VehicleDetectionService";
 const{ width} = Dimensions.get("window");
 const CARD_WIDTH = width * 0.78;
 const SIDE_SPACING = 16;
@@ -23,6 +31,8 @@ type PhotoItem = {
   id: string;
   title: string;
   image: ImageSourcePropType;
+  analysisStatus: AnalysisStatus;
+  vehiclePresent: number | null;
 }
 /**
  * Renders the image selector for a specific incident.
@@ -38,44 +48,66 @@ export default function ChoosePhoto() {
 const {incident_id } = useLocalSearchParams();
  const { theme } = useTheme();
   
-//mock data filling in for database
     const [photoList, setPhotoList] = useState<PhotoItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const knownImageIds = useRef(new Set<string>());
 
   useEffect(()=> {
     let isActive = true;
+    let initialLoadComplete = false;
+    const analysisUpdatesDuringInitialLoad = new Set<string>();
 
-    async function loadPhotos() {
+    async function loadPhotos(showLoading: boolean) {
       if (typeof incident_id !== 'string'){
         if (isActive) {
           setPhotoList([]);
+          knownImageIds.current.clear();
           setIsLoading(false);
         }
         return;
       }
       try{
-        setIsLoading(true);
-        const images: any[] = await getIncidentImagesByIncidentId(incident_id);
+        if (showLoading) {
+          setIsLoading(true);
+        }
+        const images = await getIncidentImagesByIncidentId(incident_id);
         const mappedImages: PhotoItem[] = images.filter((image) =>
         image.id != null && typeof image.file_path === "string" && image.file_path.length > 0)
         .map((image,index) => ({
           id: String(image.id), 
           title: `Photo ${index + 1}`,
           image: getMockImageSource(image.file_path) ?? {uri:image.file_path},
+          analysisStatus: image.analysis_status,
+          vehiclePresent: image.vehicle_present,
         }));
         if (isActive){
+          knownImageIds.current = new Set(mappedImages.map((image) => image.id));
           setPhotoList(mappedImages);
         }
       }catch (error){
         console.error("failed to load incident images", error);
-        if (isActive){
+      } finally {
+        if (isActive) {
           setIsLoading(false);
         }
       }
     }
-    void loadPhotos();
+    void loadPhotos(true).then(() => {
+      initialLoadComplete = true;
+      if (isActive && analysisUpdatesDuringInitialLoad.size > 0) {
+        void loadPhotos(false);
+      }
+    });
+    const unsubscribe = vehicleDetectionService.subscribe((imageId) => {
+      if (knownImageIds.current.has(imageId)) {
+        void loadPhotos(false);
+      } else if (!initialLoadComplete) {
+        analysisUpdatesDuringInitialLoad.add(imageId);
+      }
+    });
     return () => {
       isActive = false;
+      unsubscribe();
     };
   }, [incident_id]);
 
@@ -102,6 +134,14 @@ const {incident_id } = useLocalSearchParams();
   
 }
 }
+
+  async function handleRetryAnalysis(photoId: string) {
+    try {
+      await vehicleDetectionService.retryFailedImage(photoId);
+    } catch (error) {
+      console.error("Failed to retry vehicle analysis", error);
+    }
+  }
     return (
       <View style={[styles.container, { backgroundColor: theme.colors.background },]}>
         <View style={[styles.headerCard, { backgroundColor: theme.colors.primary, borderColor: theme.colors.border },]}>
@@ -111,6 +151,11 @@ const {incident_id } = useLocalSearchParams();
         </View>
         <FlatList
           data={photoList}
+          ListEmptyComponent={
+            <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>
+              {isLoading ? "Loading photos…" : "No photos available"}
+            </Text>
+          }
           keyExtractor={(item) => item.id}
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -132,6 +177,16 @@ const {incident_id } = useLocalSearchParams();
                 source={item.image}
                 style={styles.image}
                 resizeMode="cover"/>
+              <View
+                style={[
+                  styles.analysisBadge,
+                  { backgroundColor: getAnalysisBadge(item.analysisStatus, item.vehiclePresent).color },
+                ]}
+              >
+                <Text style={styles.analysisBadgeText}>
+                  {getAnalysisBadge(item.analysisStatus, item.vehiclePresent).label}
+                </Text>
+              </View>
               <View style={[styles.photoCountBadge,{ backgroundColor: theme.colors.primary }, ]}>
                 <Text style={[styles.photoCountText,{ color: theme.colors.primaryForeground },]}> 
                   {index + 1} / {photoList.length}
@@ -142,6 +197,19 @@ const {incident_id } = useLocalSearchParams();
               <View>
                 <Text style={[styles.itemTitle, { color: theme.colors.text }]}> {item.title} </Text>
                 <Text style={[ styles.itemSubtitle, { color: theme.colors.textSecondary }, ]} > Tap to use this image </Text>
+                {item.analysisStatus === "failed" && (
+                  <TouchableOpacity
+                    accessibilityRole="button"
+                    accessibilityLabel={`Retry AI analysis for ${item.title}`}
+                    style={styles.retryButton}
+                    onPress={(event) => {
+                      event.stopPropagation();
+                      void handleRetryAnalysis(item.id);
+                    }}
+                  >
+                    <Text style={styles.retryButtonText}>Retry analysis</Text>
+                  </TouchableOpacity>
+                )}
               </View>
               <View style={[ styles.pickBadge, { backgroundColor: theme.colors.primary }, ]} >
                 <Ionicons name="checkmark-outline" size={16} color={theme.colors.primaryForeground}/>
@@ -290,6 +358,39 @@ const {incident_id } = useLocalSearchParams();
       hintText: {
         fontSize: 13,
         fontWeight: "500",
+      },
+      analysisBadge: {
+        position: "absolute",
+        top: 12,
+        left: 12,
+        maxWidth: "70%",
+        borderRadius: 10,
+        paddingHorizontal: 10,
+        paddingVertical: 7,
+      },
+      analysisBadgeText: {
+        color: "#FFFFFF",
+        fontSize: 12,
+        fontWeight: "700",
+      },
+      retryButton: {
+        alignSelf: "flex-start",
+        marginTop: 6,
+        borderRadius: 8,
+        backgroundColor: "#FEF2F2",
+        paddingHorizontal: 8,
+        paddingVertical: 5,
+      },
+      retryButtonText: {
+        color: "#991B1B",
+        fontSize: 12,
+        fontWeight: "700",
+      },
+      emptyText: {
+        paddingHorizontal: 20,
+        paddingVertical: 24,
+        fontSize: 15,
+        textAlign: "center",
       },
   });
   

@@ -4,8 +4,10 @@ import { IBDCCommunicationService, EventNotification, ImageInfo, ImageChunk } fr
 import { createSession, getAllSessions } from "@/database/SessionDao";
 import { createIncident } from "@/database/IncidentDao";
 import { createIncidentImage} from "@/database/ImageDao";
+import { updateIncidentBestImage } from "@/database/IncidentDao";
 import { concatUint8Arrays } from "@/utils/base64";
 import { SessionManager } from "@/hooks/SessionManager";
+import { vehicleDetectionService } from "./VehicleDetectionService";
 
 /** Directory used to persist image data received from the device. */
 const IMAGE_DIRECTORY = new Directory(Paths.document, "incident_images");
@@ -30,6 +32,17 @@ interface PendingEvent {
     images: Map<number, PendingImage>;
     /** Paths of completed image files, keyed by image index. */
     imagePaths: Map<number,string>;
+    /** Incident is created as soon as the first complete image has been saved. */
+    incidentId: string;
+    incidentCreation: Promise<void> | null;
+    /** Image indices with durable database records. */
+    persistedImages: Set<number>;
+    /** Prevents duplicate asynchronous assembly for retransmitted final chunks. */
+    savingImages: Set<number>;
+}
+
+export interface ImageAnalysisScheduler {
+    scheduleImage(imageId: string, imageUri: string): Promise<boolean>;
 }
 
 /**
@@ -70,7 +83,11 @@ export class ImageIngestService {
      * Creates the ingest service and subscribes to relevant communication messages.
      * @param communicationService Service that dispatches decoded device messages.
      */
-    constructor(communicationService: IBDCCommunicationService) {
+    constructor(
+        communicationService: IBDCCommunicationService,
+        private readonly analysisScheduler: ImageAnalysisScheduler =
+            vehicleDetectionService
+    ) {
         this.communicationService = communicationService;
         this.communicationService.onEventNotifications(this.handleEventNotification);
         this.communicationService.onImageInfo(this.handleImageInfo);
@@ -103,6 +120,10 @@ export class ImageIngestService {
             detectedAt,
             images: new Map(),
             imagePaths: new Map(),
+            incidentId: `incident-${event.eventId}-${Date.now()}`,
+            incidentCreation: null,
+            persistedImages: new Set(),
+            savingImages: new Set(),
         });
 
         this.communicationService.requestImageTransfer(event.eventId, 0, 0).catch((error) => {
@@ -165,82 +186,124 @@ export class ImageIngestService {
         pendingEvent: PendingEvent,
         pendingImage: PendingImage
     ): Promise<void> {
-        const orderedChunks: Uint8Array[] = [];
-        for (let i = 0; i < pendingImage.totalChunks; i++) {
-            const chunkBytes = pendingImage.chunks.get(i);
-            if (!chunkBytes) {
-                console.warn(
-                    `ImageIngestService: missing chunk ${i}/${pendingImage.totalChunks} for event ${eventId} image ${imageIndex}, waiting for retransmit.`
-                );
-                return;
-            }
-            orderedChunks.push(chunkBytes);
-        }
- 
-        const assembled = concatUint8Arrays(orderedChunks);
- 
-        try {
-            // makes this safe to call on every image, not just the first.
-            IMAGE_DIRECTORY.create({ intermediates: true, idempotent: true });
-        } catch (error) {
-            console.error("ImageIngestService: failed to create incident_images directory:", error);
+        if (
+            pendingEvent.persistedImages.has(imageIndex) ||
+            pendingEvent.savingImages.has(imageIndex)
+        ) {
             return;
         }
- 
-        const extension = extensionForFormat(pendingImage.imageFormat);
-        const file = new File(IMAGE_DIRECTORY, `event_${eventId}_image_${imageIndex}.${extension}`);
-        file.write(assembled);
- 
-        pendingEvent.imagePaths.set(imageIndex, file.uri);
-        pendingEvent.images.delete(imageIndex);
- 
-        if (pendingEvent.imagePaths.size === pendingEvent.imageCount) {
-            await this.finalizeIncident(eventId, pendingEvent);
+
+        pendingEvent.savingImages.add(imageIndex);
+        try {
+            let filePath = pendingEvent.imagePaths.get(imageIndex);
+            if (!filePath) {
+                const orderedChunks: Uint8Array[] = [];
+                for (let i = 0; i < pendingImage.totalChunks; i++) {
+                    const chunkBytes = pendingImage.chunks.get(i);
+                    if (!chunkBytes) {
+                        console.warn(
+                            `ImageIngestService: missing chunk ${i}/${pendingImage.totalChunks} for event ${eventId} image ${imageIndex}, waiting for retransmit.`
+                        );
+                        return;
+                    }
+                    orderedChunks.push(chunkBytes);
+                }
+
+                const assembled = concatUint8Arrays(orderedChunks);
+                try {
+                    IMAGE_DIRECTORY.create({ intermediates: true, idempotent: true });
+                } catch (error) {
+                    console.error("ImageIngestService: failed to create incident_images directory:", error);
+                    return;
+                }
+
+                const extension = extensionForFormat(pendingImage.imageFormat);
+                const file = new File(
+                    IMAGE_DIRECTORY,
+                    `event_${eventId}_image_${imageIndex}.${extension}`
+                );
+                file.write(assembled);
+                filePath = file.uri;
+                pendingEvent.imagePaths.set(imageIndex, filePath);
+            }
+
+            await this.ensureIncidentCreated(pendingEvent);
+            const imageId = `${pendingEvent.incidentId}-image-${imageIndex}`;
+            await createIncidentImage(
+                imageId,
+                pendingEvent.incidentId,
+                filePath,
+                null,
+                "device",
+                "pending"
+            );
+            pendingEvent.persistedImages.add(imageIndex);
+            pendingEvent.images.delete(imageIndex);
+
+            void this.analysisScheduler
+                .scheduleImage(imageId, filePath)
+                .catch((error) => {
+                    console.error(
+                        `ImageIngestService: failed to enqueue analysis for image ${imageId}:`,
+                        error
+                    );
+                });
+
+            if (pendingEvent.persistedImages.size === pendingEvent.imageCount) {
+                await this.finalizeIncident(eventId, pendingEvent);
+            }
+        } finally {
+            pendingEvent.savingImages.delete(imageIndex);
         }
     }
- 
+
+    private ensureIncidentCreated(pendingEvent: PendingEvent): Promise<void> {
+        if (!pendingEvent.incidentCreation) {
+            pendingEvent.incidentCreation = (async () => {
+                const occurrenceTime = new Date(pendingEvent.detectedAt);
+                const sessionId =
+                    await this.sessionManager.getOrCreateSession(occurrenceTime);
+                await createIncident(
+                    pendingEvent.incidentId,
+                    sessionId,
+                    null, // latitude - not yet available from device/GPS
+                    null, // longitude
+                    null, // licensePlate
+                    null, // bestImageId
+                    null, // injurySeverity
+                    0, // driverPresent
+                    null, // driverInformation
+                    null, // extraComment
+                    null, // vehicleMake
+                    null, // vehicleModel
+                    null, // vehicleColor
+                    null, // vehicleYear
+                    pendingEvent.detectedAt
+                );
+            })().catch((error) => {
+                pendingEvent.incidentCreation = null;
+                throw error;
+            });
+        }
+        return pendingEvent.incidentCreation;
+    }
+
     /**
-     * Creates the incident and image database records, acknowledges the event,
-     * and removes its completed transfer state.
+     * Finalizes the saved image set, acknowledges the event, and clears transfer state.
      */
     private async finalizeIncident(eventId: number, pendingEvent: PendingEvent): Promise<void> {
         console.log("Finalizing Incident", eventId);
-        const occurrenceTime = new Date(pendingEvent.detectedAt);
-        const sessionId = await this.sessionManager.getOrCreateSession(occurrenceTime);
-        const incidentId = `incident-${eventId}-${Date.now()}`;
- 
-        //Best image just gets set to the first image, will need to find a better way later. 
-        const firstImageIndex = Math.min(...pendingEvent.imagePaths.keys());
-        const bestImageId = `${incidentId}-image-${firstImageIndex}`; 
-
-        await createIncident(
-            incidentId,
-            sessionId,
-            null, // latitude - not yet available from device/GPS
-            null, // longitude
-            null, // licensePlate
-            bestImageId,
-            null, // injurySeverity
-            0, // driverPresent
-            null, // driverInformation
-            null, // extraComment
-            null, // vehicleMake
-            null, // vehicleModel
-            null, // vehicleColor
-            null, // vehicleYear
-            pendingEvent.detectedAt
-        );
- 
-        for (const [imageIndex, filePath] of pendingEvent.imagePaths.entries()) {
-            await createIncidentImage(
-                `${incidentId}-image-${imageIndex}`,
-                incidentId,
-                filePath,
-                null,
-                "device"
-            );
+        if (
+            pendingEvent.persistedImages.size !== pendingEvent.imageCount ||
+            pendingEvent.imagePaths.size !== pendingEvent.imageCount
+        ) {
+            return;
         }
- 
+        const firstImageIndex = Math.min(...pendingEvent.imagePaths.keys());
+        await updateIncidentBestImage(
+            pendingEvent.incidentId,
+            `${pendingEvent.incidentId}-image-${firstImageIndex}`
+        );
         await this.communicationService.sendEventTransferAck(eventId);
  
         this.pendingEvents.delete(eventId);

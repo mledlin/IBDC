@@ -5,6 +5,7 @@
 import * as SQLite from "expo-sqlite";
 
 let db: SQLite.SQLiteDatabase | null = null;
+let initializationPromise: Promise<void> | null = null;
 
 export async function getDatabase() {
     if (db) {
@@ -21,7 +22,17 @@ export async function getDatabase() {
     return db;
 }
 
-export async function initDatabase() {
+export function initDatabase(): Promise<void> {
+    if (!initializationPromise) {
+        initializationPromise = initializeDatabase().catch((error) => {
+            initializationPromise = null;
+            throw error;
+        });
+    }
+    return initializationPromise;
+}
+
+async function initializeDatabase(): Promise<void> {
     const database = await getDatabase();
 
     await database.execAsync(`
@@ -58,6 +69,13 @@ export async function initDatabase() {
             file_path TEXT NOT NULL,
             thumbnail_path TEXT,
             source TEXT NOT NULL DEFAULT 'device',
+            analysis_status TEXT NOT NULL DEFAULT 'not_scheduled',
+            vehicle_present INTEGER,
+            detections_json TEXT,
+            analysis_model_id TEXT,
+            confidence_threshold REAL,
+            analysis_timestamp TEXT,
+            analysis_error TEXT,
             FOREIGN KEY (incident_id) REFERENCES incidents(id)
         );
         
@@ -85,5 +103,32 @@ export async function initDatabase() {
 
         CREATE INDEX IF NOT EXISTS idx_incidents_best_image_id
         ON incidents(best_image_id);
+    `);
+
+    const imageColumns = await database.getAllAsync<{ name: string }>(
+        "PRAGMA table_info(incident_images)"
+    );
+    const existingColumns = new Set(imageColumns.map((column) => column.name));
+    const migrations: Array<[string, string]> = [
+        ["analysis_status", "TEXT NOT NULL DEFAULT 'not_scheduled'"],
+        ["vehicle_present", "INTEGER"],
+        ["detections_json", "TEXT"],
+        ["analysis_model_id", "TEXT"],
+        ["confidence_threshold", "REAL"],
+        ["analysis_timestamp", "TEXT"],
+        ["analysis_error", "TEXT"],
+    ];
+
+    for (const [name, definition] of migrations) {
+        if (!existingColumns.has(name)) {
+            await database.execAsync(
+                `ALTER TABLE incident_images ADD COLUMN ${name} ${definition}`
+            );
+        }
+    }
+
+    await database.execAsync(`
+        CREATE INDEX IF NOT EXISTS idx_incident_images_analysis_status
+        ON incident_images(analysis_status);
     `);
 }
