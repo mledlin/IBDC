@@ -1,50 +1,143 @@
-# Welcome to your Expo app 👋
+# Welcome to the Intelligent Bicycle Dash Cam
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
-
-## Get started
+## Get started / Running the App
 
 1. Install dependencies
 
-   ```bash
-   npm install
-   ```
+```bash
+npm install
+```
 
 2. Start the app
 
-   ```bash
-   npx expo start
-   ```
+You will need an android or IOS operating system to run this application. Either start an emulator now on your pc or 
+have your phone ready. You may need to enable USB debugging (android)
 
-In the output, you'll find options to open the app in a
+For Android, you can open the Device Manager on Android Studio as one of many options; it works "out of the box".
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+For a physical device download the expo go app and use it to scan the QR code that will appear in your terminal.
 
 ```bash
-npm run reset-project
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Now select the menu option you wish.
 
-## Learn more
+In the event of any error: 
+   - Stop everything
+   - Restart the emulator
+   - Restart expo
 
-To learn more about developing your project with Expo, look at the following resources:
+--------------
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Expo Development Build steps
 
-## Join the community
+ - Replace `app.json` with `app_with_BLE.json` for a ready to go plugin launcher.
 
-Join our community of developers creating universal apps.
+1. Enter the following to download and install the expo dev client.
+```Bash
+npx expo install expo-dev-client
+```
+2. Enter the following to download and install the BLE library.
+```Bash
+npx expo install react-native-ble-plx
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+3. Build the app locally for whichever platform you wish:
+
+#### Clean/Build equivalent
+
+```Bash
+npx expo prebuild --clean
+```
+
+#### Android
+```Bash
+Emulator:
+npx expo run:android
+
+Device:
+npx expo run:android --device
+```
+#### IOS
+```Bash
+Emulator:
+npx expo run:ios
+
+Device:
+npx expo run:ios --device
+```
+
+4. Run IDBC on either an emulator or physical device!
+
+
+### Ensure we are requesting these permissions
+#### Android 12+:
+- BLUETOOTH_SCAN
+- BLUETOOTH_CONNECT
+#### Android <=11:
+- BLUETOOTH
+- BLUETOOTH_ADMIN
+- ACCESS_FINE_LOCATION
+#### IOS
+- IOS automatically requests permissions because `NSBluetoothAlwaysUsageDescription` is present.
+
+### Code Example for requesting permissions
+
+The following is a code snippet that should request permissions based on the OS its running on. 
+
+```Typescript
+import { Platform, PermissionsAndroid } from 'react-native';
+
+export async function requestBlePermissions() {
+  if (Platform.OS === 'ios') {
+    return true;
+  }
+
+  if (Platform.Version >= 31) {
+    const results = await PermissionsAndroid.requestMultiple([
+      PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+      PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+    ]);
+
+    return (
+      results[PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN] === PermissionsAndroid.RESULTS.GRANTED &&
+      results[PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT] === PermissionsAndroid.RESULTS.GRANTED
+    );
+  }
+
+  const result = await PermissionsAndroid.request(
+    PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+  );
+
+  return result === PermissionsAndroid.RESULTS.GRANTED;
+}
+```
+Note: Android manifest and IOS Info.plist files are not required as app.json covers them completely.
+
+# Program Structure
+
+This application uses expo-router for navigation. App.tsx controls the first screen shown.
+
+## app/(tabs)
+
+This is where all the screens live. Currently, there is a MainScreen and a Settings screen that are extremely basic. They have a simple text link to move between pages.
+
+# How to use mock data!
+
+- Mock data is stored in /domain/mockData.ts
+- The following are the available mock data structures.
+
+  1. defaultSession - 1 single session with 2 incidents.
+  2. defaultIncident - 1 single incident
+  3. fullMockHistory - 18 sessions with incidents in all stages
+  4. emptyMockSessions - 18 sessions with no incidents
+
+
+- Use this line:
+```Typescript
+import {SOMETHING} from "@/domain/mockData"
+```
+- Instead of "SOMETHING", type the variable you want based on the data you want.
+- Use the variable however you wish. Review RideDetails.tsx for a real example.
+- Let me know if you have any questions!

@@ -1,0 +1,23 @@
+Colin Tugend
+Team 4
+SER 401
+3/24/26
+	
+
+	API Keys in a Distributed Version Control System
+
+Motivation
+	
+	The use of the Google cloud API is necessary when using the react-native-maps library. Early in the project, I worked on a user story where I had to get the map functionality to work. This task involved using a cloud API key provided by Google. I was aware that hardcoding the value in a .json file was incorrect as anyone can look and see the plain text. I had a solution! I could put the Google API key in a .env folder and load the value into the configuration file at runtime. Unfortunately I committed the .env file with an un-encrypted text API key to our repository. This led to me doing some research on how to responsibly use API keys in a planned production environment.
+
+
+Importance of Protecting API Keys
+
+	We are using Google Maps in our solution. Google Maps is being used as a software as a service (SaaS) in our application. This means that Google is providing us a software solution as long as we agree to a set of conditions (payment, licensing, etc). Depending on the conditions, the use of the API cost can scale as usage increases or API calls can be limited based on how many calls are made in a time period. Being the developer is aware of these restrictions, appropriate usage can be planned and designed. However, if people who are not supposed to use the Google Maps API obtain our API key, they can use the key and incur costs and resources on the accord of the API key. 
+	
+
+
+How to Protect API Keys in a Distributed Version Control System
+
+	
+	During development, it is easy; do not commit them to version control. The entire point of distributed version control is to share files between the team, but some information like API keys need special treatment. The way this data can be managed comes down to run-time configurations. Our program can look for an environment variable(API key) stored local to the development device. This keeps the security risk to our devices only, reducing the attack vector space. Different considerations need to be taken when pushing the application to production, but for Sprint II, this is a valid separation of concerns. 

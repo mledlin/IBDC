@@ -1,0 +1,19 @@
+The goal of documenting these classes is to understand and demonstrate the following: 
+1. What purpose do these classes serve
+2. Where are the supporting models/research documents
+3. Are all documents cohesive to each other and the code
+
+Domain Classes: Incident, Session, mockData
+
+Incident 
+1. Incident encapsulates all the data required of an 'incident event' defined by our sponsor. 
+2. schemadraft.pdf IBDC Project Definition and Requirements.docx 
+3. Yes.
+
+Session 
+1. Session encapsulates incidents based on time stamps. This is a quality of data assurance proposed by our team as opposed to a sponsor defined requirement.
+2. Session Proposal.pdf schemadraft.pdf 
+3. No. 
+In the document SessionProposal under the Technical Proposed Process header, the current session is proposed to have its own table in the database. This is not reflective of
+the code nor the schemadraft.pdf doc. Proposed fix is to add the table to the schema. Code still needs to be implemented when determining whether to add to the current session 
+or create a new current session.   

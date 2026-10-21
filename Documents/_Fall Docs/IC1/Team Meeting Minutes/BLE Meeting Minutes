@@ -1,0 +1,33 @@
+Meeting Minutes – Team Meeting (Team 4) 
+Date 8/27/2026
+Time: 4:45 PM (Asynchronus)
+Duration: 45 Mins
+Participants:  Team 4: Christopher Paquin, Matthew Edlin, Jair Franco, Colin Tugend
+
+Topics Covered: 
+Discussed the level of abstraction we will develop on top of the out chosen BLE interface. 
+We chose to use the Adapter Pattern in order to handle the ambiguities presented by having no defined communication protocol prototype. 
+Discussed whether additions to the Proto file are necessary and/or helpful.
+<!!!> We made an assumption that the BLE adapter on the hardware device will allow for a maximum transmittable unit larger than 23 bytes. <!!!>
+    -> (Still meeds clarification from the sponsor.)
+
+
+Summary: 
+Our meeting helped us have a clear view of how the process of receiving and processing BLE data can be broken down into separate modules. This decision is in line with our over-arching architecture goal of building a modular program.   
+
+
+Action Item List: Create BLE Adapter
+Action Owner: Christopher Paquin
+Action Item Dates: 8/27/2026
+
+Action Item List: Create an IDBC mock that can send data to our application
+Action Owner: Mathhew Edlin
+Action Item Dates: 8/27/2026
+
+Action Item List: Work on connecting the application to the mobile device's Bluetooth module.
+Action Owner: Colin Tugend
+Action Item Dates: 8/27/2026
+
+Action Item List: Research desirable design patterns for wireless communication
+Action Owner: Jair Franco
+Action Item Dates: 8/27/2026
