@@ -7,6 +7,7 @@ export type LocalRideSession = {
 export type LocalIncident = {
     id: string;
     imageFiles?: LocalImage[];
+    best_image_id?: string | null;
     [key: string]: unknown;
 };
 
@@ -50,18 +51,31 @@ export class DefaultServerUploadAdapter implements ServerUploadAdapter {
         const files: UploadFile[] = [];
 
         session.incidents?.forEach((incident) => {
-            incident.imageFiles?.forEach((image, index) => {
+            //Incidents without best image will be skipped
+            if(!incident.best_image_id){
+                return;
+            }
 
-                if (!image.file_path) {
-                    return;
-                }
+            //Locating best image
+            const bestImage = incident.imageFiles?.find(
+                (image) => image.id === incident.best_image_id
+            );
 
-                files.push({
-                    fieldName: "images",
-                    uri: image.file_path,
-                    name: `incident-${incident.id}-${index}.jpg`,
-                    type: "image/jpeg",
-                });
+            //Skip those without path/dne
+            if(!bestImage?.file_path){
+                return;
+            }
+
+            //Excludes mock images due to searching by path. This will also need to be revisited when BLE image transfer begins occuring
+            if(!bestImage.file_path.startsWith("file://")){
+                return;
+            }
+
+            files.push({
+                fieldName: "images",
+                uri: bestImage.file_path,
+                name: `incident-${incident.id}-${bestImage.id}`,
+                type: "image/jpeg",
             });
         });
 
