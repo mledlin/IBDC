@@ -31,6 +31,7 @@
     "expo-checkbox": "~5.0.8",
     "expo-constants": "~18.0.13",
     "expo-font": "~14.0.11",
+    "expo-go": "^0.2.0",
     "expo-haptics": "~15.0.8",
     "expo-image": "~3.0.11",
     "expo-image-picker": "~17.0.10",
