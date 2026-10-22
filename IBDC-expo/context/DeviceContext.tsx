@@ -12,6 +12,9 @@ import { MockBleAdapter } from "@/ble/MockBleAdapter";
 import { IBDCCommunicationService, DeviceStatus as IBDCDeviceStatus, PendingEventList } from "@/services/IBDCCommunicationService";
 import { SimulatedIBDC } from "@/ble/SimulatedIBDC";
 import { ImageIngestService } from "@/services/ImageIngestService";
+import { ExpoImageStorage } from "@/services/ExpoImageStorage";
+import { DAOAdapter } from "@/services/DAOAdapter";
+import { SimulatedIBDCImageLoader } from "@/ble/SimulatedIBDCImageLoader"
 
 export type DeviceMode = 'mock' | 'real';
 export type ConnectedStatus = 'connected' | 'disconnected' | 'pairing';
@@ -75,9 +78,14 @@ let bleAdapter: BleAdapter = mockBLEAdapter;
 // Sits between bleAdapter and this context (and any other domain services),
 const communicationService = new IBDCCommunicationService(bleAdapter);
 
-new ImageIngestService(communicationService);
+// Abstractions built around hardware coupling
+const imageStorage = new ExpoImageStorage();
+const imageLoader = new SimulatedIBDCImageLoader();
+const DAOAccess = new DAOAdapter();
 
-const simulatedDevice = new SimulatedIBDC(mockBLEAdapter);
+new ImageIngestService(communicationService, imageStorage, DAOAccess);
+
+const simulatedDevice = new SimulatedIBDC(mockBLEAdapter, imageLoader);
 
 /**
  * Wraps part of the application with shared device state.

@@ -1,12 +1,11 @@
 // Bridges incomming BLE event/image messages to on-disk files and database rows
-import {Directory, File, Paths} from "expo-file-system";
-import { IBDCCommunicationService, EventNotification, ImageInfo, ImageChunk } from "./IBDCCommunicationService";
-import { createSession } from "@/database/SessionDao";
-import { createIncident } from "@/database/IncidentDao";
-import { createIncidentImage} from "@/database/ImageDao";
-import { concatUint8Arrays } from "@/utils/base64";
+import {EventNotification, IBDCCommunicationService, ImageChunk, ImageInfo} from "./IBDCCommunicationService";
+import {concatUint8Arrays} from "@/utils/base64";
+import {ImageStorage} from "@/services/ExpoImageStorage";
+import {DAOAccessor} from "./DAOAdapter";
 
-const IMAGE_DIRECTORY = new Directory(Paths.document, "incident_images");
+
+
 
 interface PendingImage {
     totalChunks: number;
@@ -20,6 +19,7 @@ interface PendingEvent {
     images: Map<number, PendingImage>;
     imagePaths: Map<number,string>;
 }
+
 
 function extensionForFormat(imageFormat: string | undefined): string {
     switch (imageFormat) {
@@ -36,12 +36,21 @@ export class ImageIngestService {
     // Events currently being downloaded. Key = device eventId.
     private pendingEvents = new Map<number, PendingEvent>();
 
-    constructor(communicationService: IBDCCommunicationService) {
+    private imageStorage: ImageStorage;
+    private daoAccessor: DAOAccessor;
+
+    constructor(communicationService: IBDCCommunicationService, imageStorage: ImageStorage,
+                daoAccess: DAOAccessor) {
         this.communicationService = communicationService;
         this.communicationService.onEventNotifications(this.handleEventNotification);
         this.communicationService.onImageInfo(this.handleImageInfo);
         this.communicationService.onImageChunk(this.handleImageChunk);
+        this.imageStorage = imageStorage;
+        this.daoAccessor = daoAccess;
     }
+
+
+
 
     private handleEventNotification = (event: EventNotification) => {
         // Protects against recieving the same EventNotification more thatn once while the event is alrealdy being downloaded
@@ -54,6 +63,8 @@ export class ImageIngestService {
         console.log(
             "ImageIngestService: EventNotification", event.eventId, "images:", event.imageCount
         );
+
+        // Test/Ensure each parameter passed here is instantiated into its correct type and the expected field exist
         this.pendingEvents.set(event.eventId, {
             imageCount: event.imageCount,
             detectedAt,
@@ -61,10 +72,12 @@ export class ImageIngestService {
             imagePaths: new Map(),
         });
 
+        // Test each parameter is passed into this function as expected
         this.communicationService.requestImageTransfer(event.eventId, 0, 0).catch((error) => {
             console.log(`ImageIngestService: failed to request images for event ${event.eventId}:`, error)
         });
     };
+
 
     private handleImageInfo = (info: ImageInfo) => {
         const pendingEvent = this.pendingEvents.get(info.eventId);
@@ -81,14 +94,20 @@ export class ImageIngestService {
             chunks: existing?.chunks ?? new Map(),
         });
     };
- 
+
     private handleImageChunk = (chunk: ImageChunk) => {
+
+        // Test here ->
+        // Determine if received chunk is expected by ensuring one of the recently received events has a matching eventId
         const pendingEvent = this.pendingEvents.get(chunk.eventId);
         if (!pendingEvent) {
             console.warn(`ImageIngestService: ImageChunk for unknown event ${chunk.eventId}, ignoring.`);
             return;
         }
- 
+        // ---
+
+        // Test here ->
+        // Either add current chunk to an existing image or create a new image starting with this chunk
         let pendingImage = pendingEvent.images.get(chunk.imageIndex);
         if (!pendingImage) {
             // Chunk arrived before ImageInfo - start tracking from the chunk's own totalChunks.
@@ -97,7 +116,10 @@ export class ImageIngestService {
         }
  
         pendingImage.chunks.set(chunk.chunkSequence, chunk.payload);
- 
+        // ---
+
+        // Test if conditional here ->
+        // Determine is image is finished being put together.
         if (chunk.isLastChunk || pendingImage.chunks.size >= pendingImage.totalChunks) {
             console.log("ImageIngestService: Complete image")
             this.finishImage(chunk.eventId, chunk.imageIndex, pendingEvent, pendingImage).catch((error) => {
@@ -107,6 +129,7 @@ export class ImageIngestService {
                 );
             });
         }
+        // --
     };
  
     private async finishImage(
@@ -128,20 +151,12 @@ export class ImageIngestService {
         }
  
         const assembled = concatUint8Arrays(orderedChunks);
- 
-        try {
-            // makes this safe to call on every image, not just the first.
-            IMAGE_DIRECTORY.create({ intermediates: true, idempotent: true });
-        } catch (error) {
-            console.error("ImageIngestService: failed to create incident_images directory:", error);
-            return;
-        }
- 
         const extension = extensionForFormat(pendingImage.imageFormat);
-        const file = new File(IMAGE_DIRECTORY, `event_${eventId}_image_${imageIndex}.${extension}`);
-        file.write(assembled);
+
+        const imageName: string = `event_${eventId}_image_${imageIndex}.${extension}`;
+        const fileUri: string = this.imageStorage.saveImage(imageName, assembled);
  
-        pendingEvent.imagePaths.set(imageIndex, file.uri);
+        pendingEvent.imagePaths.set(imageIndex, fileUri);
         pendingEvent.images.delete(imageIndex);
  
         if (pendingEvent.imagePaths.size === pendingEvent.imageCount) {
@@ -151,6 +166,7 @@ export class ImageIngestService {
  
     private async finalizeIncident(eventId: number, pendingEvent: PendingEvent): Promise<void> {
         console.log("Finalizing Incident", eventId);
+
         const sessionId = `session-${eventId}-${Date.now()}`;
         const incidentId = `incident-${eventId}-${Date.now()}`;
  
@@ -158,7 +174,7 @@ export class ImageIngestService {
         // Maybe we can use a day time frame or when the device is first connected to eod?
         // Will need to be reviewed later.
         try{
-        await createSession(sessionId, pendingEvent.detectedAt);
+        await this.daoAccessor.createSession(sessionId, pendingEvent.detectedAt);
         }catch(error){
             console.error("Database Finalized Failed", error);
             throw error;
@@ -167,7 +183,7 @@ export class ImageIngestService {
         const firstImageIndex = Math.min(...pendingEvent.imagePaths.keys());
         const bestImageId = `${incidentId}-image-${firstImageIndex}`; 
 
-        await createIncident(
+        await this.daoAccessor.createIncident(
             incidentId,
             sessionId,
             null, // latitude - not yet available from device/GPS
@@ -186,7 +202,7 @@ export class ImageIngestService {
         );
  
         for (const [imageIndex, filePath] of pendingEvent.imagePaths.entries()) {
-            await createIncidentImage(
+            await this.daoAccessor.createIncidentImage(
                 `${incidentId}-image-${imageIndex}`,
                 incidentId,
                 filePath,
@@ -200,6 +216,10 @@ export class ImageIngestService {
         this.pendingEvents.delete(eventId);
 
         console.log(`ImageIngestService: event ${eventId} saved and acknowleged`)
+    }
+
+    public getPendingEventSize() {
+        return this.pendingEvents.size;
     }
 }
  
