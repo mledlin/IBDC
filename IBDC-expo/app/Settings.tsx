@@ -230,23 +230,9 @@ export default function SettingsPage() {
                 Alert.alert("No Sessions", "No sessions available to upload.");
                 return;
             }
-            const session = sessions[0];
-
-            const adapter = new DefaultServerUploadAdapter();
-            const adaptedSession = adapter.adaptSession(session);
-            //Local Tests To Ensure Data Integrity In Console
-           // console.log("Uploaded Payload:", JSON.stringify(adaptedSession.payload, null, 2));
-           //console.log("Uploaded Files:", adaptedSession.files);
-            
-           //Temporarily excluding mock images from the upload
-           const testSession = {
-            ...session,
-            incidents: session.incidents.map((incident: any) => ({
-                ...incident,
-                imageFiles: [],
-            })),
-           };
-           const result = await uploadSession(testSession, {
+            const session = sessions[0];         
+ 
+           const result = await uploadSession(session, {
                 endpoint: "http://10.0.2.2:3000/upload",
            });
            
