@@ -5,5 +5,6 @@ export function createMockDAO(): jest.Mocked<DAOAccessor> {
         createSession: jest.fn(),
         createIncident: jest.fn(),
         createIncidentImage: jest.fn(),
+        getAllSessions: jest.fn().mockResolvedValue([]),
     }
 }

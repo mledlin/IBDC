@@ -8,6 +8,7 @@ import {DAOAccessor} from "./DAOAdapter";
 
 
 
+
 /** Tracks chunks collected for an image that has not yet been assembled. */
 interface PendingImage {
     /** Expected number of chunks in this image. */
@@ -57,6 +58,8 @@ export class ImageIngestService {
 
     private imageStorage: ImageStorage;
     private daoAccessor: DAOAccessor;
+    private sessionManager: SessionManager;
+
 
     constructor(communicationService: IBDCCommunicationService, imageStorage: ImageStorage,
                 daoAccess: DAOAccessor) {
@@ -66,20 +69,10 @@ export class ImageIngestService {
         this.communicationService.onImageChunk(this.handleImageChunk);
         this.imageStorage = imageStorage;
         this.daoAccessor = daoAccess;
+
+        // No dependency injection here. This class does not interface hardware.
+        this.sessionManager = new SessionManager(this.daoAccessor);
     }
-    private readonly sessionManager = new SessionManager({
-        async getAllSessions() {
-            const sessions = await this.getAllSessions();
-            return sessions.map((session) => ({
-                id: session.id,
-                createdTime: session.createdTime,
-            }));
-        },
-        this.daoAcessor.createSession()
-    });
-
-
-
 
     /**
      * Creates or selects a session for a device connection.
@@ -210,15 +203,6 @@ export class ImageIngestService {
         const sessionId = await this.sessionManager.getOrCreateSession(occurrenceTime);
         const incidentId = `incident-${eventId}-${Date.now()}`;
 
-        // Auto-create a new session per event (no active-ride-session concept wired in yet).
-        // Maybe we can use a day time frame or when the device is first connected to eod?
-        // Will need to be reviewed later.
-        try{
-        await this.daoAccessor.createSession(sessionId, pendingEvent.detectedAt);
-        }catch(error){
-            console.error("Database Finalized Failed", error);
-            throw error;
-        }
         //Best image just gets set to the first image, will need to find a better way later.
         const firstImageIndex = Math.min(...pendingEvent.imagePaths.keys());
         const bestImageId = `${incidentId}-image-${firstImageIndex}`; 
