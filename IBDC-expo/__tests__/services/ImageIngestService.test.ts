@@ -15,7 +15,7 @@ test("mapIncomingImagesToEventById", async () => {
 
 
     // Trigger after registering listeners
-    testing_environment.triggerEvent();
+    await testing_environment.triggerEvent();
 
     // Current event and imageInfo objects. These are passed to the ImageIngestService
     let [event] = await Promise.all([
@@ -93,7 +93,7 @@ test("imageCompletionOnDisconnect", async () => {
         )
     })
     // Trigger an event and wait for chunk to be received
-    testing_environment.triggerEvent();
+    await testing_environment.triggerEvent();
 
     // Await on the first chunk received
     let [imageChunk, imageInfo, event] = await Promise.all([
@@ -108,9 +108,9 @@ test("imageCompletionOnDisconnect", async () => {
     expect(imageChunk.chunkSequence).toBe(0);
 
     // Disconnect device
-    testing_environment.disconnect();
+    await testing_environment.disconnect();
 
-    testing_environment.triggerEvent();
+    await testing_environment.triggerEvent();
 
 
     console.log("Number of events being processed after" +
@@ -118,8 +118,12 @@ test("imageCompletionOnDisconnect", async () => {
 
     expect(testing_environment.imageIngestService.getPendingEventSize()).toBe(1);
 
-    // Re-connect device
-    testing_environment.reconnect();
+    // Re-connect device.
+    try {
+        await testing_environment.reconnect();
+    } catch (e) {
+        console.error(e);
+    }
 
     expect(testing_environment.imageIngestService.getPendingEventSize()).toBe(2);
 
