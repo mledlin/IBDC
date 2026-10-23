@@ -1,14 +1,12 @@
-/** Bridges incoming BLE event and image messages to files and database records. */
-import {Directory, File, Paths} from "expo-file-system";
-import { IBDCCommunicationService, EventNotification, ImageInfo, ImageChunk } from "./IBDCCommunicationService";
-import { createSession, getAllSessions } from "@/database/SessionDao";
-import { createIncident } from "@/database/IncidentDao";
-import { createIncidentImage} from "@/database/ImageDao";
-import { concatUint8Arrays } from "@/utils/base64";
+// Bridges incomming BLE event/image messages to on-disk files and database rows
+import {EventNotification, IBDCCommunicationService, ImageChunk, ImageInfo} from "./IBDCCommunicationService";
+import {concatUint8Arrays} from "@/utils/base64";
 import { SessionManager } from "@/hooks/SessionManager";
+import {ImageStorage} from "@/services/ExpoImageStorage";
+import {DAOAccessor} from "./DAOAdapter";
 
-/** Directory used to persist image data received from the device. */
-const IMAGE_DIRECTORY = new Directory(Paths.document, "incident_images");
+
+
 
 /** Tracks chunks collected for an image that has not yet been assembled. */
 interface PendingImage {
@@ -32,6 +30,7 @@ interface PendingEvent {
     imagePaths: Map<number,string>;
 }
 
+
 /**
  * Maps a protobuf image format to its filename extension.
  * @param imageFormat Protobuf image-format enum name.
@@ -53,29 +52,34 @@ function extensionForFormat(imageFormat: string | undefined): string {
  */
 export class ImageIngestService {
     private readonly communicationService: IBDCCommunicationService;
-    private readonly sessionManager = new SessionManager({
-        async getAllSessions() {
-            const sessions = await getAllSessions();
-            return sessions.map((session) => ({
-                id: session.id,
-                createdTime: session.created_time,
-            }));
-        },
-        createSession,
-    });
     /** Events currently being downloaded, keyed by device-assigned event identifier. */
     private pendingEvents = new Map<number, PendingEvent>();
 
-    /**
-     * Creates the ingest service and subscribes to relevant communication messages.
-     * @param communicationService Service that dispatches decoded device messages.
-     */
-    constructor(communicationService: IBDCCommunicationService) {
+    private imageStorage: ImageStorage;
+    private daoAccessor: DAOAccessor;
+
+    constructor(communicationService: IBDCCommunicationService, imageStorage: ImageStorage,
+                daoAccess: DAOAccessor) {
         this.communicationService = communicationService;
         this.communicationService.onEventNotifications(this.handleEventNotification);
         this.communicationService.onImageInfo(this.handleImageInfo);
         this.communicationService.onImageChunk(this.handleImageChunk);
+        this.imageStorage = imageStorage;
+        this.daoAccessor = daoAccess;
     }
+    private readonly sessionManager = new SessionManager({
+        async getAllSessions() {
+            const sessions = await this.getAllSessions();
+            return sessions.map((session) => ({
+                id: session.id,
+                createdTime: session.createdTime,
+            }));
+        },
+        this.daoAcessor.createSession()
+    });
+
+
+
 
     /**
      * Creates or selects a session for a device connection.
@@ -110,6 +114,7 @@ export class ImageIngestService {
         });
     };
 
+
     /** Records image metadata for an event currently being ingested. */
     private handleImageInfo = (info: ImageInfo) => {
         const pendingEvent = this.pendingEvents.get(info.eventId);
@@ -126,7 +131,7 @@ export class ImageIngestService {
             chunks: existing?.chunks ?? new Map(),
         });
     };
- 
+
     /** Stores an incoming image chunk and assembles the image once complete. */
     private handleImageChunk = (chunk: ImageChunk) => {
         const pendingEvent = this.pendingEvents.get(chunk.eventId);
@@ -134,7 +139,10 @@ export class ImageIngestService {
             console.warn(`ImageIngestService: ImageChunk for unknown event ${chunk.eventId}, ignoring.`);
             return;
         }
- 
+        // ---
+        console.log("Handling chunk " + chunk.chunkSequence + " out of " +
+        chunk.totalChunks + " with image Id " + chunk.imageIndex);
+
         let pendingImage = pendingEvent.images.get(chunk.imageIndex);
         if (!pendingImage) {
             // Chunk arrived before ImageInfo - start tracking from the chunk's own totalChunks.
@@ -153,6 +161,7 @@ export class ImageIngestService {
                 );
             });
         }
+        // --
     };
  
     /**
@@ -178,20 +187,12 @@ export class ImageIngestService {
         }
  
         const assembled = concatUint8Arrays(orderedChunks);
- 
-        try {
-            // makes this safe to call on every image, not just the first.
-            IMAGE_DIRECTORY.create({ intermediates: true, idempotent: true });
-        } catch (error) {
-            console.error("ImageIngestService: failed to create incident_images directory:", error);
-            return;
-        }
- 
         const extension = extensionForFormat(pendingImage.imageFormat);
-        const file = new File(IMAGE_DIRECTORY, `event_${eventId}_image_${imageIndex}.${extension}`);
-        file.write(assembled);
- 
-        pendingEvent.imagePaths.set(imageIndex, file.uri);
+
+        const imageName: string = `event_${eventId}_image_${imageIndex}.${extension}`;
+        const fileUri: string = this.imageStorage.saveImage(imageName, assembled);
+
+        pendingEvent.imagePaths.set(imageIndex, fileUri);
         pendingEvent.images.delete(imageIndex);
  
         if (pendingEvent.imagePaths.size === pendingEvent.imageCount) {
@@ -208,12 +209,21 @@ export class ImageIngestService {
         const occurrenceTime = new Date(pendingEvent.detectedAt);
         const sessionId = await this.sessionManager.getOrCreateSession(occurrenceTime);
         const incidentId = `incident-${eventId}-${Date.now()}`;
- 
-        //Best image just gets set to the first image, will need to find a better way later. 
+
+        // Auto-create a new session per event (no active-ride-session concept wired in yet).
+        // Maybe we can use a day time frame or when the device is first connected to eod?
+        // Will need to be reviewed later.
+        try{
+        await this.daoAccessor.createSession(sessionId, pendingEvent.detectedAt);
+        }catch(error){
+            console.error("Database Finalized Failed", error);
+            throw error;
+        }
+        //Best image just gets set to the first image, will need to find a better way later.
         const firstImageIndex = Math.min(...pendingEvent.imagePaths.keys());
         const bestImageId = `${incidentId}-image-${firstImageIndex}`; 
 
-        await createIncident(
+        await this.daoAccessor.createIncident(
             incidentId,
             sessionId,
             null, // latitude - not yet available from device/GPS
@@ -232,7 +242,7 @@ export class ImageIngestService {
         );
  
         for (const [imageIndex, filePath] of pendingEvent.imagePaths.entries()) {
-            await createIncidentImage(
+            await this.daoAccessor.createIncidentImage(
                 `${incidentId}-image-${imageIndex}`,
                 incidentId,
                 filePath,
@@ -246,6 +256,14 @@ export class ImageIngestService {
         this.pendingEvents.delete(eventId);
 
         console.log(`ImageIngestService: event ${eventId} saved and acknowleged`)
+    }
+
+    public getPendingEventSize() {
+        return this.pendingEvents.size;
+    }
+
+    public getPendingEvents() {
+        return this.pendingEvents;
     }
 }
  

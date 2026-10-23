@@ -1,36 +1,15 @@
-import {Asset} from "expo-asset"
-import { File } from "expo-file-system"
 import { ProtobufService } from "@/protobuf/ProtobufService";
 import {MockBleAdapter} from "@/ble/MockBleAdapter";
 import { BleDeviceInfo } from "./BleAdapter";
+import {LoadImageData, SimulatedIBDCImageLoader} from "./SimulatedIBDCImageLoader";
 import type {DeviceSettings} from "@/services/IBDCCommunicationService";
 
 /** Maximum bytes in each simulated image chunk; kept small to exercise multi-chunk transfers. */
 const IMAGE_CHUNK_SIZE = 180;
 
-/** Bundled placeholder photos cycled through when simulated events need image data. */
-const MOCK_IMAGE_MODULES = [
-    require("@/assets/images/IBDCExampleData/1.jpeg"),
-    require("@/assets/images/IBDCExampleData/2.jpeg"),
-    require("@/assets/images/IBDCExampleData/3.jpeg"),
-    require("@/assets/images/IBDCExampleData/4.jpeg"),
-    require("@/assets/images/IBDCExampleData/5.jpeg"),
-    require("@/assets/images/IBDCExampleData/6.jpeg"),
-    require("@/assets/images/IBDCExampleData/7.jpeg"),
-    require("@/assets/images/IBDCExampleData/8.jpeg"),
-    require("@/assets/images/IBDCExampleData/9.jpeg"),
-    require("@/assets/images/IBDCExampleData/10.jpeg"),
-    require("@/assets/images/IBDCExampleData/11.jpeg"),
-    require("@/assets/images/IBDCExampleData/12.jpeg"),
-    require("@/assets/images/IBDCExampleData/13.jpeg"),
-    require("@/assets/images/IBDCExampleData/14.jpeg"),
-    require("@/assets/images/IBDCExampleData/15.jpeg"),
-    require("@/assets/images/IBDCExampleData/16.jpeg"),
-    require("@/assets/images/IBDCExampleData/17.jpeg"),
-    require("@/assets/images/IBDCExampleData/18.jpeg"),
-    require("@/assets/images/IBDCExampleData/19.jpeg"),
-    require("@/assets/images/IBDCExampleData/20.jpeg"),
-];
+// Bundled placeholder photos used to give the simulator real, displayable
+// image bytes to send, cycled across however many images an event reports. 
+
 
 /** Mutable status values maintained by the simulated IBDC device. */
 interface SimulatedDeviceState {
@@ -76,24 +55,6 @@ const DEFAULT_DEVICE_INFO: BleDeviceInfo = {
     name: "prototype_dev_simDevice_v0.1"
 }
 
-/**
- * Loads bundled image assets into byte arrays for simulated image transfers.
- * @returns The loaded image bytes in asset-list order.
- * @throws If an asset cannot be loaded or has no local URI.
- */
-async function loadMockImageBytes(): Promise<Uint8Array[]> {
-    const assets = await Asset.loadAsync(MOCK_IMAGE_MODULES);
-
-    const bytesList: Uint8Array[] = [];
-    for (const asset of assets) {
-        if(!asset.localUri) {
-            throw new Error(`SimulatedIBDC: mock image asset "${asset.name}" has not localUri after loading.`)
-        }
-        const file = new File(asset.localUri);
-        bytesList.push(await file.bytes());
-    }
-    return bytesList;
-}
 
 /**
  * Simulates an IBDC device connected through a {@link MockBleAdapter}.
@@ -107,8 +68,9 @@ export class SimulatedIBDC {
     private state: SimulatedDeviceState;
     private statusIntervalId: ReturnType<typeof setInterval> | null = null;
     private nextEventId = 1;
+    private imageLoader: LoadImageData;
 
-    //Images "caputred" for events that have been notified but not yet ACKed
+    //Images "captured" for events that have been notified but not yet ACKed
     //by the app, by event ID
     private pendingEvents = new Map<number, SimulatedPendingEvent>();
     private mockImageBytesPromise: Promise<Uint8Array[]> | null = null;
@@ -121,7 +83,9 @@ export class SimulatedIBDC {
      * @param deviceInfo Optional identity advertised by the simulated device.
      * @param initialState Optional overrides for the initial device status.
      */
-    constructor(adapter: MockBleAdapter, deviceInfo?: BleDeviceInfo, initialState?: Partial<SimulatedDeviceState>){
+    constructor(adapter: MockBleAdapter, imageLoader: LoadImageData,
+                deviceInfo?: BleDeviceInfo, initialState?: Partial<SimulatedDeviceState>,
+            ){
         this.adapter = adapter;
         this.deviceInfo = deviceInfo ?? {...DEFAULT_DEVICE_INFO};
         this.state = {
@@ -136,6 +100,7 @@ export class SimulatedIBDC {
 
         this.adapter.setDeviceInfo(this.deviceInfo);
         this.adapter.onDeviceReceive(this.handleAppMessage);
+        this.imageLoader = imageLoader;
     }
     /**
      * Starts periodic status updates and automatic simulated detection events.
@@ -183,11 +148,16 @@ export class SimulatedIBDC {
      */
     private async ensureMockImagesLoaded(): Promise<Uint8Array[]> {
         if (!this.mockImageBytesPromise) {
-            this.mockImageBytesPromise = loadMockImageBytes();
+            this.mockImageBytesPromise = this.loadMockImageBytes();
         }
         return this.mockImageBytesPromise;
     }
 
+    private async loadMockImageBytes(): Promise<Uint8Array[]> {
+        return await this.imageLoader.loadImagesAsBytes();
+    }
+
+    /**Simulates a detection event on demand */
     /**
      * Creates and announces a simulated detection event.
      * @param overrides Optional event distance, timing, image count, and image format.
@@ -195,6 +165,7 @@ export class SimulatedIBDC {
      * @throws If the bundled images cannot be loaded.
      */
     async triggerEvent(overrides?: EventOverrides): Promise<void> {
+        console.log("Event triggered in SimulatedIBDC")
         const pool = await this.ensureMockImagesLoaded();
         const eventId = this.nextEventId++;
         const imageCount = overrides?.imageCount ?? this.state.imagesPerEventSetting;
@@ -365,10 +336,6 @@ export class SimulatedIBDC {
         return { ...this.state};
     }
 
-    /**
-     * Returns a copy of the simulated device identity.
-     * @returns A read-only copy of the device information.
-     */
     getDeviceInfo(): Readonly<BleDeviceInfo> {
         return { ...this.deviceInfo };
     }

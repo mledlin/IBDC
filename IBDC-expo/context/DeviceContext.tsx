@@ -12,6 +12,9 @@ import { MockBleAdapter } from "@/ble/MockBleAdapter";
 import { IBDCCommunicationService, DeviceStatus as IBDCDeviceStatus, PendingEventList } from "@/services/IBDCCommunicationService";
 import { SimulatedIBDC } from "@/ble/SimulatedIBDC";
 import { ImageIngestService } from "@/services/ImageIngestService";
+import { ExpoImageStorage } from "@/services/ExpoImageStorage";
+import { DAOAdapter } from "@/services/DAOAdapter";
+import { SimulatedIBDCImageLoader } from "@/ble/SimulatedIBDCImageLoader"
 
 /** Selects between the hardware BLE adapter and the in-memory mock adapter. */
 export type DeviceMode = 'mock' | 'real';
@@ -77,7 +80,7 @@ type DeviceContextType = {
   /** Desired images-per-event setting saved by the app. */
   desiredImagesPerEvent: number;
   /** Persists the desired image count and synchronizes it with a connected device. */
-  setImagesPerEvent: (count: number) => Promise<void>; 
+  setImagesPerEvent: (count: number) => Promise<void>;
 };
 
 /**
@@ -92,11 +95,14 @@ let bleAdapter: BleAdapter = mockBLEAdapter;
 /** Shared protocol service used by the context and domain services. */
 const communicationService = new IBDCCommunicationService(bleAdapter);
 
-/** Persists completed image transfers received over the shared communication service. */
-const imageIngestService = new ImageIngestService(communicationService);
+// Abstractions built around hardware coupling
+const imageStorage = new ExpoImageStorage();
+const imageLoader = new SimulatedIBDCImageLoader();
+const DAOAccess = new DAOAdapter();
 
-/** Mock device paired with the shared mock adapter. */
-const simulatedDevice = new SimulatedIBDC(mockBLEAdapter);
+new ImageIngestService(communicationService, imageStorage, DAOAccess);
+
+const simulatedDevice = new SimulatedIBDC(mockBLEAdapter, imageLoader);
 
 /**
  * Wraps part of the application with shared device state.
