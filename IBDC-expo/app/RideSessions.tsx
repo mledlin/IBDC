@@ -21,9 +21,8 @@ import {
     Alert,
 } from "react-native";
 import {Ionicons} from "@expo/vector-icons";
-import {useRouter} from "expo-router";
+import {useRouter, useFocusEffect} from "expo-router";
 import {useTheme} from "@/context/ThemeContext"
-import {useFocusEffect} from "expo-router";
 import {isIncidentComplete} from "@/domain/Incident";
 import {
     DEFAULT_SESSIONS_PER_PAGE,

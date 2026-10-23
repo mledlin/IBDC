@@ -17,8 +17,6 @@ export interface SessionPersistence {
     createSession(id: string, createdTime: string): Promise<void>;
 }
 
-//
-
 export class SessionManager {
 
     private persistence: SessionPersistence;

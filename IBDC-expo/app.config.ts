@@ -41,8 +41,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         permissions: [
             "android.permission.ACCESS_COARSE_LOCATION",
             "android.permission.ACCESS_FINE_LOCATION",
-            "android.permission.ACCESS_COARSE_LOCATION",
-            "android.permission.ACCESS_FINE_LOCATION",
         ],
         package: "com.anonymous.IBDCexpo",
     },

@@ -8,7 +8,7 @@ import type {DeviceSettings} from "@/services/IBDCCommunicationService";
 const IMAGE_CHUNK_SIZE = 180;
 
 // Bundled placeholder photos used to give the simulator real, displayable
-// image bytes to send, cycled across however many images an event reports. 
+// image bytes to send, cycled across however many images an event reports.
 
 
 /** Mutable status values maintained by the simulated IBDC device. */

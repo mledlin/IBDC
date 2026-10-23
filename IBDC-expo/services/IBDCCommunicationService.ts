@@ -66,7 +66,7 @@ export interface ImageInfo {
   /** Number of chunks used to transfer the image. */
   totalChunks: number;
   /** Protobuf image-format enum name. */
-  imageFormat: string; 
+  imageFormat: string;
 }
 
 /** One byte chunk of an image transfer. */
@@ -261,13 +261,19 @@ export class IBDCCommunicationService {
         await this.send("eventTransferAck", { eventId });
     }
 
-    /**
-     * Writes settings (such as images captured per event) to the device.
-     * @param settings Settings to send.
-     * @returns A promise that resolves when the settings are sent.
-     */
-    async writeSettings(settings: DeviceSettings): Promise<void> {
-        await this.send("settings", {...settings});
+    /** Write settings (e.g. images captured per event) to the device */
+    async writeSettings(
+        settings: { imagesPerEvent: number },
+    ): Promise<void> {
+        const count = settings.imagesPerEvent;
+
+        if (!Number.isInteger(count) || count < 1 || count > 50) {
+            throw new Error("Images per event must be a positive uint32.");
+        }
+
+        await this.send("settings", {
+            imagesPerEvent: count,
+        });
     }
 
     /**
