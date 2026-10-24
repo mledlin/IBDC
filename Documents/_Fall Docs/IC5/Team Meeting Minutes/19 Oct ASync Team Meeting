@@ -1,0 +1,26 @@
+Meeting Minutes – Team 4
+Date 10/19/2026
+Time: 3:32 PM (Synchronous)
+Duration: 3 days
+Participants: Christopher Paquin, Matthew Edlin, Jair Franco, Dr Heinrichs
+
+Topics Covered:
+Chris is fixing and documenting inconsistencies in a separate branch for team review.
+
+Matthew is exploring a small Google AI model that runs locally. Chris plans similar work next IC.
+
+Data transfer works with a local test server. Only the best image is uploaded. local behavior remains unchanged.
+
+Jair verified data transfer using a dashboard and is finishing image testing. Test tools and instructions are included
+in the repository.
+
+Summary:
+The team discussed code cleanup, local AI image detection, and server uploads. Dr. Heinrichs identified testing against
+the other team’s server as the next priority.
+
+Action Items:
+
+Chris: Finish documented fixes and review them with the team.
+Matthew: Add image-detection work to Taiga and compare findings.
+Jair: Complete image-upload testing.
+Team: Obtain the other team’s working server/API and perform an upload integration test.
