@@ -71,17 +71,30 @@ export async function createIncident(
 //Updates image marked as best for an incident
 export async function updateIncidentBestImage(
     incidentId: string,
-    imageId: string
-) {
+    imageId: string,
+): Promise<void> {
     const database = await getDatabase();
 
-    await database.runAsync(
+    const result = await database.runAsync(
         `UPDATE incidents
          SET best_image_id = ?
-         WHERE id = ?`,
+         WHERE id = ?
+           AND EXISTS (
+               SELECT 1
+               FROM incident_images
+               WHERE incident_images.id = ?
+                 AND incident_images.incident_id = incidents.id
+           )`,
         imageId,
-        incidentId
+        incidentId,
+        imageId,
     );
+
+    if (result.changes !== 1) {
+        throw new Error(
+            "The incident was not found or the selected image does not belong to it.",
+        );
+    }
 }
 //Retrieves a singular incident by its ID
 export async function getIncidentById(incidentId: string) {
