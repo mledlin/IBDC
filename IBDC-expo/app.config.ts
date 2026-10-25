@@ -7,6 +7,14 @@ import { ExpoConfig, ConfigContext } from 'expo/config';
  */
 export default ({ config }: ConfigContext): ExpoConfig => ({
     ...config,
+    owner: "paqattacks-team",
+    extra: {
+        ...config.extra,
+        eas: {
+            ...config.extra?.eas,
+            projectId: "ef9497ce-9ce8-4d26-9ad6-89a8872ab1cd",
+        },
+    },
     name: "IBDC-expo",
     slug: "IBDC-expo",
     version: "1.0.0",
@@ -31,8 +39,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         edgeToEdgeEnabled: true,
         predictiveBackGestureEnabled: false,
         permissions: [
-            "android.permission.ACCESS_COARSE_LOCATION",
-            "android.permission.ACCESS_FINE_LOCATION",
             "android.permission.ACCESS_COARSE_LOCATION",
             "android.permission.ACCESS_FINE_LOCATION",
         ],
@@ -68,7 +74,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
                 iosGoogleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY
             },
         ],
-        "expo-sqlite"
+        "expo-sqlite", 
+        [
+            "react-native-ble-plx",
+        ],
     ],
 
     experiments: {

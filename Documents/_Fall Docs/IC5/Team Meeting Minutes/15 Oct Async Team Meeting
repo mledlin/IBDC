@@ -1,0 +1,21 @@
+Meeting Minutes – Team 4
+Date 10/15/2026
+Time: 11:19 PM (Asynchronous)
+Duration: 2 Days
+Participants: Team 4: Christopher Paquin, Matthew Edlin, Colin Tugend
+
+Topics Covered:
+- We discussed session creation logic and over-midnight session rollovers
+- We discussed how to handle disconnects and how that would interact with session logic.
+- Chris cried wolf about an error but was unable to reproduce it after 2 hrs of trying so we called it good for now.
+
+Summary:
+We decided to improve ride-session tracking and discussed various system logic to ensure we were on the same page.
+
+Action Items:
+
+Matthew: Implement session/disconnection updates
+
+Chris: Test the updates.
+
+Team: Review session timing and disconnect edge cases.

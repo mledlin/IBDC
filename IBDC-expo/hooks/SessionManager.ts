@@ -7,40 +7,30 @@
 // This interface determines what type of data SessionManager should query in order to determine incoming data's home.
 export interface SessionInfo {
     id: string,
-    createdTime: string // A string of format -> Date.toString()
+    createdTime: string // ISO date string
 }
 
 // This interface determines the method name and return type that must exist in order to work with Session
 // Manager querying capabilities.
 export interface SessionPersistence {
     getAllSessions(): Promise<SessionInfo[]>;
+    createSession(id: string, createdTime: string): Promise<void>;
 }
-
-//
 
 export class SessionManager {
 
     private persistence: SessionPersistence;
+    private sessionOperation: Promise<void> = Promise.resolve();
 
 
     public constructor(sessionPersistence: SessionPersistence) {
         this.persistence = sessionPersistence;
     }
 
-    // Determines which date M/D/Y an event occurred.
-    private isSameDate(incomingDate: Date, sessionDate: Date): boolean {
-        return (
-            incomingDate.getFullYear() === sessionDate.getFullYear() &&
-            incomingDate.getMonth() === sessionDate.getMonth() &&
-            incomingDate.getDate() === sessionDate.getDate()
-        );
-    }
-
-    // Determines if the incoming data happened within 2 hours from the start of an existing session.
-    private isWithin2HoursAfterSessionInit(incomingDate: Date, sessionDate: Date): boolean {
+    // A session covers the two hours beginning at its creation time.
+    private isWithinSession(incomingDate: Date, sessionDate: Date): boolean {
         const difference = incomingDate.getTime() - sessionDate.getTime();
 
-        // The math here is converting milliseconds to hours
         return difference >= 0 &&
             difference <= 2 * 60 * 60 * 1000;
     }
@@ -52,17 +42,45 @@ export class SessionManager {
      * @returns an existing session ID or undefined if no session exists
      */
     public async determineSession(incomingDate: Date): Promise<string | undefined> {
-
         const sessions: SessionInfo[] = await this.persistence.getAllSessions();
 
-        for (const session of sessions) {
-            const sessionDate = new Date(session.createdTime);
-            if (this.isSameDate(incomingDate, sessionDate)) {
-                if (this.isWithin2HoursAfterSessionInit(incomingDate, sessionDate)) {
-                    return session.id;
-                }
-            }
+        const matchingSession = sessions
+            .filter((session) => this.isWithinSession(incomingDate, new Date(session.createdTime)))
+            .sort((left, right) =>
+                new Date(right.createdTime).getTime() - new Date(left.createdTime).getTime()
+            )[0];
+
+        return matchingSession?.id;
+    }
+
+    public async createSession(startTime: Date): Promise<string> {
+        return this.serializeSessionOperation(() => this.persistNewSession(startTime));
+    }
+
+    public async getOrCreateSession(startTime: Date): Promise<string> {
+        return this.serializeSessionOperation(async () =>
+            (await this.determineSession(startTime)) ?? this.persistNewSession(startTime)
+        );
+    }
+
+    private async persistNewSession(startTime: Date): Promise<string> {
+        const sessionId = `session-${startTime.getTime()}-${Math.random().toString(36).slice(2, 10)}`;
+        await this.persistence.createSession(sessionId, startTime.toISOString());
+        return sessionId;
+    }
+
+    private async serializeSessionOperation<T>(operation: () => Promise<T>): Promise<T> {
+        const previousOperation = this.sessionOperation;
+        let releaseOperation: () => void = () => undefined;
+        this.sessionOperation = new Promise<void>((resolve) => {
+            releaseOperation = resolve;
+        });
+
+        await previousOperation;
+        try {
+            return await operation();
+        } finally {
+            releaseOperation();
         }
-        return undefined;
     }
 }

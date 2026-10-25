@@ -1,38 +1,17 @@
-import {Asset} from "expo-asset"
-import { File } from "expo-file-system"
 import { ProtobufService } from "@/protobuf/ProtobufService";
 import {MockBleAdapter} from "@/ble/MockBleAdapter";
 import { BleDeviceInfo } from "./BleAdapter";
+import {LoadImageData, SimulatedIBDCImageLoader} from "./SimulatedIBDCImageLoader";
+import type {DeviceSettings} from "@/services/IBDCCommunicationService";
 
-// Max bytes per simulated BLE ImageChunk payload. I made it smaller to force multiple payload for testing. 
-// real payloads will be ~180-240 bytes. 
+/** Maximum bytes in each simulated image chunk; kept small to exercise multi-chunk transfers. */
 const IMAGE_CHUNK_SIZE = 180;
 
 // Bundled placeholder photos used to give the simulator real, displayable
-// image bytes to send, cycled across however many images an event reports. 
-const MOCK_IMAGE_MODULES = [
-    require("@/assets/images/IBDCExampleData/1.jpeg"),
-    require("@/assets/images/IBDCExampleData/2.jpeg"),
-    require("@/assets/images/IBDCExampleData/3.jpeg"),
-    require("@/assets/images/IBDCExampleData/4.jpeg"),
-    require("@/assets/images/IBDCExampleData/5.jpeg"),
-    require("@/assets/images/IBDCExampleData/6.jpeg"),
-    require("@/assets/images/IBDCExampleData/7.jpeg"),
-    require("@/assets/images/IBDCExampleData/8.jpeg"),
-    require("@/assets/images/IBDCExampleData/9.jpeg"),
-    require("@/assets/images/IBDCExampleData/10.jpeg"),
-    require("@/assets/images/IBDCExampleData/11.jpeg"),
-    require("@/assets/images/IBDCExampleData/12.jpeg"),
-    require("@/assets/images/IBDCExampleData/13.jpeg"),
-    require("@/assets/images/IBDCExampleData/14.jpeg"),
-    require("@/assets/images/IBDCExampleData/15.jpeg"),
-    require("@/assets/images/IBDCExampleData/16.jpeg"),
-    require("@/assets/images/IBDCExampleData/17.jpeg"),
-    require("@/assets/images/IBDCExampleData/18.jpeg"),
-    require("@/assets/images/IBDCExampleData/19.jpeg"),
-    require("@/assets/images/IBDCExampleData/20.jpeg"),
-];
+// image bytes to send, cycled across however many images an event reports.
 
+
+/** Mutable status values maintained by the simulated IBDC device. */
 interface SimulatedDeviceState {
     protocolVersion: number;
     firmwareVersionLabel: string;
@@ -42,6 +21,7 @@ interface SimulatedDeviceState {
     imagesPerEventSetting: number;
 }
 
+/** Optional values used to customize a simulated detection event. */
 interface EventOverrides {
     distanceCm?: number;
     timeOffsetMs?: number;
@@ -49,45 +29,63 @@ interface EventOverrides {
     imageFormat?: "IMAGE_FORMAT_JPEG" | "IMAGE_FORMAT_PNG" | "IMAGE_FORMAT_UNSPECIFIED";
 }
 
-interface SimulatedEventImages {
+/** Event retained by the simulator until the app acknowledges its transfer. */
+interface SimulatedPendingEvent {
+    eventId: number, 
+    distanceCm: number, 
+    timeOffsetMs: number, 
+    imageCount: number, 
+
+    imageFormat: 
+        | "IMAGE_FORMAT_JPEG"
+        | "IMAGE_FORMAT_PNG"
+        | "IMAGE_FORMAT_UNSPECIFIED";
+
     images: Uint8Array[];
-    imageFormat: "IMAGE_FORMAT_JPEG" | "IMAGE_FORMAT_PNG" | "IMAGE_FORMAT_UNSPECIFIED";
 }
 
+//interface SimulatedEventImages {
+//    images: Uint8Array[];
+//    imageFormat: "IMAGE_FORMAT_JPEG" | "IMAGE_FORMAT_PNG" | "IMAGE_FORMAT_UNSPECIFIED";
+//}
+
+/** Identity used when no custom simulated device identity is supplied. */
 const DEFAULT_DEVICE_INFO: BleDeviceInfo = {
     id: "v0.1.pb_v0.3.2",
     name: "prototype_dev_simDevice_v0.1"
 }
 
-async function loadMockImageBytes(): Promise<Uint8Array[]> {
-    const assets = await Asset.loadAsync(MOCK_IMAGE_MODULES);
 
-    const bytesList: Uint8Array[] = [];
-    for (const asset of assets) {
-        if(!asset.localUri) {
-            throw new Error(`SimulatedIBDC: mock image asset "${asset.name}" has not localUri after loading.`)
-        }
-        const file = new File(asset.localUri);
-        bytesList.push(await file.bytes());
-    }
-    return bytesList;
-}
-
+/**
+ * Simulates an IBDC device connected through a {@link MockBleAdapter}.
+ *
+ * It emits status and event messages, responds to app requests, and transfers
+ * bundled placeholder images using the device communication protocol.
+ */
 export class SimulatedIBDC {
     private readonly adapter: MockBleAdapter;
     private readonly deviceInfo: BleDeviceInfo;
     private state: SimulatedDeviceState;
     private statusIntervalId: ReturnType<typeof setInterval> | null = null;
     private nextEventId = 1;
+    private imageLoader: LoadImageData;
 
-    //Images "caputred" for events that have been notified but not yet ACKed
+    //Images "captured" for events that have been notified but not yet ACKed
     //by the app, by event ID
-    private eventImages = new Map<number, SimulatedEventImages>();
+    private pendingEvents = new Map<number, SimulatedPendingEvent>();
     private mockImageBytesPromise: Promise<Uint8Array[]> | null = null;
     
     private eventIntervalId: ReturnType<typeof setInterval> | null = null;
 
-    constructor(adapter: MockBleAdapter, deviceInfo?: BleDeviceInfo, initialState?: Partial<SimulatedDeviceState>){
+    /**
+     * Creates a simulated device and registers its identity and app-message handler.
+     * @param adapter Mock adapter used to exchange protocol messages.
+     * @param deviceInfo Optional identity advertised by the simulated device.
+     * @param initialState Optional overrides for the initial device status.
+     */
+    constructor(adapter: MockBleAdapter, imageLoader: LoadImageData,
+                deviceInfo?: BleDeviceInfo, initialState?: Partial<SimulatedDeviceState>,
+            ){
         this.adapter = adapter;
         this.deviceInfo = deviceInfo ?? {...DEFAULT_DEVICE_INFO};
         this.state = {
@@ -102,8 +100,12 @@ export class SimulatedIBDC {
 
         this.adapter.setDeviceInfo(this.deviceInfo);
         this.adapter.onDeviceReceive(this.handleAppMessage);
+        this.imageLoader = imageLoader;
     }
-    /**Begins periodically pushing DeviceStatus updates, simulating the device's normal hearbeat. Each tick will also advance battery/storage drain slightly */
+    /**
+     * Starts periodic status updates and automatic simulated detection events.
+     * Status is pushed every five seconds and events are triggered every fifteen seconds.
+     */
    start(): void {
     if (this.statusIntervalId || this.eventIntervalId) {
         return;
@@ -127,6 +129,7 @@ export class SimulatedIBDC {
         });
     }, 15000);
 }
+    /** Stops the status and automatic event timers. */
     stop(): void {
     if (this.statusIntervalId) {
         clearInterval(this.statusIntervalId);
@@ -140,39 +143,61 @@ export class SimulatedIBDC {
 }
 
     /**
-     * Loads and caches the bundled mock photo bytes use to stand in for real captures. 
+     * Loads and caches the bundled placeholder image bytes.
+     * @returns The cached image byte arrays.
      */
     private async ensureMockImagesLoaded(): Promise<Uint8Array[]> {
         if (!this.mockImageBytesPromise) {
-            this.mockImageBytesPromise = loadMockImageBytes();
+            this.mockImageBytesPromise = this.loadMockImageBytes();
         }
         return this.mockImageBytesPromise;
     }
 
+    private async loadMockImageBytes(): Promise<Uint8Array[]> {
+        return await this.imageLoader.loadImagesAsBytes();
+    }
+
     /**Simulates a detection event on demand */
+    /**
+     * Creates and announces a simulated detection event.
+     * @param overrides Optional event distance, timing, image count, and image format.
+     * @returns A promise that resolves after the event notification is sent.
+     * @throws If the bundled images cannot be loaded.
+     */
     async triggerEvent(overrides?: EventOverrides): Promise<void> {
+        console.log("Event triggered in SimulatedIBDC")
         const pool = await this.ensureMockImagesLoaded();
-
         const eventId = this.nextEventId++;
-        const imageCount = overrides?.imageCount ?? 3;
+        const imageCount = overrides?.imageCount ?? this.state.imagesPerEventSetting;
         const imageFormat = overrides?.imageFormat ?? "IMAGE_FORMAT_JPEG";
-        this.state.pendingEventCount += 1;
-
+        const distanceCm = overrides?.distanceCm ?? Math.floor(50 + Math.random() *200);
+        const timeOffsetMs = overrides?.timeOffsetMs ?? Math.floor(Math.random() *500);
         const images: Uint8Array[] = [];
+
         for (let i = 0; i < imageCount; i++) {
             images.push(pool[i % pool.length]);
         }
-        this.eventImages.set(eventId, {images, imageFormat});
-        this.adapter.simulateIncomingData("eventNotification", {
+        const event: SimulatedPendingEvent = {
             eventId, 
-            distanceCm: overrides?.distanceCm ?? Math.floor(50 + Math.random() *200), 
-            timeOffsetMs: overrides?.timeOffsetMs ?? Math.floor(Math.random() * 500),
-            imageCount,
-            imageFormat,
-        });
+            distanceCm, 
+            timeOffsetMs, 
+            imageCount, 
+            imageFormat, 
+            images,
+        };
+        this.pendingEvents.set(event.eventId, event);
+        this.updatePendingEventCount();
+        this.sendEventNotification(event);
+    }
+
+    /** Sends an event notification for a pending event to the connected app. */
+    private sendEventNotification(event: SimulatedPendingEvent): void{
+        console.log(`SimulatedIBDC: sending EventNotification for evetn ${event.eventId}`);
+        this.adapter.simulateIncomingData("eventNotification", {eventId: event.eventId, distanceCm: event.distanceCm, timeOffsetMs: event.timeOffsetMs, imageCount: event.imageCount, imageFormat: event.imageFormat, });
     }
     /**
-     * Decodes AppToDevice envelpoes sent via BleAdapeter.sendData and reacts to them. 
+     * Decodes app-to-device messages and dispatches each supported request.
+     * Invalid envelopes are logged and ignored.
      */
     private handleAppMessage = (data: Uint8Array) => {
         
@@ -199,25 +224,67 @@ export class SimulatedIBDC {
             }
             case "eventTransferAck": {
                 const ack = decoded.eventTransferAck as { eventId: number };
-                this.acknowledgeEvent();
-                this.eventImages.delete(ack.eventId);
+                console.log(`SimulatedIBDC: EventTransferAck recieved for event ${ack.eventId}`);
+                if(!this.pendingEvents.has(ack.eventId)){console.warn(`SimulatedIBDC: ACK received for unknown event ${ack.eventId}`); break;}
+                this.pendingEvents.delete(ack.eventId);
+                this.updatePendingEventCount();
+                this.pushDeviceStatus();
+                break;
+            }
+            case "pendingEventListRequest": {
+                const eventIds = Array.from(this.pendingEvents.keys());
+                console.log("SimulatedIBDC: PendingEventListRequest received. Pending:", eventIds);
+                this.adapter.simulateIncomingData("pendingEventList", {eventIds,});
+                break;
+            }
+            case "eventInfoRequest": {
+                const request = decoded.eventInfoRequest as { eventId: number };
+                const event = this.pendingEvents.get(request.eventId);
+                if(!event){console.warn(`SimulatedIBDC: Event not found for eventId ${request.eventId}`); break;}
+                console.log(`SimulatedIBDC: EventInfoRequest resending info for event ${request.eventId}`);
+                this.sendEventNotification(event);
+                break;
+            }
+            case "settings": {
+                const settings = decoded.settings as Partial<DeviceSettings>;
+                if(settings.imagesPerEvent === undefined) {
+                    console.warn("SimulatedIBDC: Settings received without imagesPerEvent.");
+                    break;
+                }
+                if(!Number.isInteger(settings.imagesPerEvent)|| settings.imagesPerEvent < 1) {
+                    console.warn(`SimulatedIBDC: Invalid imagesPerEvent = ${settings.imagesPerEvent}`);
+                    break;
+                }
+                this.state.imagesPerEventSetting = settings.imagesPerEvent;
+                console.log(`SimulatedIBDC: Updated imagesPerEventSetting to ${this.state.imagesPerEventSetting}`);
+                this.pushDeviceStatus();
                 break;
             }
             default:
-                //come back to implement settings/pendingeventListRequets and EventInfoRequest
+                console.warn(`SimulatedIBDC: Unknown message type: ${decoded.type}`);
                 break;
         }
         
     };
 
+    /**
+     * Sends image metadata and chunks for a pending event, starting at the requested offset.
+     * @param eventId Identifier of the event to transfer.
+     * @param startFromImage Index of the first image to transfer.
+     * @param startFromChunk Index of the first chunk of that image to transfer.
+     */
     private sendImageTransfer(eventId: number, startFromImage: number, startFromChunk: number): void {
-        const record = this.eventImages.get(eventId);
-        if(!record) {
+        const event = this.pendingEvents.get(eventId);
+        if(!event) {
             console.warn(`SimulatedIBDC: ImageTransferRequest for unknown event ${eventId}, ignoring.`);
             return;
         }
-        for (let imageIndex = startFromImage; imageIndex < record.images.length; imageIndex++) {
-            const bytes = record.images[imageIndex];
+        if(startFromImage < 0 || startFromImage >= event.images.length) {
+            console.warn(`SimulatedIBDC: Invalid startFromChunk = ${startFromChunk} or startFromImage = ${startFromImage} for event ${eventId}, ignoring.`);
+            return;
+        }
+        for (let imageIndex = startFromImage; imageIndex < event.images.length; imageIndex++) {
+            const bytes = event.images[imageIndex];
             const totalChunks = Math.ceil(bytes.length / IMAGE_CHUNK_SIZE);
 
             this.adapter.simulateIncomingData("imageInfo", {
@@ -225,10 +292,14 @@ export class SimulatedIBDC {
                 imageIndex, 
                 imageSizeBytes: bytes.length,
                 totalChunks, 
-                imageFormat: record.imageFormat,
+                imageFormat: event.imageFormat,
             });
 
             const chunkStart = imageIndex === startFromImage ? startFromChunk : 0;
+            if(chunkStart < 0 || chunkStart >= totalChunks) {
+                console.warn(`SimulatedIBDC: Invalid chunkStart = ${chunkStart} for event ${eventId}, ignoring.`);
+                return;
+            }
             for (let chunkSequence = chunkStart; chunkSequence < totalChunks; chunkSequence++) {
                 const start = chunkSequence * IMAGE_CHUNK_SIZE;
                 const end = Math.min(start + IMAGE_CHUNK_SIZE, bytes.length);
@@ -244,7 +315,9 @@ export class SimulatedIBDC {
             }
         }
     }
-    /**Pushes the current sumulated DeviceStatus immediately, outside the normal schedule */
+    /**
+     * Sends the current device status immediately, outside the periodic schedule.
+     */
     pushDeviceStatus(): void{
         this.adapter.simulateIncomingData("deviceStatus", {
             protocolVersion: this.state.protocolVersion,
@@ -254,11 +327,11 @@ export class SimulatedIBDC {
             imagesPerEventSetting: this.state.imagesPerEventSetting,
         });
     }
-    /** Marks an event as acknowleged, decrementing the simuleated pending count */
-    acknowledgeEvent(): void{
-        this.state.pendingEventCount = Math.max(0, this.state.pendingEventCount - 1);
-    }
-    /**retuns a read only snapshot of current simulaed device for debugging */
+    
+    /**
+     * Returns a shallow snapshot of the current simulated device state.
+     * @returns A read-only copy of the current state.
+     */
     getState() : Readonly<SimulatedDeviceState> {
         return { ...this.state};
     }
@@ -266,9 +339,14 @@ export class SimulatedIBDC {
     getDeviceInfo(): Readonly<BleDeviceInfo> {
         return { ...this.deviceInfo };
     }
-    /** Advances simulateed device state slightly, called deach tick. */
+
+    /** Decreases the simulated battery and storage levels by one percentage point. */
     private tick(): void {
         this.state.batteryPercent = Math.max(0, this.state.batteryPercent -1);
         this.state.storageAvailablePercent = Math.max(0, this.state.storageAvailablePercent - 1);
+    }
+    /** Synchronizes the advertised pending-event count with the pending-event map. */
+    private updatePendingEventCount(): void {
+        this.state.pendingEventCount = this.pendingEvents.size;
     }
 }

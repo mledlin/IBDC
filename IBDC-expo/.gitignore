@@ -47,4 +47,6 @@ app-example
 /android
 
 # Coverage
-/coverage
+/IBDC-expo/coverage/
+coverage/
+
