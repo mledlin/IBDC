@@ -33,6 +33,24 @@ export interface DeviceInfo {
   imagesPerEventOnDevice?: number;
 }
 
+
+/**
+ * These components are necessary for DeviceContext to function
+ */
+export interface DeviceDependencies {
+  bleAdapter: BleAdapter,
+  communicationService: IBDCCommunicationService,
+  simulatedDevice: SimulatedIBDC;
+}
+
+/**
+ * Specify children that can access the information.
+ */
+interface DeviceProviderProps {
+  children: React.ReactNode;
+  dependencies: DeviceDependencies;
+}
+
 /**
  * device:
  * the currently selected or connected device, or null if none is set.
@@ -69,7 +87,7 @@ const bleAdapter: BleAdapter = mockBLEAdapter;
 // Sits between bleAdapter and this context (and any other domain services),
 const communicationService = new IBDCCommunicationService(bleAdapter);
 
-// Abstractions built around hardware coupling
+// Abstractions built around hardware coupling.
 const imageStorage = new ExpoImageStorage();
 const imageLoader = new SimulatedIBDCImageLoader();
 const DAOAccess = new DAOAdapter();
@@ -85,9 +103,10 @@ const simulatedDevice = new SimulatedIBDC(mockBLEAdapter, imageLoader);
  * the value and its setter available to all descendant components.
  *
  * @param children The child components that should have access to device context.
+ * @param dependencies necessary components for the application modules to work together
  * @returns A context provider containing device state and update access.
  */
-export function DeviceProvider({ children }: { children: React.ReactNode }) {
+export function DeviceProvider({ children, dependencies }: DeviceProviderProps) {
   const [device, setDevice] = useState<DeviceInfo | null>(null);
   const [devices, setDevices] = useState<BleDeviceInfo[]>([]);
 

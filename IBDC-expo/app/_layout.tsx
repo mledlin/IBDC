@@ -9,7 +9,7 @@
  */
 
 import { Stack } from "expo-router";
-import { DeviceProvider } from "@/context/DeviceContext";
+import ProductionDeviceProvider  from "@/context/ProductionDeviceProvider";
 import { View, Text, Image } from "react-native";
 import { ThemeProvider, useTheme } from "@/context/ThemeContext";
 import { initDatabase } from "@/database/database";
@@ -135,9 +135,9 @@ function AppStack() {
 export default function AppLayout() {
     return (
         <ThemeProvider>
-            <DeviceProvider>
-                <AppStack />
-            </DeviceProvider>
+            <ProductionDeviceProvider>
+                    <AppStack />
+            </ProductionDeviceProvider>
         </ThemeProvider>
     );
 }
