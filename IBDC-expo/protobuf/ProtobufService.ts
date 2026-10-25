@@ -1,5 +1,5 @@
 import * as protobuf from "protobufjs";
-import schema from "./IBDC_v0.3.2.json";
+import schema from "./IBDC_v0.3.3.json";
 
 const root = protobuf.Root.fromJSON(schema);
 
@@ -11,7 +11,7 @@ export class ProtobufService {
      * Encodes a JavaScript object into a Protobuf binary format based on the specified message type.
      */
    static encode( messageType: string, data: Record<string, unknown>): Uint8Array {
-     const type = root.lookupType(`IBDC.${messageType}`);
+     const type = root.lookupType(`IDBC.${messageType}`);
 
     // Converts normal JS values into their protobuf representation.
      // In particular, enum names such as "IMAGE_FORMAT_JPEG"
@@ -34,7 +34,7 @@ export class ProtobufService {
         messageType: string, 
         data: Uint8Array
     ): Record<string, unknown> {
-        const type = root.lookupType(`IBDC.${messageType}`);
+        const type = root.lookupType(`IDBC.${messageType}`);
         const message = type.decode(data);
         return type.toObject(message, {
             longs: String,

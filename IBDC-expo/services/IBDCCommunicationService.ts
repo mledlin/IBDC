@@ -7,15 +7,22 @@ type DeviceToAppPayload =
 | "imageInfo"
 | "imageChunk"
 | "deviceStatus"
-| "pendingEventList";
+| "pendingEventList"
+| "appTimeRequest";
 
 /** App-to-device oneof payload variants expected by protobufjs. */
 type AppToDevicePayload = 
 | "imageTransferRequest"
 | "eventTransferAck"
-| "settings"
 | "pendingEventListRequest"
-| "eventInfoRequest";
+| "eventInfoRequest"
+| "appTimeResponse";
+
+/** Image formats defined by the v0.3.3 protocol. */
+export type ImageFormat =
+    | "IMAGE_FORMAT_UNSPECIFIED"
+    | "IMAGE_FORMAT_JPEG"
+    | "IMAGE_FORMAT_PNG";
 
 
 /** Metadata announced by the device when a detection event occurs. */
@@ -32,7 +39,7 @@ export interface EventNotification {
    * Protobuf image-format enum name. The device currently supports JPEG and
    * unspecified formats; requesting other formats may result in an error.
    */
-  imageFormat: string;
+  imageFormat: ImageFormat;
 }
 
 /** Current operational status reported by the device. */
@@ -45,14 +52,6 @@ export interface DeviceStatus {
   pendingEvents: number;
   /** Remaining device storage, as a percentage. */
   storageAvailablePercent: number;
-  /** Configured number of images captured per event. */
-  imagesPerEventSetting: number;
-}
-
-/** Settings sent from the app to the device. */
-export interface DeviceSettings {
-  /** Number of images the device should capture for each event. */
-  imagesPerEvent: number;
 }
 
 /** Metadata describing an image being transferred from the device. */
@@ -66,7 +65,7 @@ export interface ImageInfo {
   /** Number of chunks used to transfer the image. */
   totalChunks: number;
   /** Protobuf image-format enum name. */
-  imageFormat: string;
+  imageFormat: ImageFormat;
 }
 
 /** One byte chunk of an image transfer. */
@@ -182,6 +181,12 @@ export class IBDCCommunicationService {
                     this.pendingEventListListeners.forEach(listener => listener(decodedPendingEventList));
                     break;
                 }
+                case "appTimeRequest": {
+                    this.sendCurrentTimeResponse().catch(error => {
+                        console.error("IBDCCommunicationService: failed to respond to AppTimeRequest:", error);
+                    });
+                    break;
+                }
                 default:
                     
                     console.warn(`IBDCCommunicationService: Received DeviceToApp envelope with unhandled payload ${payload}, ignoring.`);
@@ -261,18 +266,13 @@ export class IBDCCommunicationService {
         await this.send("eventTransferAck", { eventId });
     }
 
-    /** Write settings (e.g. images captured per event) to the device */
-    async writeSettings(
-        settings: { imagesPerEvent: number },
-    ): Promise<void> {
-        const count = settings.imagesPerEvent;
-
-        if (!Number.isInteger(count) || count < 1 || count > 50) {
-            throw new Error("Images per event must be a positive uint32.");
-        }
-
-        await this.send("settings", {
-            imagesPerEvent: count,
+    /** Responds to the device's time request using the app's local clock. */
+    private async sendCurrentTimeResponse(): Promise<void> {
+        const now = new Date();
+        await this.send("appTimeResponse", {
+            hours: now.getHours(),
+            minute: now.getMinutes(),
+            seconds: now.getSeconds(),
         });
     }
 
