@@ -1,9 +1,8 @@
-import * as ImageManipulator from "expo-image-manipulator";
+import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 
 /**
  * Converts images to JPEG for standardized uploading.
  */
-
 export async function convertImage(
     imageUri: string
 ): Promise<string> {
@@ -11,7 +10,7 @@ export async function convertImage(
     const rendered = await context.renderAsync();
 
     const result = await rendered.saveAsync({
-        format: ImageManipulator.SaveFormat.JPEG,
+        format: SaveFormat.JPEG,
         compress: 0.95,
     });
 
