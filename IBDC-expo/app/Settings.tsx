@@ -230,8 +230,7 @@ export default function SettingsPage() {
                 Alert.alert("No Sessions", "No sessions available to upload.");
                 return;
             }
-            const session = sessions[0];         
- 
+            const session = sessions[0];   
            const result = await uploadSession(session, {
                 endpoint: "http://10.0.2.2:3000/upload",
            });

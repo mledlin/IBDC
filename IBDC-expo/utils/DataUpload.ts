@@ -30,6 +30,9 @@ export async function uploadSession(
     const adapter = config.adapter ?? new DefaultServerUploadAdapter();
     const adaptedSession = adapter.adaptSession(session);
 
+    //console.log("Prepared Images:", adaptedSession.files);
+    //console.log("Image Count:", adaptedSession.files.length);
+
     const headers: Record<string, string> = {
         ...(config.headers ?? {}),
     };
@@ -46,7 +49,7 @@ export async function uploadSession(
         for (const file of adaptedSession.files) {
             const convertedUri = await convertImage(file.uri);
             formData.append(
-                file.fieldName
+                file.fieldName,
                 {
                     uri: convertedUri,
                     name: file.name.replace(/\.[^.]+$/, "") + ".jpg",
@@ -61,7 +64,11 @@ export async function uploadSession(
         headers["Content-Type"] = "application/json";
         body = JSON.stringify(adaptedSession.payload);
     }
-
+    //console.log("Request Headers:", headers);
+    //console.log(
+    //"Request Body Type:",
+    //body instanceof FormData ? "FormData" : "JSON"
+    //);
     const response = await fetch(config.endpoint, {
         method: "POST",
         headers,

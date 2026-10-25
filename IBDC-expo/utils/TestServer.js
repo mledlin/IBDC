@@ -1,7 +1,13 @@
 const http = require("node:http");
-
+const fs = require("node:fs");
+const path = require("node:path");
+const Busboy = require("busboy");
 const PORT = 3000;
 const uploads = [];
+
+const uploadDirectory = path.join(__dirname, "uploads");
+fs.mkdirSync(uploadDirectory, {recursive: true});
+
 //Simple dashboard for viewing sent data.
 const dashboard = `
 <!DOCTYPE html>
@@ -110,8 +116,12 @@ const server = http.createServer((req, res) => {
         res.end(JSON.stringify(uploads));
         return;
     }
+if (req.method === "POST" && req.url === "/upload") {
 
-    if (req.method === "POST" && req.url === "/upload") {
+    const contentType = req.headers["content-type"] || "";
+
+    // Preserve JSON uploads for sessions without images.
+    if (contentType.includes("application/json")) {
         let body = "";
 
         req.on("data", chunk => {
@@ -122,8 +132,6 @@ const server = http.createServer((req, res) => {
             try {
                 const data = JSON.parse(body);
                 uploads.push(data);
-                console.log("Received Upload:");
-                console.log(JSON.stringify(data, null, 2));
 
                 res.writeHead(200);
                 res.end(JSON.stringify({
@@ -139,8 +147,125 @@ const server = http.createServer((req, res) => {
                 }));
             }
         });
+
         return;
     }
+
+    // Handle metadata and actual image files.
+    if (contentType.includes("multipart/form-data")) {
+        const busboy = Busboy({
+            headers: req.headers,
+            limits: {
+                fileSize: 15 * 1024 * 1024,
+                files: 20
+            }
+        });
+
+        let metadata = null;
+        const images = [];
+        const pendingWrites = [];
+        let uploadError = null;
+
+        busboy.on("field", (name, value) => {
+            if (name === "metadata") {
+                try {
+                    metadata = JSON.parse(value);
+                } catch (error) {
+                    uploadError = error;
+                }
+            }
+        });
+
+        busboy.on("file", (fieldName, file, info) => {
+            const filename = `${require("node:crypto").randomUUID()}.jpg`;
+            const destination = path.join(uploadDirectory, filename);
+
+            const output = fs.createWriteStream(destination);
+
+            file.on("limit", () => {
+                uploadError = new Error("Image exceeds size limit");
+            });
+
+            file.on("error", error => {
+                uploadError = error;
+                output.destroy(error);
+            });
+
+            const completed = new Promise((resolve, reject) => {
+                output.on("finish", resolve);
+                output.on("error", reject);
+            });
+
+            pendingWrites.push(completed);
+            file.pipe(output);
+
+            images.push({
+                fieldName,
+                filename,
+                mimeType: info.mimeType
+            });
+        });
+
+        busboy.on("error", error => {
+            uploadError = error;
+        });
+
+        busboy.on("filesLimit", () => {
+            uploadError = new Error("Too many images");
+        });
+
+        busboy.on("close", async () => {
+            try {
+                await Promise.all(pendingWrites);
+
+                if (uploadError) {
+                    throw uploadError;
+                }
+
+                if (!metadata || !metadata.sessionId) {
+                    throw new Error("Missing session metadata");
+                }
+
+                const upload = {
+                    ...metadata,
+                    images
+                };
+
+                uploads.push(upload);
+
+                console.log("Received Upload:", upload);
+
+                res.writeHead(200);
+                res.end(JSON.stringify({
+                    ok: true,
+                    message: "Session and images received",
+                    sessionId: metadata.sessionId,
+                    imageCount: images.length
+                }));
+
+            } catch (error) {
+                console.error("Upload failed:", error);
+
+                res.writeHead(400);
+                res.end(JSON.stringify({
+                    ok: false,
+                    message: "Image upload failed"
+                }));
+            }
+        });
+
+        req.pipe(busboy);
+        return;
+    }
+
+    res.writeHead(415);
+    res.end(JSON.stringify({
+        ok: false,
+        message: "Unsupported content type"
+    }));
+
+    return;
+}
 
     res.writeHead(404);
     res.end(JSON.stringify({ error: "Not found" }));
