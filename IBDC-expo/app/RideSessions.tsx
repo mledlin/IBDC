@@ -34,7 +34,7 @@ import {
 } from "@/domain/RideSessionView";
 
 import {deleteSession, getSessionHistoryData} from "@/database/SessionDao";
-import { LinearGradient } from "expo-linear-gradient";
+import {LinearGradient} from "expo-linear-gradient";
 import {useSafeAreaInsets} from "react-native-safe-area-context";
 import {exportRideSessionToPdf} from "@/utils/SessionExport";
 
@@ -308,10 +308,15 @@ export default function RideSession() {
     }
 
     return (
-        <View style={[styles.screenBackground, {backgroundColor: theme.colors.background, flex: 1, paddingTop: insets.top * 2.5}] }>
+        <View style={[styles.screenBackground, {
+            backgroundColor: theme.colors.background,
+            flex: 1,
+            paddingLeft: insets.left,
+            paddingRight: insets.right,
+        }]}>
             <ScrollView
                 ref={scrollViewRef}
-                contentContainerStyle={styles.scrollContainer}>
+                contentContainerStyle={[styles.scrollContainer, {paddingBottom: insets.bottom + 16}]}>
                 <View style={styles.display}>
                     <View style={styles.historyHeader}>
                         <View style={styles.historyTitleBlock}>
@@ -337,8 +342,8 @@ export default function RideSession() {
                             style={[
                                 styles.filterButton,
                                 {
-                                    backgroundColor: theme.colors.surface,
-                                    borderColor: theme.colors.border,
+                                    backgroundColor: theme.colors.surfaceText,
+                                    borderColor: theme.colors.surfaceText,
                                 },
                             ]}
                             onPress={handleToggleFilters}
@@ -346,12 +351,13 @@ export default function RideSession() {
                             <Ionicons
                                 name="options-outline"
                                 size={16}
-                                color={theme.colors.text}
+                                color={theme.colors.surface}
                             />
+
                             <Text
                                 style={[
                                     styles.filterButtonText,
-                                    {color: theme.colors.text},
+                                    {color: theme.colors.surface},
                                 ]}
                             >
                                 Filter
@@ -386,7 +392,7 @@ export default function RideSession() {
                             <Text
                                 style={[
                                     styles.summaryLabel,
-                                    {color: theme.colors.textSecondary},
+                                    {color: theme.colors.surfaceText},
                                 ]}
                             >
                                 Sessions
@@ -411,7 +417,7 @@ export default function RideSession() {
                             <Text
                                 style={[
                                     styles.summaryLabel,
-                                    {color: theme.colors.textSecondary},
+                                    {color: theme.colors.surfaceText},
                                 ]}
                             >
                                 Incidents
@@ -430,7 +436,7 @@ export default function RideSession() {
                             <Text
                                 style={[
                                     styles.summaryLabel,
-                                    {color: theme.colors.textSecondary},
+                                    {color: theme.colors.surfaceText},
                                 ]}
                             >
                                 Need Review
@@ -509,9 +515,15 @@ export default function RideSession() {
                                 <View style={styles.sessionHeader}>
                                     <View style={{flex: 1}}>
                                         <Text
-                                            style={[styles.dateText, {color: theme.colors.textSecondary}]}>{formattedDateTime}</Text>
+                                            style={[styles.dateText, {color: theme.colors.surfaceText}]}>{formattedDateTime}</Text>
                                         <Text
-                                            style={[styles.sessionMeta, {color: theme.colors.textSecondary}]}>{incidentCount} Incident{incidentCount !== 1 ? "s" : ""}</Text>
+                                            style={[
+                                                styles.sessionMeta,
+                                                {color: theme.colors.surfaceText},
+                                            ]}
+                                        >
+                                            {incidentCount} Incident{incidentCount !== 1 ? "s" : ""}
+                                        </Text>
                                     </View>
                                     <View style={styles.sessionHeaderActions}>
                                         <TouchableOpacity
@@ -595,63 +607,65 @@ export default function RideSession() {
                                     </View>
                                 ) : (
                                     <View style={styles.incidentScrollWrapper}>
-                                    <ScrollView
-                                        horizontal
-                                        showsHorizontalScrollIndicator={true}
-                                        contentContainerStyle={styles.incidentRow}>
-                                        {session.incidents.map((incident: any, incidentIndex: number) => {
-                                            const selectedImage =
-                                                incident.imageFiles.find(
-                                                    (image: any) =>
-                                                        image.id === incident.selectedImageId
-                                                ) || null;
-                                            const complete = isIncidentComplete(incident);
+                                        <ScrollView
+                                            horizontal
+                                            showsHorizontalScrollIndicator={true}
+                                            contentContainerStyle={styles.incidentRow}>
+                                            {session.incidents.map((incident: any, incidentIndex: number) => {
+                                                const selectedImage =
+                                                    incident.imageFiles.find(
+                                                        (image: any) =>
+                                                            image.id === incident.selectedImageId
+                                                    ) || null;
+                                                const complete = isIncidentComplete(incident);
 
-                                            return (
-                                                <TouchableOpacity
-                                                    key={incidentIndex}
-                                                    style={[styles.incidentCard, {
-                                                        backgroundColor: theme.colors.background,
-                                                        borderColor: theme.colors.border
-                                                    },]}
-                                                    onPress={() => handleIncidentPress(incident)}>
-                                                    {selectedImage ? (
-                                                        <Image
-                                                            source={selectedImage.uri}
-                                                            style={styles.incidentImage}
-                                                            resizeMode="cover"
-                                                        />
-                                                    ) : (
-                                                        <View
-                                                            style={[styles.placeholderBox, {backgroundColor: theme.colors.surface},]}>
-                                                            <Ionicons name="image-outline" size={26}
-                                                                      color={theme.colors.textSecondary}/>
-                                                            <Text
-                                                                style={[styles.placeholderText, {color: theme.colors.textSecondary}]}>
-                                                                No Image
-                                                            </Text>
-                                                        </View>
-                                                    )}
-
-                                                    {!complete && (
-                                                        <View
-                                                            style={[styles.incidentReviewBadge, {backgroundColor: theme.colors.primary}]}>
-                                                            <Ionicons
-                                                                name="alert"
-                                                                size={11}
-                                                                color={theme.colors.primaryForeground}
+                                                return (
+                                                    <TouchableOpacity
+                                                        key={incidentIndex}
+                                                        style={[styles.incidentCard, {
+                                                            backgroundColor: theme.colors.background,
+                                                            borderColor: theme.colors.border
+                                                        },]}
+                                                        onPress={() => handleIncidentPress(incident)}>
+                                                        {selectedImage ? (
+                                                            <Image
+                                                                source={selectedImage.uri}
+                                                                style={styles.incidentImage}
+                                                                resizeMode="cover"
                                                             />
-                                                            <Text
-                                                                style={[styles.incidentReviewText, {color: theme.colors.primaryForeground}]}>
-                                                                Review
-                                                            </Text>
-                                                        </View>
-                                                    )}
-                                                </TouchableOpacity>
-                                            );
-                                        })}
-                                    </ScrollView>
-                                    <LinearGradient colors={["transparent", theme.colors.surface,]} start= {{x:0, y:0}} end={{x:1, y:0}} pointerEvents="none" style={styles.incidentFadeRight} />
+                                                        ) : (
+                                                            <View
+                                                                style={[styles.placeholderBox, {backgroundColor: theme.colors.surface},]}>
+                                                                <Ionicons name="image-outline" size={26}
+                                                                          color={theme.colors.textSecondary}/>
+                                                                <Text
+                                                                    style={[styles.placeholderText, {color: theme.colors.textSecondary}]}>
+                                                                    No Image
+                                                                </Text>
+                                                            </View>
+                                                        )}
+
+                                                        {!complete && (
+                                                            <View
+                                                                style={[styles.incidentReviewBadge, {backgroundColor: theme.colors.primary}]}>
+                                                                <Ionicons
+                                                                    name="alert"
+                                                                    size={11}
+                                                                    color={theme.colors.primaryForeground}
+                                                                />
+                                                                <Text
+                                                                    style={[styles.incidentReviewText, {color: theme.colors.primaryForeground}]}>
+                                                                    Review
+                                                                </Text>
+                                                            </View>
+                                                        )}
+                                                    </TouchableOpacity>
+                                                );
+                                            })}
+                                        </ScrollView>
+                                        <LinearGradient colors={["transparent", theme.colors.surface,]}
+                                                        start={{x: 0, y: 0}} end={{x: 1, y: 0}} pointerEvents="none"
+                                                        style={styles.incidentFadeRight}/>
                                     </View>
                                 )}
                             </View>
@@ -696,15 +710,16 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     incidentScrollWrapper: {
-        position: "relative", 
+        position: "relative",
         width: "100%",
     },
     incidentFadeRight: {
-        position: "absolute", 
-        right: 0, 
-        top: 0, 
-        bottom: 0, 
-        width: 48, 
+        position: "absolute",
+        right: 0,
+        top: 0,
+        bottom: 0,
+        width: 16,
+        opacity: 0.90,
         pointerEvents: "none",
     },
     scrollContainer: {

@@ -54,6 +54,7 @@ export default function SettingsPage() {
     const [isSwitchingDevice, setIsSwitchingDevice] = useState(false);
 
     const [isUpdatingImagesPerEvent, setIsUpdatingImagesPerEvent,] = useState(false);
+    const insets = useSafeAreaInsets();
     /**
      * Available age thresholds for bulk deleting older stored data.
      */
@@ -118,13 +119,13 @@ export default function SettingsPage() {
      * Change the user's prefered number of images per event.
      */
     async function updateImagesPerEvent(newCount: number): Promise<void> {
-        try{
+        try {
             setIsUpdatingImagesPerEvent(true);
             await setImagesPerEvent(newCount);
-        }catch(error){
+        } catch (error) {
             console.error("Settings: failed to update images per event", error);
             Alert.alert("Settings Error", error instanceof Error ? error.message : String(error));
-        }finally {
+        } finally {
             setIsUpdatingImagesPerEvent(false);
         }
     }
@@ -236,89 +237,104 @@ export default function SettingsPage() {
     };
 
     const handleClearTestRideData = () => {
-        Alert.alert("Clear Test Ride Data?", 
-            "This will permenetly delete every ride session, incident, and saved incident photo. App settings and paired decices will not be chnaged.", 
-        [
-            {
-                text: "Cancel", 
-                style: "cancel",
-            },
-            {
-                text: "Clear All Data", 
-                style: "destructive",
-                onPress: async () => {
-                    try{
-                        setIsClearingTestData(true);
-                        await deleteAllSessions();
-                        Alert.alert("Test Data Cleared", "All ride test data has been deleted.");
-                    } catch (error) {
-                        console.error("Failed to clear test ride data", error);
-                        Alert.alert("Error", "Could not clear the ride test data. :(");
-                    } finally {
-                        setIsClearingTestData(false);
-                    }
+        Alert.alert("Clear Test Ride Data?",
+            "This will permenetly delete every ride session, incident, and saved incident photo. App settings and paired decices will not be chnaged.",
+            [
+                {
+                    text: "Cancel",
+                    style: "cancel",
                 },
-            },
-        ]
-    );
+                {
+                    text: "Clear All Data",
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            setIsClearingTestData(true);
+                            await deleteAllSessions();
+                            Alert.alert("Test Data Cleared", "All ride test data has been deleted.");
+                        } catch (error) {
+                            console.error("Failed to clear test ride data", error);
+                            Alert.alert("Error", "Could not clear the ride test data. :(");
+                        } finally {
+                            setIsClearingTestData(false);
+                        }
+                    },
+                },
+            ]
+        );
     };
 
     return (
         <View
-            style={[styles.container, {backgroundColor: theme.colors.background, paddingTop: useSafeAreaInsets().top}]}>
+            style={[
+                styles.container,
+                {
+                    backgroundColor: theme.colors.background,
+                    paddingLeft: 24 + insets.left,
+                    paddingRight: 24 + insets.right,
+                },
+            ]}
+        >
             <ScrollView
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.scrollContent}>
+                contentContainerStyle={[
+                    styles.scrollContent,
+                    {paddingBottom: insets.bottom + 24},
+                ]}
+            >
 
                 <Text style={[styles.title, {color: theme.colors.text}]}>SETTINGS</Text>
-                <Text style={[styles.sectionLabel, {color: theme.colors.text}]}>DEVICE SOURCE</Text>
+                <Text style={[styles.sectionLabel, styles.firstSectionLabel, {color: theme.colors.text}]}>DEVICE
+                    SOURCE</Text>
                 <View style={styles.retentionSection}>
-                <View style={styles.settingsToggle}>
-                    <Switch
-                     value={deviceMode === 'real'} 
-                     disabled={isSwitchingDevice}
-                     onValueChange={async enabled => {
-                        setIsSwitchingDevice(true);
-                        try{
-                            await setDeviceMode(enabled ? 'real' : 'mock');
-                        }catch (error){
-                            const message = 
-                            error instanceof Error && error.message.includes("createClient")
-                            ? "Real BLE requires a development Build. Expo Go cannot run react-native-ble-plx."
-                            : error instanceof Error 
-                                ? error.message
-                                :String(error);
-                            Alert.alert('Device switch failed', message);
-                        }finally {
-                            setIsSwitchingDevice(false);
-                        }
-                     }} 
-                     thumbColor={theme.colors.primary}
-                     />
-                    <Text 
-                    style={[styles.settingLabel, {color: theme.colors.text}]}>{deviceMode === 'real' ? 'Real IBDC device' : 'Simulated IBDC device'}</Text>
-                </View>
-                 <Text style={{color: theme.colors.textSecondary, marginBottom: 16}}>
-                    Switching disconnects the current device. Scan again on Pair Device.
-                </Text>
+                    <View style={styles.settingsToggle}>
+                        <Switch
+                            value={deviceMode === 'real'}
+                            disabled={isSwitchingDevice}
+                            onValueChange={async enabled => {
+                                setIsSwitchingDevice(true);
+                                try {
+                                    await setDeviceMode(enabled ? 'real' : 'mock');
+                                } catch (error) {
+                                    const message =
+                                        error instanceof Error && error.message.includes("createClient")
+                                            ? "Real BLE requires a development Build. Expo Go cannot run react-native-ble-plx."
+                                            : error instanceof Error
+                                                ? error.message
+                                                : String(error);
+                                    Alert.alert('Device switch failed', message);
+                                } finally {
+                                    setIsSwitchingDevice(false);
+                                }
+                            }}
+                            thumbColor={theme.colors.primary}
+                        />
+                        <Text
+                            style={[styles.settingLabel, {color: theme.colors.text}]}>{deviceMode === 'real' ? 'Real IBDC device' : 'Simulated IBDC device'}</Text>
+                    </View>
+                    <Text style={{color: theme.colors.textSecondary, marginBottom: 16}}>
+                        Switching disconnects the current device. Scan again on Pair Device.
+                    </Text>
                 </View>
                 <Text style={[
-                    styles.sectionLabel, 
+                    styles.sectionLabel,
                     {color: theme.colors.text,}]}>
-                        DEVICE SETTINGS
-                </Text> 
+                    DEVICE SETTINGS
+                </Text>
 
                 <View style={styles.retentionSection}>
                     <Text style={[styles.retentionLabel, {color: theme.colors.text,}]}>
                         Images Per Event
                     </Text>
-                    <View style = {styles.retentionSelector}>
+                    <View style={styles.retentionSelector}>
                         <TouchableOpacity
-                        onPress={()=> 
-                            void updateImagesPerEvent(desiredImagesPerEvent - 1)
-                            } 
-                        disabled={desiredImagesPerEvent <= 1 || isUpdatingImagesPerEvent} style={styles.arrowButton}>
-                            <Text style={[styles.arrowText, {color: desiredImagesPerEvent <= 1|| isUpdatingImagesPerEvent ? theme.colors.textSecondary : theme.colors.text,},]}>
+                            onPress={() =>
+                                void updateImagesPerEvent(desiredImagesPerEvent - 1)
+                            }
+                            disabled={desiredImagesPerEvent <= 1 || isUpdatingImagesPerEvent}
+                            style={styles.arrowButton}>
+                            <Text
+                                style={[styles.arrowText, {color: desiredImagesPerEvent <= 1 || isUpdatingImagesPerEvent ? theme.colors.textSecondary : theme.colors.text,},]}>
                                 {"\u25c0"}
                             </Text>
                         </TouchableOpacity>
@@ -326,20 +342,21 @@ export default function SettingsPage() {
                             {desiredImagesPerEvent}
                         </Text>
                         <TouchableOpacity
-                        onPress={()=> 
-                            void updateImagesPerEvent(desiredImagesPerEvent + 1)
-                        }
-                        disabled={isUpdatingImagesPerEvent}
-                        style={styles.arrowButton}>
-                            <Text style={[styles.arrowText, {color: isUpdatingImagesPerEvent ? theme.colors.textSecondary : theme.colors.text,}]}>
+                            onPress={() =>
+                                void updateImagesPerEvent(desiredImagesPerEvent + 1)
+                            }
+                            disabled={isUpdatingImagesPerEvent}
+                            style={styles.arrowButton}>
+                            <Text
+                                style={[styles.arrowText, {color: isUpdatingImagesPerEvent ? theme.colors.textSecondary : theme.colors.text,}]}>
                                 {"\u25B6"}
                             </Text>
                         </TouchableOpacity>
-                        </View>
-                            <Text style={[styles.settingDescription, {color: theme.colors.textSecondary,},]}>
-                                Number of photos the IBDC device captures for each incident.
-                            </Text>
-                        </View>  
+                    </View>
+                    <Text style={[styles.settingDescription, {color: theme.colors.textSecondary,},]}>
+                        Number of photos the IBDC device captures for each incident.
+                    </Text>
+                </View>
 
                 {/* Theme picker */}
                 <Text style={[styles.sectionLabel, {color: theme.colors.text}]}>APPEARANCE</Text>
@@ -462,9 +479,9 @@ export default function SettingsPage() {
                         ]}
                         onPress={handleClearTestRideData}
                         disabled={isClearingTestData}>
-                            <Text style={[styles.actionButtonText, {color: theme.colors.primaryForeground}]}>
-                                {isClearingTestData ? "clearing Test Data..." : "Clear Test Ride Data (DEV TOOL)"}
-                            </Text>
+                        <Text style={[styles.actionButtonText, {color: theme.colors.primaryForeground}]}>
+                            {isClearingTestData ? "clearing Test Data..." : "Clear Test Ride Data (DEV TOOL)"}
+                        </Text>
                     </TouchableOpacity>
                 </View>
 
@@ -476,13 +493,13 @@ export default function SettingsPage() {
 const styles = StyleSheet.create({
     scrollContent: {
         flexGrow: 1,
-        paddingTop: 60,
+        paddingTop: 16,
         paddingBottom: 24,
     },
     settingDescription: {
         marginTop: 8,
-        textAlign: "center", 
-        fontSize: 14, 
+        textAlign: "center",
+        fontSize: 14,
     },
     container: {
         flex: 1,
@@ -496,6 +513,9 @@ const styles = StyleSheet.create({
         marginTop: 24,
         paddingHorizontal: 4,
     },
+    firstSectionLabel: {
+        marginTop: 0,
+    },
     inBoxSectionLabel: {
         fontSize: 11,
         fontWeight: "600",
@@ -506,7 +526,7 @@ const styles = StyleSheet.create({
         fontSize: 24,
         fontWeight: "bold",
         textAlign: "center",
-        marginBottom: 40,
+        marginBottom: 12,
         color: "#333333",
     },
     settingsToggle: {
