@@ -317,8 +317,8 @@ export default function SettingsPage() {
                         onPress={()=> 
                             void updateImagesPerEvent(desiredImagesPerEvent - 1)
                             } 
-                        disabled={desiredImagesPerEvent <= 1 || isUpdatingImagesPerEvent} style={styles.arrowButton}>
-                            <Text style={[styles.arrowText, {color: desiredImagesPerEvent <= 1|| isUpdatingImagesPerEvent ? theme.colors.textSecondary : theme.colors.text,},]}>
+                        disabled={deviceMode !== "mock" || desiredImagesPerEvent <= 1 || isUpdatingImagesPerEvent} style={styles.arrowButton}>
+                            <Text style={[styles.arrowText, {color: deviceMode !== "mock" || desiredImagesPerEvent <= 1|| isUpdatingImagesPerEvent ? theme.colors.textSecondary : theme.colors.text,},]}>
                                 {"\u25c0"}
                             </Text>
                         </TouchableOpacity>
@@ -329,15 +329,15 @@ export default function SettingsPage() {
                         onPress={()=> 
                             void updateImagesPerEvent(desiredImagesPerEvent + 1)
                         }
-                        disabled={isUpdatingImagesPerEvent}
+                        disabled={deviceMode !== "mock" || isUpdatingImagesPerEvent}
                         style={styles.arrowButton}>
-                            <Text style={[styles.arrowText, {color: isUpdatingImagesPerEvent ? theme.colors.textSecondary : theme.colors.text,}]}>
+                            <Text style={[styles.arrowText, {color: deviceMode !== "mock" || isUpdatingImagesPerEvent ? theme.colors.textSecondary : theme.colors.text,}]}>
                                 {"\u25B6"}
                             </Text>
                         </TouchableOpacity>
                         </View>
                             <Text style={[styles.settingDescription, {color: theme.colors.textSecondary,},]}>
-                                Number of photos the IBDC device captures for each incident.
+                                Controls the image count for simulated events. The v0.3.3 protocol does not support changing this on a real device.
                             </Text>
                         </View>  
 

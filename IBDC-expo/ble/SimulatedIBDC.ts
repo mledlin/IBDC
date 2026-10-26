@@ -2,7 +2,6 @@ import { ProtobufService } from "@/protobuf/ProtobufService";
 import {MockBleAdapter} from "@/ble/MockBleAdapter";
 import { BleDeviceInfo } from "./BleAdapter";
 import {LoadImageData, SimulatedIBDCImageLoader} from "./SimulatedIBDCImageLoader";
-import type {DeviceSettings} from "@/services/IBDCCommunicationService";
 
 /** Maximum bytes in each simulated image chunk; kept small to exercise multi-chunk transfers. */
 const IMAGE_CHUNK_SIZE = 180;
@@ -51,7 +50,7 @@ interface SimulatedPendingEvent {
 
 /** Identity used when no custom simulated device identity is supplied. */
 const DEFAULT_DEVICE_INFO: BleDeviceInfo = {
-    id: "v0.1.pb_v0.3.2",
+    id: "v0.1.pb_v0.3.3",
     name: "prototype_dev_simDevice_v0.1"
 }
 
@@ -87,10 +86,10 @@ export class SimulatedIBDC {
                 deviceInfo?: BleDeviceInfo, initialState?: Partial<SimulatedDeviceState>,
             ){
         this.adapter = adapter;
-        this.deviceInfo = deviceInfo ?? {...DEFAULT_DEVICE_INFO};
+        this.deviceInfo = deviceInfo ?? adapter.getDeviceInfo() ?? {...DEFAULT_DEVICE_INFO};
         this.state = {
             protocolVersion: 3,
-            firmwareVersionLabel: "v0.3.2",
+            firmwareVersionLabel: "v0.3.3",
             batteryPercent: 100,
             pendingEventCount: 0, 
             storageAvailablePercent: 100,
@@ -245,23 +244,12 @@ export class SimulatedIBDC {
                 this.sendEventNotification(event);
                 break;
             }
-            case "settings": {
-                const settings = decoded.settings as Partial<DeviceSettings>;
-                if(settings.imagesPerEvent === undefined) {
-                    console.warn("SimulatedIBDC: Settings received without imagesPerEvent.");
-                    break;
-                }
-                if(!Number.isInteger(settings.imagesPerEvent)|| settings.imagesPerEvent < 1) {
-                    console.warn(`SimulatedIBDC: Invalid imagesPerEvent = ${settings.imagesPerEvent}`);
-                    break;
-                }
-                this.state.imagesPerEventSetting = settings.imagesPerEvent;
-                console.log(`SimulatedIBDC: Updated imagesPerEventSetting to ${this.state.imagesPerEventSetting}`);
-                this.pushDeviceStatus();
+            case "appTimeResponse": {
+                console.log("SimulatedIBDC: AppTimeResponse received:", decoded.appTimeResponse);
                 break;
             }
             default:
-                console.warn(`SimulatedIBDC: Unknown message type: ${decoded.type}`);
+                console.warn(`SimulatedIBDC: Unknown message type: ${decoded.payload}`);
                 break;
         }
         
@@ -324,8 +312,12 @@ export class SimulatedIBDC {
             batteryPercent: this.state.batteryPercent,
             pendingEvents: this.state.pendingEventCount,
             storageAvailablePercent: this.state.storageAvailablePercent,
-            imagesPerEventSetting: this.state.imagesPerEventSetting,
         });
+    }
+
+    /** Sets the local image count used by simulated events, not a wire-protocol setting. */
+    setImagesPerEvent(imageCount: number): void {
+        this.state.imagesPerEventSetting = imageCount;
     }
     
     /**
