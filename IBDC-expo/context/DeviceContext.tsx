@@ -6,15 +6,9 @@
  */
 
 import React, {createContext, useContext, useEffect, useState} from "react";
-import { BleAdapter, BleDeviceInfo } from "@/ble/BleAdapter";
-import { MockBleAdapter } from "@/ble/MockBleAdapter";
-import { IBDCCommunicationService, DeviceStatus as IBDCDeviceStatus } from "@/services/IBDCCommunicationService";
-import { SimulatedIBDC } from "@/ble/SimulatedIBDC";
-import { ImageIngestService } from "@/services/ImageIngestService";
-import { ExpoImageStorage } from "@/services/ExpoImageStorage";
-import { DAOAdapter } from "@/services/DAOAdapter";
-import { SimulatedIBDCImageLoader } from "@/ble/SimulatedIBDCImageLoader"
-
+import {BleAdapter, BleDeviceInfo} from "@/ble/BleAdapter";
+import {DeviceStatus as IBDCDeviceStatus, IBDCCommunicationService} from "@/services/IBDCCommunicationService";
+import {SimulatedIBDC} from "@/ble/SimulatedIBDC";
 
 export type ConnectedStatus = 'connected' | 'disconnected' | 'pairing';
 
@@ -34,21 +28,15 @@ export interface DeviceInfo {
 }
 
 
-/**
- * These components are necessary for DeviceContext to function
- */
 export interface DeviceDependencies {
   bleAdapter: BleAdapter,
   communicationService: IBDCCommunicationService,
   simulatedDevice: SimulatedIBDC;
 }
 
-/**
- * Specify children that can access the information.
- */
 interface DeviceProviderProps {
   children: React.ReactNode;
-  dependencies: DeviceDependencies;
+  dependencies: DeviceDependencies,
 }
 
 /**
@@ -78,23 +66,6 @@ type DeviceContextType = {
  */
 const DeviceContext = createContext<DeviceContextType | undefined>(undefined);
 
-//!!real adatper will be used in production, mock adapter is for testing and development
-// kept as concrete MockBleRefrence because SimulatedIBDC needs simulateIncomming(),
-// which isn't a part of the BleAdapter interface or the real implementation.
-const mockBLEAdapter = new MockBleAdapter();
-const bleAdapter: BleAdapter = mockBLEAdapter;
-
-// Sits between bleAdapter and this context (and any other domain services),
-const communicationService = new IBDCCommunicationService(bleAdapter);
-
-// Abstractions built around hardware coupling.
-const imageStorage = new ExpoImageStorage();
-const imageLoader = new SimulatedIBDCImageLoader();
-const DAOAccess = new DAOAdapter();
-
-new ImageIngestService(communicationService, imageStorage, DAOAccess);
-
-const simulatedDevice = new SimulatedIBDC(mockBLEAdapter, imageLoader);
 
 /**
  * Wraps part of the application with shared device state.
@@ -103,13 +74,17 @@ const simulatedDevice = new SimulatedIBDC(mockBLEAdapter, imageLoader);
  * the value and its setter available to all descendant components.
  *
  * @param children The child components that should have access to device context.
- * @param dependencies necessary components for the application modules to work together
+ * @param dependencies bleAdapter, communicationsService and simulated device dependencies
  * @returns A context provider containing device state and update access.
  */
 export function DeviceProvider({ children, dependencies }: DeviceProviderProps) {
+
+  const bleAdapter: BleAdapter = dependencies.bleAdapter;
+  const communicationService = dependencies.communicationService;
+  const simulatedDevice = dependencies.simulatedDevice;
+
   const [device, setDevice] = useState<DeviceInfo | null>(null);
   const [devices, setDevices] = useState<BleDeviceInfo[]>([]);
-
   // keep connceted device state in sync with decoded DeviceStatus pushes. 
   // only update stat is a device is currently set; ignore otherwise
   //
@@ -119,7 +94,7 @@ export function DeviceProvider({ children, dependencies }: DeviceProviderProps) 
         if(!prevDevice){
           return prevDevice;
         }
-        return { 
+        return {
           ...prevDevice,
           battery: status.batteryPercent,
           pendingEvents: status.pendingEvents,
@@ -129,7 +104,7 @@ export function DeviceProvider({ children, dependencies }: DeviceProviderProps) 
             total: 100,
           },
           lastSynced: new Date().toISOString(),
-          
+
         };
       });
     });

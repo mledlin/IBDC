@@ -29,6 +29,7 @@ const imageLoader = new SimulatedIBDCImageLoader();
 const DAOAccess = new DAOAdapter();
 
 new ImageIngestService(communicationService, imageStorage, DAOAccess);
+
 const simulatedDevice = new SimulatedIBDC(mockBLEAdapter, imageLoader);
 
 const deviceDependencies: DeviceDependencies = {
