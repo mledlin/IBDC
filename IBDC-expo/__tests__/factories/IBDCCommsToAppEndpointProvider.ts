@@ -31,7 +31,6 @@ export class IBDCCommsToAppEndpointProvider {
     // -----------------------------------
 
 
-
     constructor() {
     const  deviceInfo: BleDeviceInfo | null = {
             id: "device",
@@ -48,16 +47,22 @@ export class IBDCCommsToAppEndpointProvider {
         this.imageIngestService = new ImageIngestService(this.ibdcCommsService, this.imageStorage, this.daoAdapter)
     }
 
-    public triggerEvent() {
-        this.ibdc.triggerEvent();
+    public async triggerEvent() {
+        await this.ibdc.triggerEvent();
     }
 
-    public disconnect() {
-        this.bleAdapter.disconnect();
+    public async disconnect() {
+        await this.bleAdapter.disconnect();
     }
 
-    public reconnect() {
-        this.bleAdapter.connect("device").then(r => {})
+    public async reconnect() {
+        const  deviceInfo: BleDeviceInfo | null = {
+            id: "device",
+            name: "test_mock"
+        }
+        this.bleAdapter.setDeviceInfo(deviceInfo)
+        this.bleAdapter.connect(deviceInfo.id).then(() => {})
+
     }
 
     // More public methods could be declared here to help with testing
