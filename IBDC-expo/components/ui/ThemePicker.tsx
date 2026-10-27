@@ -89,14 +89,26 @@ export default function ThemePicker() {
             {/* Trigger button */}
             <Pressable
                 onPress={() => setVisible(true)}
-                style={[styles.triggerButton, {
-                    backgroundColor: theme.colors.primary,
-                    borderColor: theme.colors.border,
-                    borderRadius: theme.radii.md,
-                }]}
+                style={[
+                    styles.triggerButton,
+                    {
+                        backgroundColor: theme.colors.surface,
+                        borderColor: theme.colors.border,
+                        borderRadius: theme.radii.md,
+                    },
+                ]}
             >
-                <Text style={[styles.triggerLabel, {color: theme.colors.primaryForeground}]}>App Theme</Text>
-                <Text style={[styles.triggerValue, {color: theme.colors.primaryForeground}]}>
+                <Text style={[
+                    styles.triggerLabel,
+                    {color: theme.colors.surfaceText},
+                ]}>
+                    App Theme
+                </Text>
+
+                <Text style={[
+                    styles.triggerValue,
+                    {color: theme.colors.surfaceTextSecondary},
+                ]}>
                     {THEME_META[themeKey].label} ›
                 </Text>
             </Pressable>

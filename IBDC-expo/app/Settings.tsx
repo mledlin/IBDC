@@ -8,7 +8,7 @@
  * - Debug tools for generating mock session and incident data.
  */
 
-import React, {useState} from "react";
+import React, {useRef, useState} from "react";
 
 import {
     getAllSessions,
@@ -52,7 +52,9 @@ export default function SettingsPage() {
     const {deviceMode, setDeviceMode, desiredImagesPerEvent, setImagesPerEvent} = useDevice();
     const [isClearingTestData, setIsClearingTestData] = useState(false);
     const [isSwitchingDevice, setIsSwitchingDevice] = useState(false);
-
+    const [isGeneratingMockData, setIsGeneratingMockData] = useState(false);
+    const [mockProgress, setMockProgress] = useState("");
+    const mockGenerationInProgress = useRef(false);
     const [isUpdatingImagesPerEvent, setIsUpdatingImagesPerEvent,] = useState(false);
     const insets = useSafeAreaInsets();
     /**
@@ -141,10 +143,10 @@ export default function SettingsPage() {
         const cutoff = new Date();
 
         switch (deleteOlderThanOptions[deleteOlderThanIndex]) {
-            case "3 months":
+            case "3 Months":
                 cutoff.setMonth(cutoff.getMonth() - 3);
                 break;
-            case "6 months":
+            case "6 Months":
                 cutoff.setMonth(cutoff.getMonth() - 6);
                 break;
             case "1 year":
@@ -179,9 +181,15 @@ export default function SettingsPage() {
                     text: "Delete",
                     style: "destructive",
                     onPress: async () => {
+                        if (mockGenerationInProgress.current) {
+                            return;
+                        }
+
                         try {
                             const cutoff = getCutoffDate();
                             await deleteSessionsOlderThan(cutoff.toISOString());
+
+                            // Keep the rest of your existing code here.
 
                             const sessions = await getAllSessions();
                             console.log("Remaining sessions:", sessions);
@@ -204,35 +212,53 @@ export default function SettingsPage() {
     };
 
     /**
-     * Creates 1 persistent randomized mock session data set.
+     * Creates 1 or more persistent randomized mock session data set.
      *
      * Generation details live outside the UI so they can be
      * reused and tested independently.
      */
-    const handleAddMockIncident = async () => {
+    const handleAddMockIncident = async (count: 1 | 10 = 1) => {
+        if (mockGenerationInProgress.current || isClearingTestData) {
+            return;
+        }
+
+        mockGenerationInProgress.current = true;
+        setIsGeneratingMockData(true);
+        setMockProgress(`Generating sessions: 0 of ${count}`);
+
+        let completed = 0;
+        let incidentCount = 0;
+
         try {
-            const mockData =
-                await generateMockSessionData(
+            for (let index = 0; index < count; index += 1) {
+                const mockData = await generateMockSessionData(
                     sqliteMockDataPersistence,
                 );
 
-            const sessions =
-                await getAllSessions();
+                completed += 1;
+                incidentCount += mockData.incidents.length;
+                setMockProgress(`Generating sessions: ${completed} of ${count}`);
+            }
 
-            console.log(
-                "Sessions:",
-                sessions,
-            );
+            const sessions = await getAllSessions();
+
+            console.log("Sessions:", sessions);
 
             Alert.alert(
                 "Success",
-                `Mock session added with ${mockData.incidents.length} incidents`,
+                `${completed} mock ${completed === 1 ? "session" : "sessions"} added with ${incidentCount} incidents`,
             );
         } catch (error) {
-            console.error(
-                "Failed to add mock data",
-                error,
+            console.error("Failed to add mock data", error);
+
+            Alert.alert(
+                "Mock data generation stopped",
+                `${completed} of ${count} sessions completed. The last attempted session may be partially saved. Review Ride Sessions before trying again.`,
             );
+        } finally {
+            mockGenerationInProgress.current = false;
+            setIsGeneratingMockData(false);
+            setMockProgress("");
         }
     };
 
@@ -248,9 +274,15 @@ export default function SettingsPage() {
                     text: "Clear All Data",
                     style: "destructive",
                     onPress: async () => {
+                        if (mockGenerationInProgress.current) {
+                            return;
+                        }
+
                         try {
                             setIsClearingTestData(true);
                             await deleteAllSessions();
+
+                            // Keep the rest of your existing code here.
                             Alert.alert("Test Data Cleared", "All ride test data has been deleted.");
                         } catch (error) {
                             console.error("Failed to clear test ride data", error);
@@ -284,45 +316,22 @@ export default function SettingsPage() {
             >
 
                 <Text style={[styles.title, {color: theme.colors.text}]}>SETTINGS</Text>
-                <Text style={[styles.sectionLabel, styles.firstSectionLabel, {color: theme.colors.text}]}>DEVICE
-                    SOURCE</Text>
-                <View style={styles.retentionSection}>
-                    <View style={styles.settingsToggle}>
-                        <Switch
-                            value={deviceMode === 'real'}
-                            disabled={isSwitchingDevice}
-                            onValueChange={async enabled => {
-                                setIsSwitchingDevice(true);
-                                try {
-                                    await setDeviceMode(enabled ? 'real' : 'mock');
-                                } catch (error) {
-                                    const message =
-                                        error instanceof Error && error.message.includes("createClient")
-                                            ? "Real BLE requires a development Build. Expo Go cannot run react-native-ble-plx."
-                                            : error instanceof Error
-                                                ? error.message
-                                                : String(error);
-                                    Alert.alert('Device switch failed', message);
-                                } finally {
-                                    setIsSwitchingDevice(false);
-                                }
-                            }}
-                            thumbColor={theme.colors.primary}
-                        />
-                        <Text
-                            style={[styles.settingLabel, {color: theme.colors.text}]}>{deviceMode === 'real' ? 'Real IBDC device' : 'Simulated IBDC device'}</Text>
-                    </View>
-                    <Text style={{color: theme.colors.textSecondary, marginBottom: 16}}>
-                        Switching disconnects the current device. Scan again on Pair Device.
-                    </Text>
-                </View>
                 <Text style={[
                     styles.sectionLabel,
-                    {color: theme.colors.text,}]}>
+                    styles.firstSectionLabel,
+                    {color: theme.colors.text},
+                ]}>
                     DEVICE SETTINGS
                 </Text>
 
-                <View style={styles.retentionSection}>
+                <View style={[
+                    styles.retentionSection,
+                    {
+                        backgroundColor: theme.colors.background,
+                        borderColor: theme.colors.border,
+                        borderRadius: theme.radii.md,
+                    },
+                ]}>
                     <Text style={[styles.retentionLabel, {color: theme.colors.text,}]}>
                         Images Per Event
                     </Text>
@@ -363,17 +372,27 @@ export default function SettingsPage() {
                 <ThemePicker/>
 
 
-                <View style={styles.retentionSection}>
+                <View style={[
+                    styles.retentionSection,
+                    {
+                        backgroundColor: theme.colors.background,
+                        borderColor: theme.colors.border,
+                        borderRadius: theme.radii.md,
+                    },
+                ]}>
                     <Text style={[styles.retentionLabel, {color: theme.colors.text}]}>Sessions Displayed Per Page</Text>
 
                     <View style={styles.retentionSelector}>
                         <TouchableOpacity
                             onPress={handlePrevOption}
+                            disabled={dataIndex === 0}
                             style={styles.arrowButton}>
                             <Text
                                 style={[
                                     styles.arrowText,
-                                    dataIndex === 0 && {color: theme.colors.background}]}>
+                                    {color: theme.colors.text},
+                                    dataIndex === 0 && {opacity: 0.3},
+                                ]}>
                                 {"\u25C0"}
                             </Text>
                         </TouchableOpacity>
@@ -384,18 +403,26 @@ export default function SettingsPage() {
 
                         <TouchableOpacity
                             onPress={handleNextOption}
+                            disabled={dataIndex === dataOptions.length - 1}
                             style={styles.arrowButton}>
                             <Text
                                 style={[
                                     styles.arrowText, {color: theme.colors.text},
-                                    dataIndex === dataOptions.length - 1 && {color: theme.colors.background}]}>
+                                    dataIndex === dataOptions.length - 1 && {opacity: 0.3}]}>
                                 {"\u25B6"}
                             </Text>
                         </TouchableOpacity>
                     </View>
                 </View>
 
-                <View style={styles.retentionSection}>
+                <View style={[
+                    styles.retentionSection,
+                    {
+                        backgroundColor: theme.colors.background,
+                        borderColor: theme.colors.border,
+                        borderRadius: theme.radii.md,
+                    },
+                ]}>
                     <Text style={[styles.retentionLabel, {color: theme.colors.text}]}>
                         Delete Data Older Than
                     </Text>
@@ -403,13 +430,14 @@ export default function SettingsPage() {
                     <View style={styles.retentionSelector}>
                         <TouchableOpacity
                             onPress={handlePrevDeleteOlderThan}
+                            disabled={deleteOlderThanIndex === 0}
                             style={styles.arrowButton}>
 
                             <Text
                                 style={[
                                     styles.arrowText,
                                     {color: theme.colors.text},
-                                    deleteOlderThanIndex === 0 && {color: theme.colors.background},
+                                    deleteOlderThanIndex === 0 && {opacity: 0.3},
                                 ]}>
                                 {"\u25C0"}
                             </Text>
@@ -421,6 +449,7 @@ export default function SettingsPage() {
 
                         <TouchableOpacity
                             onPress={handleNextDeleteOlderThan}
+                            disabled={deleteOlderThanIndex === deleteOlderThanOptions.length - 1}
                             style={styles.arrowButton}>
 
                             <Text
@@ -428,7 +457,7 @@ export default function SettingsPage() {
                                     styles.arrowText,
                                     {color: theme.colors.text},
                                     deleteOlderThanIndex === deleteOlderThanOptions.length - 1 &&
-                                    {color: theme.colors.background},
+                                    {opacity: 0.3},
                                 ]}>
                                 {"\u25B6"}
                             </Text>
@@ -453,8 +482,54 @@ export default function SettingsPage() {
                 </View>
 
 
-                <View style={styles.debugSection}>
+                <View style={[
+                    styles.debugSection,
+                    {
+                        backgroundColor: theme.colors.background,
+                        borderColor: theme.colors.border,
+                        borderRadius: theme.radii.md,
+                    },
+                ]}>
                     <Text style={[styles.inBoxSectionLabel, {color: theme.colors.text}]}>DEBUG FEATURES</Text>
+                    <Text style={[styles.sectionLabel, styles.firstSectionLabel, {color: theme.colors.text}]}>DEVICE
+                        SOURCE</Text>
+                    <View style={[
+                        styles.retentionSection,
+                        {
+                            backgroundColor: theme.colors.background,
+                            borderColor: theme.colors.border,
+                            borderRadius: theme.radii.md,
+                        },
+                    ]}>
+                        <View style={styles.settingsToggle}>
+                            <Switch
+                                value={deviceMode === 'real'}
+                                disabled={isSwitchingDevice}
+                                onValueChange={async enabled => {
+                                    setIsSwitchingDevice(true);
+                                    try {
+                                        await setDeviceMode(enabled ? 'real' : 'mock');
+                                    } catch (error) {
+                                        const message =
+                                            error instanceof Error && error.message.includes("createClient")
+                                                ? "Real BLE requires a development Build. Expo Go cannot run react-native-ble-plx."
+                                                : error instanceof Error
+                                                    ? error.message
+                                                    : String(error);
+                                        Alert.alert('Device switch failed', message);
+                                    } finally {
+                                        setIsSwitchingDevice(false);
+                                    }
+                                }}
+                                thumbColor={theme.colors.primary}
+                            />
+                            <Text
+                                style={[styles.settingLabel, {color: theme.colors.text}]}>{deviceMode === 'real' ? 'Real IBDC device' : 'Simulated IBDC device'}</Text>
+                        </View>
+                        <Text style={{color: theme.colors.textSecondary, marginBottom: 16}}>
+                            Switching disconnects the current device. Scan again on Pair Device.
+                        </Text>
+                    </View>
                     <TouchableOpacity
                         style={[
                             styles.addMockButton,
@@ -463,24 +538,66 @@ export default function SettingsPage() {
                                 borderRadius: theme.radii.md,
                             },
                         ]}
-                        onPress={handleAddMockIncident}>
-
-                        <Text style={[styles.actionButtonText, {color: theme.colors.primaryForeground}]}>
-                            Add Random Mock Incident Data
+                        onPress={() => void handleAddMockIncident(1)}
+                        disabled={isGeneratingMockData || isClearingTestData}
+                    >
+                        <Text style={[
+                            styles.actionButtonText,
+                            {color: theme.colors.primaryForeground},
+                        ]}>
+                            Add 1 Random Mock Incident
                         </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                        style={[styles.wipeButton,
+                        style={[
+                            styles.addMockButton,
+                            {
+                                backgroundColor: theme.colors.primary,
+                                borderRadius: theme.radii.md,
+                                opacity: isGeneratingMockData || isClearingTestData ? 0.6 : 1,
+                            },
+                        ]}
+                        onPress={() => void handleAddMockIncident(10)}
+                        disabled={isGeneratingMockData || isClearingTestData}>
+
+                        <Text style={[
+                            styles.actionButtonText,
+                            {color: theme.colors.primaryForeground},
+                        ]}>
+                            Add 10 Random Mock Incidents
+                        </Text>
+                    </TouchableOpacity>
+
+                    {isGeneratingMockData && (
+                        <Text
+                            accessibilityLiveRegion="polite"
+                            style={{
+                                color: theme.colors.textSecondary,
+                                marginTop: 12,
+                            }}>
+                            {mockProgress}
+                        </Text>
+                    )}
+
+                    <TouchableOpacity
+                        style={[
+                            styles.wipeButton,
                             {
                                 backgroundColor: theme.colors.danger,
                                 borderRadius: theme.radii.md,
-                                opacity: isClearingTestData ? 0.6 : 1,
-                            }
+                                opacity: isGeneratingMockData || isClearingTestData ? 0.6 : 1,
+                            },
                         ]}
                         onPress={handleClearTestRideData}
-                        disabled={isClearingTestData}>
-                        <Text style={[styles.actionButtonText, {color: theme.colors.primaryForeground}]}>
-                            {isClearingTestData ? "clearing Test Data..." : "Clear Test Ride Data (DEV TOOL)"}
+                        disabled={isGeneratingMockData || isClearingTestData}
+                    >
+                        <Text style={[
+                            styles.actionButtonText,
+                            {color: theme.colors.primaryForeground},
+                        ]}>
+                            {isClearingTestData
+                                ? "Clearing Test Data..."
+                                : "Clear Test Ride Data (DEV TOOL)"}
                         </Text>
                     </TouchableOpacity>
                 </View>
@@ -537,12 +654,12 @@ const styles = StyleSheet.create({
     settingLabel: {
         marginLeft: 16,
         fontSize: 18,
+        flexShrink: 1,
     },
     retentionSection: {
         padding: 16,
-        marginTop: 16,
+        marginTop: 8,
         borderWidth: 1,
-        borderColor: "#000000",
         borderRadius: 8,
     },
     retentionLabel: {
@@ -557,13 +674,18 @@ const styles = StyleSheet.create({
     arrowButton: {
         paddingHorizontal: 16,
         paddingVertical: 8,
+        minWidth: 48,
+        minHeight: 48,
+        alignItems: "center",
+        justifyContent: "center",
     },
     arrowText: {
         fontSize: 24,
         fontWeight: "bold",
     },
     retentionValue: {
-        minWidth: 120,
+        flex: 1,
+        minWidth: 60,
         textAlign: "center",
         fontSize: 18,
     },
@@ -574,8 +696,8 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     addMockButton: {
-        marginTop: 30,
-        marginBottom: 16,
+        marginTop: 16,
+        marginBottom: 0,
         paddingVertical: 14,
         borderRadius: 8,
         alignItems: "center",
@@ -593,9 +715,8 @@ const styles = StyleSheet.create({
     },
     debugSection: {
         padding: 16,
-        marginTop: 16,
+        marginTop: 24,
         borderWidth: 1,
-        borderColor: "#000000",
         borderRadius: 8,
     },
 });
