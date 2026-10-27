@@ -51,18 +51,37 @@ export type IncidentImage = {
 };
 
 // This is a potential check to verify an incident is ready to be published as a PDF or by
-// other means. All data should be filled in to be true.
+// other means. All required data should be filled in to be true. Added checks to ensure selected image exists.
 export function isIncidentComplete(incident: Incident): boolean {
-    const hasText = (value: unknown): boolean =>
+    const hasText = (value: unknown): value is string =>
         typeof value === "string" && value.trim().length > 0;
 
-    return (
-        Array.isArray(incident.imageFiles) &&
-        incident.imageFiles.length > 0 &&
+    const validCoordinate = (
+        value: unknown,
+        minimum: number,
+        maximum: number,
+    ): boolean =>
+        typeof value === "number" &&
+        Number.isFinite(value) &&
+        value >= minimum &&
+        value <= maximum;
+
+    const hasSelectedImage =
         hasText(incident.best_image_id) &&
-        incident.latitude != null &&
-        incident.longitude != null &&
+        Array.isArray(incident.imageFiles) &&
+        incident.imageFiles.some(
+            (image) => image.id === incident.best_image_id,
+        );
+
+    const hasValidTimestamp =
         hasText(incident.created_time) &&
+        Number.isFinite(Date.parse(incident.created_time));
+
+    return (
+        hasSelectedImage &&
+        validCoordinate(incident.latitude, -90, 90) &&
+        validCoordinate(incident.longitude, -180, 180) &&
+        hasValidTimestamp &&
         hasText(incident.license_plate)
     );
 }

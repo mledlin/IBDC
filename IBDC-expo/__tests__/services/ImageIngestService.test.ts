@@ -15,7 +15,7 @@ test("mapIncomingImagesToEventById", async () => {
 
 
     // Trigger after registering listeners
-    testing_environment.triggerEvent();
+    await testing_environment.triggerEvent();
 
     // Current event and imageInfo objects. These are passed to the ImageIngestService
     let [event] = await Promise.all([
@@ -48,7 +48,7 @@ test("imageValidatedBeforeDAOWrite", async () => {
     });
 
 
-    testing_environment.triggerEvent();
+    await testing_environment.triggerEvent();
 
     // Current event and imageInfo objects. These are passed to the ImageIngestService
     let [event] = await Promise.all([
@@ -110,6 +110,7 @@ test("imageCompletionOnDisconnect", async () => {
     // Disconnect device
     await testing_environment.disconnect();
 
+    await testing_environment.triggerEvent();
     try {
         await testing_environment.triggerEvent();
     }
@@ -123,9 +124,9 @@ test("imageCompletionOnDisconnect", async () => {
 
     expect(testing_environment.imageIngestService.getPendingEventSize()).toBe(1);
 
-    // Re-connect device
+    // Re-connect device.
     try {
-        testing_environment.reconnect();
+        await testing_environment.reconnect();
     } catch (e) {
         console.error(e);
     }

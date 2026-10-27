@@ -1,8 +1,7 @@
 import { ProtobufService } from "@/protobuf/ProtobufService";
 import { BleAdapter } from "@/ble/BleAdapter";
 
-//IBDC_v0.3.2.proto introduced AppToDevice/DeviceTo app wrapper messages, each a 'oneof payload'.
-// Names of the DeviceToApp ofone variants, as decoded by protobufjs
+/** Device-to-app oneof payload variants decoded by protobufjs. */
 type DeviceToAppPayload = 
 | "eventNotification"
 | "imageInfo"
@@ -10,7 +9,7 @@ type DeviceToAppPayload =
 | "deviceStatus"
 | "pendingEventList";
 
-// Name of the AppToDevicePayload oneof vaiants, as expected by protobufjs
+/** App-to-device oneof payload variants expected by protobufjs. */
 type AppToDevicePayload = 
 | "imageTransferRequest"
 | "eventTransferAck"
@@ -19,65 +18,122 @@ type AppToDevicePayload =
 | "eventInfoRequest";
 
 
-// Decoded message shapes (currently wired up to listeners: EventNotification, DeviceStatus)
-
+/** Metadata announced by the device when a detection event occurs. */
 export interface EventNotification {
+  /** Device-assigned identifier for the event. */
   eventId: number;
+  /** Measured distance associated with the event, in centimeters. */
   distanceCm: number;
+  /** Time between event detection and notification, in milliseconds. */
   timeOffsetMs: number;
+  /** Number of images associated with the event. */
   imageCount: number;
+  /**
+   * Protobuf image-format enum name. The device currently supports JPEG and
+   * unspecified formats; requesting other formats may result in an error.
+   */
   imageFormat: string;
-   // enum name as string, e.g., "IMAGE_FORMAT_JPEG". "IMAGE_FORMAT_JPEG" and "IMAGE_FORMAT_UNSPECIFIED" 
-   // are the only two formats currently supported by the device. The device will return an error if any other format is requested.
 }
 
+/** Current operational status reported by the device. */
 export interface DeviceStatus {
+  /** Protocol version supported by the device. */
   protocolVersion: number;
+  /** Remaining battery charge, as a percentage. */
   batteryPercent: number;
+  /** Number of events awaiting acknowledgement by the app. */
   pendingEvents: number;
+  /** Remaining device storage, as a percentage. */
   storageAvailablePercent: number;
+  /** Configured number of images captured per event. */
   imagesPerEventSetting: number;
 }
 
-export interface ImageInfo {
-  eventId: number;
-  imageIndex: number;
-  imageSizeBytes: number;
-  totalChunks: number;
-  imageFormat: string; 
+/** Settings sent from the app to the device. */
+export interface DeviceSettings {
+  /** Number of images the device should capture for each event. */
+  imagesPerEvent: number;
 }
 
+/** Metadata describing an image being transferred from the device. */
+export interface ImageInfo {
+  /** Identifier of the event containing the image. */
+  eventId: number;
+  /** Zero-based image index within the event. */
+  imageIndex: number;
+  /** Total image size, in bytes. */
+  imageSizeBytes: number;
+  /** Number of chunks used to transfer the image. */
+  totalChunks: number;
+  /** Protobuf image-format enum name. */
+  imageFormat: string;
+}
+
+/** One byte chunk of an image transfer. */
 export interface ImageChunk {
+    /** Identifier of the event containing the image. */
     eventId: number;
+    /** Zero-based image index within the event. */
     imageIndex: number;
+    /** Zero-based sequence number of this chunk. */
     chunkSequence: number;
+    /** Whether this is the final chunk in the image. */
     isLastChunk: boolean;
+    /** Raw image bytes in this chunk. */
     payload: Uint8Array;
+    /** Total number of chunks in the image. */
     totalChunks: number;
 }
 
+/** Identifiers of events still pending on the device. */
 export interface PendingEventList {
+    /** Device-assigned identifiers for unacknowledged events. */
     eventIds: number[];
 }
 
+/** Handler for decoded event notification messages. */
 type EventNotificationListener = (message: EventNotification) => void;
+/** Handler for decoded device status messages. */
 type DeviceStatusListener = (message: DeviceStatus) => void;
+/** Handler for decoded image metadata messages. */
 type ImageInfoListener = (message: ImageInfo) => void;
+/** Handler for decoded image chunk messages. */
 type ImageChunkListener = (message: ImageChunk) => void;
+/** Handler for decoded pending event list messages. */
 type PendingEventListListener = (message: PendingEventList) => void;
+/** Function that removes a previously registered listener. */
 type Unsubscribe = () => void;
 
+/**
+ * Encodes app-to-device requests and dispatches decoded device-to-app messages
+ * to subscribers.
+ */
 export class IBDCCommunicationService {
-    private readonly ble: BleAdapter;
+    // This can become read only when mock/real adapter switching is removed
+    // from the final production application. 
+    private ble: BleAdapter;
     private eventNotificationListeners = new Set<EventNotificationListener>();
     private deviceStatusListeners = new Set<DeviceStatusListener>();
     private imageInfoListeners = new Set<ImageInfoListener>();
     private imageChunkListeners = new Set<ImageChunkListener>()
     private pendingEventListListeners = new Set<PendingEventListListener>();
 
+    /**
+     * Creates the service and registers its incoming-data handler with the adapter.
+     * @param ble Adapter used to send and receive BLE data.
+     */
     constructor(ble: BleAdapter) {
         this.ble = ble;
         this.ble.onDataReceived(this.handleIncoming);
+    }
+
+    /**
+     * Replaces the active adapter while preserving existing message subscribers.
+     * @param ble Adapter to use for subsequent communication.
+     */
+    setAdapter(ble: BleAdapter): void{
+        this.ble = ble;
+        ble.onDataReceived(this.handleIncoming);
     }
 
     private handleIncoming = (data: Uint8Array) => {
@@ -135,63 +191,115 @@ export class IBDCCommunicationService {
         }
     };
 
-    /** Subscribe to decoded EventNotification messages. Returns an unsubscribe function. */
+    /**
+     * Subscribes to decoded event notification messages.
+     * @param listener Handler invoked for each event notification.
+     * @returns A function that unregisters the listener.
+     */
     onEventNotifications(listener: EventNotificationListener): Unsubscribe {
         this.eventNotificationListeners.add(listener);
         return () => this.eventNotificationListeners.delete(listener);
     }
 
-    /** Subscribe to decoded DeviceStatus messages. Returns an unsubscribe function. */
+    /**
+     * Subscribes to decoded device status messages.
+     * @param listener Handler invoked for each status update.
+     * @returns A function that unregisters the listener.
+     */
     onDeviceStatus(listener: DeviceStatusListener): Unsubscribe {
         this.deviceStatusListeners.add(listener);
         return () => this.deviceStatusListeners.delete(listener);
     }
 
-    /** Subscribe to decoded ImageInfo messages. Returns an unsubscribe function. */
+    /**
+     * Subscribes to decoded image metadata messages.
+     * @param listener Handler invoked for each image metadata message.
+     * @returns A function that unregisters the listener.
+     */
     onImageInfo(listener: ImageInfoListener): Unsubscribe {
         this.imageInfoListeners.add(listener);
         return () => this.imageInfoListeners.delete(listener);
     }
 
-    /** Subscribe to decoded ImageChunk messages. Returns an unsubscribe function. */
+    /**
+     * Subscribes to decoded image chunk messages.
+     * @param listener Handler invoked for each image chunk.
+     * @returns A function that unregisters the listener.
+     */
     onImageChunk(listener: ImageChunkListener): Unsubscribe {
         this.imageChunkListeners.add(listener);
         return () => this.imageChunkListeners.delete(listener);
     }
 
-    /** Subscribe to decoded PendingEventList messages. Returns an unsubscribe function. */
+    /**
+     * Subscribes to decoded pending event list messages.
+     * @param listener Handler invoked for each pending event list.
+     * @returns A function that unregisters the listener.
+     */
     onPendingEventList(listener: PendingEventListListener): Unsubscribe {
         this.pendingEventListListeners.add(listener);
         return () => this.pendingEventListListeners.delete(listener);
     }
 
-    
+    /**
+     * Encodes an app-to-device payload and sends it through the active adapter.
+     * @param payloadField Name of the oneof field to encode.
+     * @param data Payload fields to encode.
+     * @returns A promise that resolves when the adapter completes the send.
+     */
     async send(payloadField: AppToDevicePayload, data: Record<string,unknown>): Promise<void> {
         const encoded = ProtobufService.encode("AppToDevice", {[payloadField]: data});
         await this.ble.sendData(encoded);
     }
 
-    /** Acknowledges a successful receipt of a an event and its images */
+    /**
+     * Acknowledges successful receipt of an event and its images.
+     * @param eventId Identifier of the event to acknowledge.
+     * @returns A promise that resolves when the acknowledgement is sent.
+     */
     async sendEventTransferAck(eventId: number): Promise<void> {
         await this.send("eventTransferAck", { eventId });
     }
 
     /** Write settings (e.g. images captured per event) to the device */
-    async writeSettings(settings: Record<string, unknown>): Promise<void> {
-        await this.send("settings", settings);
+    async writeSettings(
+        settings: { imagesPerEvent: number },
+    ): Promise<void> {
+        const count = settings.imagesPerEvent;
+
+        if (!Number.isInteger(count) || count < 1 || count > 50) {
+            throw new Error("Images per event must be a positive uint32.");
+        }
+
+        await this.send("settings", {
+            imagesPerEvent: count,
+        });
     }
 
-    /** Ask the device for the list of events not yet acknowledged by the app */
+    /**
+     * Requests the list of events that have not yet been acknowledged by the app.
+     * @returns A promise that resolves when the request is sent.
+     */
     async requestPendingEvents(): Promise<void> {
         await this.send("pendingEventListRequest", {});
     }
 
-    /** Ask the device to retransmit EventNotification info for a specific event */
+    /**
+     * Requests the device to retransmit notification metadata for an event.
+     * @param eventId Identifier of the event to request.
+     * @returns A promise that resolves when the request is sent.
+     */
     async requestEventInfo(eventId: number): Promise<void> {
         await this.send("eventInfoRequest", { eventId });
     }
 
-    /** Request an image transfer, resuming from a specific image/hchunk */
+    /**
+     * Requests an image transfer, optionally resuming at a specific image and chunk.
+     * @param eventId Identifier of the event whose images are requested.
+     * @param startFromImage Zero-based image index at which to resume.
+     * @param startFromChunk Zero-based chunk index at which to resume.
+     * @returns A promise that resolves when the request is sent.
+     */
     async requestImageTransfer(eventId: number, startFromImage: number, startFromChunk: number): Promise<void> {
         await this.send("imageTransferRequest", { eventId, startFromImage, startFromChunk });
     }

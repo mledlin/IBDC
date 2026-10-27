@@ -110,14 +110,3 @@ export function makeConstantRandom(
 
     return () => value;
 }
-
-/**
- * Placing this class in the test folder keeps related classes together, but running jest will run all tests in the
- * folder, and this is one of them. Having no tests shows as a fail. This test just avoids that. I'm completely open
- * to better ways of doing this.
- */
-describe("Prevent this from showing as a fail", () => {
-    test("Placeholder Test", () => {
-        expect("Hi").toEqual("Hi");
-    })
-});

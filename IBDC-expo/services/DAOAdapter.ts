@@ -1,6 +1,7 @@
-import { createSession } from "@/database/SessionDao";
+import {createSession, DatabaseSessionRow, getAllSessions} from "@/database/SessionDao";
 import { createIncident } from "@/database/IncidentDao";
 import { createIncidentImage} from "@/database/ImageDao";
+import type { SessionInfo, SessionPersistence } from "@/hooks/SessionManager"
 
 export type DAOAccessor = {
     createSession: (sessionId: string, createdTime: string) => Promise<void>,
@@ -23,12 +24,14 @@ export type DAOAccessor = {
                           incidentId: string,
                           filePath: string,
                           thumbnail: any,
-                          source: string) => Promise<void>
+                          source: string) => Promise<void>,
+    getAllSessions(): Promise<SessionInfo[]>
+
 }
 
-export class DAOAdapter implements DAOAccessor {
+export class DAOAdapter implements DAOAccessor, SessionPersistence {
 
-    public async createSession (sessionId: string, createdTime: string): Promise<void> {
+    public async createSession(sessionId: string, createdTime: string): Promise<void> {
         await createSession(sessionId, createdTime);
     }
 
@@ -46,8 +49,7 @@ export class DAOAdapter implements DAOAccessor {
                                 vehicleModel: string | null,
                                 vehicleColor: string | null,
                                 vehicleYear: string | null,
-                                createdTime: string): Promise<void>
-    {
+                                createdTime: string): Promise<void> {
         await createIncident(id, sessionId, latitude, longitude, licensePlate, bestImageId,
             injurySeverity, driverPresent, driverInformation, extraComment,
             vehicleMake, vehicleModel, vehicleColor, vehicleYear, createdTime)
@@ -61,7 +63,15 @@ export class DAOAdapter implements DAOAccessor {
                                      source: string): Promise<void> {
         await createIncidentImage(id, incidentId, filePath, thumbnail, source)
     }
+
+    public async getAllSessions(): Promise<SessionInfo[]> {
+        const stored_sessions: DatabaseSessionRow[] = await getAllSessions();
+
+        return stored_sessions.map((session:DatabaseSessionRow): SessionInfo => ({
+            id: session.id,
+            createdTime: session.created_time,
+        }));
+    }
+
 }
-
-
 

@@ -1,26 +1,42 @@
 // Bridges incomming BLE event/image messages to on-disk files and database rows
 import {EventNotification, IBDCCommunicationService, ImageChunk, ImageInfo} from "./IBDCCommunicationService";
 import {concatUint8Arrays} from "@/utils/base64";
+import { SessionManager } from "@/hooks/SessionManager";
 import {ImageStorage} from "@/services/ExpoImageStorage";
 import {DAOAccessor} from "./DAOAdapter";
 
 
 
 
+
+/** Tracks chunks collected for an image that has not yet been assembled. */
 interface PendingImage {
+    /** Expected number of chunks in this image. */
     totalChunks: number;
+    /** Protobuf image-format enum name, when supplied by image metadata. */
     imageFormat?: string;
+    /** Received image chunks keyed by their zero-based sequence number. */
     chunks: Map<number, Uint8Array>;
 }
 
+/** Tracks metadata and downloaded image paths for an event in progress. */
 interface PendingEvent {
+    /** Number of images expected for the event. */
     imageCount: number;
+    /** ISO timestamp at which the event was detected. */
     detectedAt: string;
+    /** Images that are still being received or assembled, keyed by image index. */
     images: Map<number, PendingImage>;
+    /** Paths of completed image files, keyed by image index. */
     imagePaths: Map<number,string>;
 }
 
 
+/**
+ * Maps a protobuf image format to its filename extension.
+ * @param imageFormat Protobuf image-format enum name.
+ * @returns `png` for PNG images; `jpg` otherwise.
+ */
 function extensionForFormat(imageFormat: string | undefined): string {
     switch (imageFormat) {
         case "IMAGE_FORMAT_PNG":
@@ -31,12 +47,19 @@ function extensionForFormat(imageFormat: string | undefined): string {
     }
 }
 
+/**
+ * Receives device events and image chunks, persists complete incident images,
+ * creates corresponding database records, and acknowledges completed transfers.
+ */
 export class ImageIngestService {
     private readonly communicationService: IBDCCommunicationService;
+    /** Events currently being downloaded, keyed by device-assigned event identifier. */
     private pendingEvents = new Map<number, PendingEvent>();
 
     private imageStorage: ImageStorage;
     private daoAccessor: DAOAccessor;
+    private sessionManager: SessionManager;
+
 
     constructor(communicationService: IBDCCommunicationService, imageStorage: ImageStorage,
                 daoAccess: DAOAccessor) {
@@ -46,19 +69,32 @@ export class ImageIngestService {
         this.communicationService.onImageChunk(this.handleImageChunk);
         this.imageStorage = imageStorage;
         this.daoAccessor = daoAccess;
+
+        // No dependency injection here. This class does not interface hardware.
+        this.sessionManager = new SessionManager(this.daoAccessor);
     }
 
+    /**
+     * Creates or selects a session for a device connection.
+     * @param connectionTime Time at which the connection was established.
+     * @returns The identifier of the resulting session.
+     */
+    public async createConnectionSession(connectionTime: Date): Promise<string> {
+        return this.sessionManager.createSession(connectionTime);
+    }
 
-
-
+    /** Starts tracking an event notification and requests its image transfer. */
     private handleEventNotification = (event: EventNotification) => {
+        // Protects against recieving the same EventNotification more thatn once while the event is alrealdy being downloaded
+        if (this.pendingEvents.has(event.eventId)){
+            console.warn(`ImageIngestService: event ${event.eventId} is already being processed, ignoring ducplicate EventNotification.`);
+            return;
+        }
         const receivedAt = Date.now();
         const detectedAt = new Date(receivedAt - event.timeOffsetMs).toISOString();
         console.log(
             "ImageIngestService: EventNotification", event.eventId, "images:", event.imageCount
         );
-
-        // Test/Ensure each parameter passed here is instantiated into its correct type and the expected field exist
         this.pendingEvents.set(event.eventId, {
             imageCount: event.imageCount,
             detectedAt,
@@ -66,13 +102,13 @@ export class ImageIngestService {
             imagePaths: new Map(),
         });
 
-        // Test each parameter is passed into this function as expected
         this.communicationService.requestImageTransfer(event.eventId, 0, 0).catch((error) => {
             console.log(`ImageIngestService: failed to request images for event ${event.eventId}:`, error)
         });
     };
 
 
+    /** Records image metadata for an event currently being ingested. */
     private handleImageInfo = (info: ImageInfo) => {
         const pendingEvent = this.pendingEvents.get(info.eventId);
         console.log("ImageIngestService: ImageInfo", info.eventId,info.imageIndex, "chunks:", info.totalChunks);
@@ -89,10 +125,8 @@ export class ImageIngestService {
         });
     };
 
+    /** Stores an incoming image chunk and assembles the image once complete. */
     private handleImageChunk = (chunk: ImageChunk) => {
-
-        // Test here ->
-        // Determine if received chunk is expected by ensuring one of the recently received events has a matching eventId
         const pendingEvent = this.pendingEvents.get(chunk.eventId);
         if (!pendingEvent) {
             console.warn(`ImageIngestService: ImageChunk for unknown event ${chunk.eventId}, ignoring.`);
@@ -102,8 +136,6 @@ export class ImageIngestService {
         console.log("Handling chunk " + chunk.chunkSequence + " out of " +
         chunk.totalChunks + " with image Id " + chunk.imageIndex);
 
-        // Test here ->
-        // Either add current chunk to an existing image or create a new image starting with this chunk
         let pendingImage = pendingEvent.images.get(chunk.imageIndex);
         if (!pendingImage) {
             // Chunk arrived before ImageInfo - start tracking from the chunk's own totalChunks.
@@ -112,10 +144,7 @@ export class ImageIngestService {
         }
  
         pendingImage.chunks.set(chunk.chunkSequence, chunk.payload);
-        // ---
-
-        // Test if conditional here ->
-        // Determine is image is finished being put together.
+ 
         if (chunk.isLastChunk || pendingImage.chunks.size >= pendingImage.totalChunks) {
             console.log("ImageIngestService: Complete image")
             this.finishImage(chunk.eventId, chunk.imageIndex, pendingEvent, pendingImage).catch((error) => {
@@ -128,6 +157,10 @@ export class ImageIngestService {
         // --
     };
  
+    /**
+     * Assembles an image from its ordered chunks, writes it to disk, and checks
+     * whether all images for the event are ready to finalize.
+     */
     private async finishImage(
         eventId: number,
         imageIndex: number,
@@ -151,7 +184,7 @@ export class ImageIngestService {
 
         const imageName: string = `event_${eventId}_image_${imageIndex}.${extension}`;
         const fileUri: string = this.imageStorage.saveImage(imageName, assembled);
- 
+
         pendingEvent.imagePaths.set(imageIndex, fileUri);
         pendingEvent.images.delete(imageIndex);
  
@@ -160,22 +193,17 @@ export class ImageIngestService {
         }
     }
  
+    /**
+     * Creates the incident and image database records, acknowledges the event,
+     * and removes its completed transfer state.
+     */
     private async finalizeIncident(eventId: number, pendingEvent: PendingEvent): Promise<void> {
         console.log("Finalizing Incident", eventId);
-
-        const sessionId = `session-${eventId}-${Date.now()}`;
+        const occurrenceTime = new Date(pendingEvent.detectedAt);
+        const sessionId = await this.sessionManager.getOrCreateSession(occurrenceTime);
         const incidentId = `incident-${eventId}-${Date.now()}`;
- 
-        // Auto-create a new session per event (no active-ride-session concept wired in yet).
-        // Maybe we can use a day time frame or when the device is first connected to eod?
-        // Will need to be reviewed later.
-        try{
-        await this.daoAccessor.createSession(sessionId, pendingEvent.detectedAt);
-        }catch(error){
-            console.error("Database Finalized Failed", error);
-            throw error;
-        }
-        //Best image just gets set to the first image, will need to find a better way later. 
+
+        //Best image just gets set to the first image, will need to find a better way later.
         const firstImageIndex = Math.min(...pendingEvent.imagePaths.keys());
         const bestImageId = `${incidentId}-image-${firstImageIndex}`; 
 
@@ -210,6 +238,8 @@ export class ImageIngestService {
         await this.communicationService.sendEventTransferAck(eventId);
  
         this.pendingEvents.delete(eventId);
+
+        console.log(`ImageIngestService: event ${eventId} saved and acknowleged`)
     }
 
     public getPendingEventSize() {
