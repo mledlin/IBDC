@@ -4,13 +4,17 @@
  * This file defines the shared device data and BLE operations, provides the
  * context wrapper component, and exposes a hook for accessing that context.
  */
-
 import React, {createContext, useContext, useEffect, useRef, useState} from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {BleAdapter, BleDeviceInfo} from "@/ble/BleAdapter";
-import {DeviceStatus as IBDCDeviceStatus, IBDCCommunicationService} from "@/services/IBDCCommunicationService";
+import {
+    DeviceStatus as IBDCDeviceStatus,
+    IBDCCommunicationService,
+    PendingEventList
+} from "@/services/IBDCCommunicationService";
 import {MockBleAdapter} from "@/ble/MockBleAdapter";
 import {SimulatedIBDC} from "@/ble/SimulatedIBDC";
+import {ImageIngestService} from "@/services/ImageIngestService";
 
 export type DeviceMode = 'mock' | 'real';
 export type ConnectedStatus = 'connected' | 'disconnected' | 'pairing';
@@ -44,6 +48,7 @@ export interface DeviceDependencies {
   bleAdapter: BleAdapter,
   communicationService: IBDCCommunicationService,
   simulatedDevice: SimulatedIBDC;
+  imageIngestService: ImageIngestService
 }
 
 interface DeviceProviderProps {
@@ -110,6 +115,8 @@ export function DeviceProvider({ children, dependencies }: DeviceProviderProps) 
   let bleAdapter: BleAdapter = dependencies.bleAdapter;
   const communicationService = dependencies.communicationService;
   const simulatedDevice = dependencies.simulatedDevice;
+  const imageIngestService = dependencies.imageIngestService;
+
 
     const [device, setDevice] = useState<DeviceInfo | null>(null);
     const [devices, setDevices] = useState<BleDeviceInfo[]>([]);
