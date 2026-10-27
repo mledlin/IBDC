@@ -1,7 +1,5 @@
-import {printToFileAsync, printAsync} from "expo-print";
-import {isAvailableAsync, shareAsync} from "expo-sharing";
-//Debug 
-import { Directory, File, Paths } from "expo-file-system";
+import {printAsync} from "expo-print";
+
 /**
  * Exports a ride session and its incidents as a PDF.
  *
@@ -139,29 +137,9 @@ export async function exportRideSessionToPdf(session: any) {
             </body>
         </html>
     `;
-    /*
-    const {uri} = await printToFileAsync({
-        html,
-    });
-    //Debug
-    console.log("Generated URI: ", uri);
-    console.log("Cache Dir: ", Paths.cache.uri);
-    const pdfile = new File(uri);
-    console.log("PDF exists:", pdfile.exists);
-    console.log("PDF size:", pdfile.size);
 
-    const sharingAvailable = await isAvailableAsync();
+        await printAsync({html});
 
-    if(!sharingAvailable) {
-        throw new Error("Sharing is not available on this device");
-    }
-    await shareAsync(uri, {
-        mimeType: "application/pdf",
-        dialogTitle: "Export Ride Session",
-        UTI: "com.adobe.pdf",
-    });
-    */
-   await printAsync({html});
 }
 
 /**
