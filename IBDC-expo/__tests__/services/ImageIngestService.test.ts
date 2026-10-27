@@ -48,7 +48,7 @@ test("imageValidatedBeforeDAOWrite", async () => {
     });
 
 
-    testing_environment.triggerEvent();
+    await testing_environment.triggerEvent();
 
     // Current event and imageInfo objects. These are passed to the ImageIngestService
     let [event] = await Promise.all([
@@ -111,6 +111,12 @@ test("imageCompletionOnDisconnect", async () => {
     await testing_environment.disconnect();
 
     await testing_environment.triggerEvent();
+    try {
+        await testing_environment.triggerEvent();
+    }
+    catch (e) {
+        console.error(e);
+    }
 
 
     console.log("Number of events being processed after" +
