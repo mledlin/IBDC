@@ -22,7 +22,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     icon: "./assets/images/icon.png",
     scheme: "ibdcexpo",
     userInterfaceStyle: "automatic",
-    newArchEnabled: true,
 
     ios: {
         supportsTablet: true,
@@ -36,7 +35,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
             backgroundImage: "./assets/images/android-icon-background.png",
             monochromeImage: "./assets/images/android-icon-monochrome.png",
         },
-        edgeToEdgeEnabled: true,
         predictiveBackGestureEnabled: false,
         permissions: [
             "android.permission.ACCESS_COARSE_LOCATION",
@@ -78,6 +76,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         [
             "react-native-ble-plx",
         ],
+        "expo-web-browser",
+        "expo-font",
+        "expo-image",
+        "expo-sharing",
+        "expo-status-bar"
     ],
 
     experiments: {

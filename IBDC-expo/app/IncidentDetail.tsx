@@ -160,7 +160,7 @@ export default function IncidentDetail() {
                     }else{
                         setThumbnailSource(null);
                     }
-                    } catch (error) {
+                } catch (error) {
                     console.error(
                         "Failed to load incident information",
                         error
@@ -196,10 +196,10 @@ export default function IncidentDetail() {
         const date = Number.isNaN(numericValue)
             ? new Date(value)
             : new Date(
-                  numericValue < 10_000_000_000
-                      ? numericValue * 1000
-                      : numericValue
-              );
+                numericValue < 10_000_000_000
+                    ? numericValue * 1000
+                    : numericValue
+            );
 
         if (Number.isNaN(date.getTime())) {
             return value;
@@ -278,13 +278,13 @@ export default function IncidentDetail() {
                             <Ionicons
                                 name="image-outline"
                                 size={36}
-                                color={theme.colors.textSecondary}
+                                color={theme.colors.surfaceText}
                             />
 
                             <Text
                                 style={[
                                     styles.noImageText,
-                                    { color: theme.colors.textSecondary },
+                                    { color: theme.colors.surfaceText },
                                 ]}
                             >
                                 No Image
@@ -338,7 +338,7 @@ export default function IncidentDetail() {
                             numberOfLines={1}
                             style={[
                                 styles.locationText,
-                                { color: theme.colors.text },
+                                { color: theme.colors.surfaceText },
                             ]}
                         >
                             {coordinateText}
@@ -351,7 +351,7 @@ export default function IncidentDetail() {
                     <Text
                         style={[
                             styles.sectionHeader,
-                            { color: theme.colors.textSecondary },
+                            { color: theme.colors.surfaceText },
                         ]}
                     >
                         INJURY SEVERITY
@@ -390,7 +390,7 @@ export default function IncidentDetail() {
                                             {
                                                 color: selected
                                                     ? "#ffffff"
-                                                    : theme.colors.textSecondary,
+                                                    : theme.colors.surfaceText,
                                             },
                                         ]}
                                     >
@@ -407,7 +407,7 @@ export default function IncidentDetail() {
                     <Text
                         style={[
                             styles.sectionHeader,
-                            { color: theme.colors.textSecondary },
+                            { color: theme.colors.surfaceText },
                         ]}
                     >
                         VEHICLE
@@ -416,7 +416,7 @@ export default function IncidentDetail() {
                     <Text
                         style={[
                             styles.inputLabel,
-                            { color: theme.colors.textSecondary },
+                            { color: theme.colors.surfaceText },
                         ]}
                     >
                         LICENSE PLATE
@@ -456,7 +456,7 @@ export default function IncidentDetail() {
                             <Text
                                 style={[
                                     styles.inputLabel,
-                                    { color: theme.colors.textSecondary },
+                                    { color: theme.colors.surfaceText },
                                 ]}
                             >
                                 MAKE
@@ -482,7 +482,7 @@ export default function IncidentDetail() {
                             <Text
                                 style={[
                                     styles.inputLabel,
-                                    { color: theme.colors.textSecondary },
+                                    { color: theme.colors.surfaceText },
                                 ]}
                             >
                                 MODEL
@@ -510,7 +510,7 @@ export default function IncidentDetail() {
                             <Text
                                 style={[
                                     styles.inputLabel,
-                                    { color: theme.colors.textSecondary },
+                                    { color: theme.colors.surfaceText },
                                 ]}
                             >
                                 COLOR
@@ -536,7 +536,7 @@ export default function IncidentDetail() {
                             <Text
                                 style={[
                                     styles.inputLabel,
-                                    { color: theme.colors.textSecondary },
+                                    { color: theme.colors.surfaceText },
                                 ]}
                             >
                                 YEAR
@@ -567,7 +567,7 @@ export default function IncidentDetail() {
                     <Text
                         style={[
                             styles.sectionHeader,
-                            { color: theme.colors.textSecondary },
+                            { color: theme.colors.surfaceText },
                         ]}
                     >
                         DRIVER
@@ -577,7 +577,7 @@ export default function IncidentDetail() {
                         <Text
                             style={[
                                 styles.switchLabel,
-                                { color: theme.colors.text },
+                                { color: theme.colors.surfaceText },
                             ]}
                         >
                             Driver Present at Scene
@@ -602,7 +602,7 @@ export default function IncidentDetail() {
                     <Text
                         style={[
                             styles.inputLabel,
-                            { color: theme.colors.textSecondary },
+                            { color: theme.colors.surfaceText },
                         ]}
                     >
                         DRIVER INFORMATION
@@ -632,7 +632,7 @@ export default function IncidentDetail() {
                     <Text
                         style={[
                             styles.sectionHeader,
-                            { color: theme.colors.textSecondary },
+                            { color: theme.colors.surfaceText },
                         ]}
                     >
                         NOTES
@@ -641,7 +641,7 @@ export default function IncidentDetail() {
                     <Text
                         style={[
                             styles.inputLabel,
-                            { color: theme.colors.textSecondary },
+                            { color: theme.colors.surfaceText },
                         ]}
                     >
                         EXTRA COMMENTS
@@ -693,8 +693,8 @@ const styles = StyleSheet.create({
         paddingBottom: 28,
     },
     thumbnailPlaceholer: {
-        width: "100%", 
-        height: 280, 
+        width: "100%",
+        height: 280,
         alignItems: "center",
         justifyContent: "center",
     },

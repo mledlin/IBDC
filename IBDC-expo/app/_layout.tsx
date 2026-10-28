@@ -14,7 +14,6 @@ import { View, Text, Image } from "react-native";
 import { ThemeProvider, useTheme } from "@/context/ThemeContext";
 import { initDatabase } from "@/database/database";
 import { useEffect } from "react";
-import {useSafeAreaInsets} from "react-native-safe-area-context";
 
 /**
  * Builds the application's navigation stack.
@@ -30,7 +29,6 @@ import {useSafeAreaInsets} from "react-native-safe-area-context";
  */
 function AppStack() {
     const { theme } = useTheme();
-    const insets = useSafeAreaInsets();
 
     useEffect(() => {
         /**
@@ -65,7 +63,7 @@ function AppStack() {
                     fontSize: 18,
                 },
                 headerShadowVisible: false,
-                headerLargeTitleEnabled: true,
+                headerLargeTitleEnabled: false,
 
                 /**
                  * Header title shown at the top of each screen.
@@ -76,8 +74,6 @@ function AppStack() {
                             flexDirection: "row",
                             alignItems: "center",
                             gap: 8,
-                            paddingBottom: 30,
-                            paddingTop: insets.top/3,
                         }}
                     >
                         <Image
@@ -88,7 +84,7 @@ function AppStack() {
                             style={{
                                 fontWeight: "700",
                                 fontSize: 18,
-                                color: "#0F172A",
+                                color: theme.colors.surfaceText,
                             }}
                         >
                             IBDC
