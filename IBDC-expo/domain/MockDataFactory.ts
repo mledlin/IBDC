@@ -91,30 +91,12 @@ const MOCK_VEHICLES = [
 ];
 
 const MOCK_COORDINATES = [
-    {
-        lat: 33.3333,
-        long: -111.1111,
-    },
-    {
-        lat: 222.2222,
-        long: 212.1212,
-    },
-    {
-        lat: 44.4444,
-        long: -111.1111,
-    },
-    {
-        lat: 303.4484,
-        long: -212.0740,
-    },
-    {
-        lat: 30.3030,
-        long: -20.1234,
-    },
-    {
-        lat: 21.1234,
-        long: -119.1191,
-    },
+    { lat: 33.3333, long: -111.1111 },
+    { lat: 32.2226, long: -110.9747 },
+    { lat: 44.4444, long: -111.1111 },
+    { lat: 33.4484, long: -112.0740 },
+    { lat: 30.3030, long: -20.1234 },
+    { lat: 21.1234, long: -119.1191 },
 ];
 
 export type MockSessionRecord = {
