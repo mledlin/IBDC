@@ -1,5 +1,7 @@
 import {printAsync} from "expo-print";
-
+import {File as ExpoFile} from "expo-file-system";
+import {Asset} from "expo-asset";
+import {getIncidentImagesByIncidentId, getMockImageSource } from "@/database/ImageDao";
 /**
  * Exports a ride session and its incidents as a PDF.
  *
@@ -189,4 +191,66 @@ function formatVehicle(incident: any): string {
     return vehicleDetails.length > 0
         ? vehicleDetails.join(" ")
         : "Not provided";
+}
+
+/**
+ * Retrieves the selected incident image and converts it
+ * into a Base64 data URI for embedding in the PDF.
+ */
+async function getBestImageDataUri(incident: any): Promise<string | null> {
+    if (!incident?.id || !incident.best_image_id) {
+        return null;
+    }
+
+    try {
+        const images = await getIncidentImagesByIncidentId(incident.id);
+
+        const selected = images.find(
+            (image: any) =>
+                String(image.id) === String(incident.best_image_id)
+        );
+
+        if (!selected?.file_path) {
+            return null;
+        }
+        //Handling Mock Sources. This area can be removed once we are done using mock images.
+        const mockSource = getMockImageSource(selected.file_path);
+        let uri = selected.file_path;
+        let mimeType = /\.png(?:[?#]|$)/i.test(uri)
+            ? "image/png"
+            : "image/jpeg";
+
+        if (typeof mockSource === "number") {
+            const asset = Asset.fromModule(mockSource);
+            await asset.downloadAsync();
+
+            uri = asset.localUri ?? asset.uri;
+            mimeType = asset.type?.toLowerCase() === "png"
+                ? "image/png"
+                : "image/jpeg";
+        } else if (
+            mockSource &&
+            typeof mockSource === "object" &&
+            "uri" in mockSource &&
+            typeof mockSource.uri === "string"
+        ) {
+            uri = mockSource.uri;
+            mimeType = /\.png(?:[?#]|$)/i.test(uri)
+                ? "image/png"
+                : "image/jpeg";
+        }
+
+        if (!uri.startsWith("file://")) {
+            console.warn("PDF export: Image is not a local file:", uri);
+            return null;
+        }
+
+        const file = new ExpoFile(uri);
+        const base64 = await file.base64();
+
+        return `data:${mimeType};base64,${base64}`;
+    } catch (error) {
+        console.warn("PDF export: Could not load image", error);
+        return null;
+    }
 }
