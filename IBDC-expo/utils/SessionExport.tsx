@@ -1,12 +1,13 @@
 import {printAsync} from "expo-print";
 import {File as ExpoFile} from "expo-file-system";
 import {Asset} from "expo-asset";
-import {getIncidentImagesByIncidentId, getMockImageSource } from "@/database/ImageDao";
+import {getIncidentImagesByIncidentId, getMockImageSource} from "@/database/ImageDao";
+
 /**
  * Exports a ride session and its incidents as a PDF.
  *
  * The PDF is generated from an HTML report and then opened
- * using the device's native sharing menu.
+ * using the device's native print dialog.
  *
  * @param session The ride session being exported.
  */
@@ -15,9 +16,21 @@ export async function exportRideSessionToPdf(session: any) {
         ? session.startDateStamp.toLocaleString()
         : "Unknown Date";
 
-    const incidentRows = session.incidents
-        .map(
-            (incident: any, index: number) => `
+    const incidents = session.incidents ?? [];
+
+    const incidentRows = (await Promise.all(
+        incidents.map(async (incident: any, index: number) => {
+            const imageDataUri = await getBestImageDataUri(incident);
+            const imageHtml = imageDataUri
+                ? `
+                    <div class="incident-photo">
+                        <strong>Selected Image:</strong>
+                        <img src="${imageDataUri}" alt="Incident Image" />
+                    </div>
+                `
+                : "";
+
+            return `
                 <div class="incident">
                     <h2>Incident ${index + 1}</h2>
 
@@ -71,10 +84,12 @@ export async function exportRideSessionToPdf(session: any) {
                             ${incident.extra_comment || "None"}
                         </span>
                     </div>
+
+                    ${imageHtml}
                 </div>
-            `
-        )
-        .join("");
+            `;
+        })
+    )).join("");
 
     const html = `
         <!DOCTYPE html>
@@ -120,6 +135,21 @@ export async function exportRideSessionToPdf(session: any) {
                         display: inline-block;
                         width: 150px;
                     }
+
+                    .incident-photo {
+                        margin-top: 16px;
+                        page-break-inside: avoid;
+                    }
+
+                    .incident-photo img {
+                        display: block;
+                        max-width: 100%;
+                        max-height: 320px;
+                        width: auto;
+                        height: auto;
+                        object-fit: contain;
+                        margin-top: 8px;
+                    }
                 </style>
             </head>
 
@@ -130,8 +160,8 @@ export async function exportRideSessionToPdf(session: any) {
                     <div>${formattedDate}</div>
 
                     <div>
-                        ${session.incidents.length}
-                        Incident${session.incidents.length === 1 ? "" : "s"}
+                        ${incidents.length}
+                        Incident${incidents.length === 1 ? "" : "s"}
                     </div>
                 </div>
 
@@ -140,8 +170,7 @@ export async function exportRideSessionToPdf(session: any) {
         </html>
     `;
 
-        await printAsync({html});
-
+    await printAsync({html});
 }
 
 /**
@@ -213,7 +242,7 @@ async function getBestImageDataUri(incident: any): Promise<string | null> {
         if (!selected?.file_path) {
             return null;
         }
-        //Handling Mock Sources. This area can be removed once we are done using mock images.
+        // Handling mock sources. This can be removed when mock images are no longer used.
         const mockSource = getMockImageSource(selected.file_path);
         let uri = selected.file_path;
         let mimeType = /\.png(?:[?#]|$)/i.test(uri)
