@@ -1,0 +1,308 @@
+IBDC Research: Free On-Device OCR and License Plate Recognition
+
+Project: Intelligent Bicycle Detection and Communication (IBDC)
+Research date: November 1, 2026
+Status: Technology assessment; implementation and device benchmarks not yet completed
+
+1. Objective
+
+Evaluate free technologies capable of extracting text, especially vehicle license plate characters, from incident photographs collected by IBDC’s bicycle-mounted ESP32 device. The preferred solution must run locally on the user’s iOS or Android phone, without uploading incident photos to a paid cloud OCR service.
+
+IBDC currently uses Expo / React Native / TypeScript, BLE to communicate with the ESP32, protobuf messages to transfer events and image chunks, and local SQLite storage for incidents and photos. The intended workflow is analysis of transferred, saved images, not necessarily live camera video.
+
+2. Important distinction: OCR vs. ALPR
+
+• OCR (optical character recognition) reads text in an image. Google ML Kit, Apple Vision, PaddleOCR and Tesseract are examples. These tools may read plate characters if the plate is sufficiently visible, but they do not necessarily locate the plate or distinguish it from other writing.
+• ALPR / ANPR (automatic license plate recognition) typically combines plate detection (find and crop the license plate) with plate OCR (transcribe the characters). A vehicle detector is not automatically a license plate detector.
+• A practical first prototype can run general OCR over a saved photo and show candidate strings for human review. A stronger system uses a plate detector, plate crop, plate OCR, and confidence/validation logic.
+
+Crucial limitation: License plates captured from a moving bicycle can be small, angled, obscured or motion-blurred. No OCR system can reliably recover characters that are absent from the pixels.
+
+3. Candidate comparison
+
+|Option                               |Role                                      |Free / licensing                                                        |iOS + Android feasibility                                                                       |Main drawback                                                                       |IBDC fit                           |
+|-------------------------------------|------------------------------------------|------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------|-----------------------------------|
+|**Google ML Kit Text Recognition v2**|General on-device OCR                     |Google provides ML Kit APIs at no cost; SDK terms apply                 |Native SDKs for both; use React Native bridge/package and **development build**                 |Not plate-specific; may return unrelated scene text                                 |**Best first prototype**           |
+|**Apple Vision text recognition**    |General on-device OCR                     |Built-in Apple platform framework; no per-request API charges           |iOS only; expose through Swift / Expo native module or compatible maintained bridge             |Separate Android solution required                                                  |**Best iOS-native fallback**       |
+|**FastPlateOCR**                     |Plate **text recognition**, after cropping|Python package is MIT licensed; **verify specific model-weight license**|Exportable models (including ONNX/Core ML/TFLite possibilities); needs mobile inference plumbing|Does not locate plates on its own                                                   |**Best specialized OCR experiment**|
+|**FastALPR**                         |Plate detection **plus** plate OCR        |Python package is MIT licensed; verify each bundled model’s license     |ONNX-based pipeline potentially portable; not a ready-to-drop-in RN/Expo module                 |Porting detector, OCR, preprocessing and postprocessing to phone is substantial work|**Best complete-ALPR reference**   |
+|**PaddleOCR (PP-OCR mobile/tiny)**   |General text detection + OCR              |Project is Apache-2.0; verify individual model-weight licenses          |Mobile/edge models available, but RN bridging / runtime integration required                    |More deployment engineering than ML Kit                                             |**Good configurable alternative**  |
+|**Tesseract OCR**                    |General OCR baseline                      |Apache-2.0                                                              |Possible through native wrapping; not JS-only in Expo Go                                        |Plate detection absent; image preprocessing especially important                    |**Benchmark / fallback**           |
+
+Note: “Free” refers to the relevant SDK/library or locally operated models, not necessarily developer account costs, build infrastructure, app distribution or engineering time. Third-party wrapper maintenance and dependencies must be checked before adoption.
+
+4. Detailed findings
+
+A. Google ML Kit Text Recognition v2 — recommended initial implementation
+
+Official documentation:
+
+• ML Kit overview
+• Text recognition: Android
+• Text recognition: iOS
+
+Strengths
+
+• Supported by Google as an on-device mobile SDK; OCR inference is usable offline.
+• Free-to-use SDK APIs with no per-image cloud OCR billing.
+• Works on Android and iOS via native SDKs.
+• Returns detected text and geometry that can help draw overlays or filter candidates.
+• Good match for processing one photo after its BLE transfer has completed.
+
+Limitations
+
+• General OCR, not a ready-made ALPR product: scene signs, vehicle branding and street markings may be recognized along with the plate.
+• Recognition depends heavily on photo sharpness, illumination, angle and pixel density.
+• Google’s guidance recommends characters approximately 16 × 16 pixels or larger in the input image.
+• The integration needs a native React Native package or custom module; not supported directly by ordinary Expo Go.
+
+React Native integration research: react-native-vision-camera-mlkit documents an Expo config plugin and static-image processing, but its own versions/platform support and compatibility with IBDC’s installed React Native, Expo and camera versions must be validated before selecting it. It is a Vision Camera integration, which may be unnecessary overhead for IBDC’s stored-image workflow. An image-URI OCR wrapper or small native module might be simpler.
+
+Recommendation: Start here and benchmark on IBDC photos before undertaking a dedicated ALPR pipeline.
+
+B. Apple Vision — iOS-only alternative
+
+Official documentation:
+
+• Recognizing text in images
+• RecognizeTextRequest
+
+Strengths
+
+• Text recognition is performed on-device, with offline support.
+• Native Apple framework provides fast and accurate recognition modes.
+• No separately hosted OCR service or model download required for the basic API.
+• Particularly attractive for IBDC’s iPhone testing.
+
+Limitations
+
+• iOS-only; an Android-specific implementation is necessary.
+• Swift-to-TypeScript integration or a third-party React Native bridge is required.
+• General OCR still requires plate candidate selection and review.
+
+Recommendation: Use if ML Kit integration proves difficult on iOS, or compare Apple Vision against ML Kit on the same stored incident photos.
+
+C. FastPlateOCR — specialized license plate reader
+
+Sources:
+
+• GitHub
+• Documentation
+• Model reference
+• PyPI license metadata
+
+Strengths
+
+• Specifically designed to recognize license plate characters.
+• Provides pretrained OCR models and ONNX inference support.
+• Documentation discusses export possibilities for mobile-friendly formats, including Core ML / TFLite / ONNX.
+• Python package metadata declares an MIT license.
+
+Limitations
+
+• Requires an already cropped plate; not a full photo-to-license-plate pipeline by itself.
+• Python example code will not run directly inside a React Native phone app.
+• Need to verify licenses and redistribution terms of the exact downloaded model weights, not just the library.
+• A native runtime and preprocessing/postprocessing implementation are required; mobile speed and app-size impact are unmeasured.
+
+Recommendation: Test it first on cropped plate images on a development computer, then decide whether a model export and on-device port are justified.
+
+D. FastALPR — end-to-end plate detection and recognition
+
+Sources:
+
+• GitHub
+• PyPI
+
+Strengths
+
+• Combines plate detection and OCR; better conceptual match for un-cropped IBDC photos.
+• ONNX-based, modular detector/recognizer architecture.
+• Python package metadata declares MIT licensing.
+
+Limitations
+
+• Primarily a Python solution; cannot simply install the pip package into Expo React Native.
+• Porting the detector and recognizer to Android/iOS requires inference runtime integration and matching preprocessing / decoding.
+• Detector and OCR model weights, training data and runtime dependencies each need separate license checks.
+• On-device performance, total model size and iOS support need benchmarking.
+
+Recommendation: Treat FastALPR as a promising proof-of-concept and architecture reference for future dedicated ALPR, not the quickest app integration.
+
+E. PaddleOCR — adaptable open-source OCR
+
+Sources:
+
+• Official repository
+• Official text detection models
+• License
+
+Strengths
+
+• Established Apache-2.0 OCR project with mobile-oriented and tiny model options.
+• Separate text detection and recognition components provide customization opportunities.
+• No per-image fee for self-run inference.
+
+Limitations
+
+• More mobile deployment work than ML Kit.
+• General text detection is not the same as license plate detection.
+• Conversion/runtime, memory use, model version and specific weight licenses require validation.
+
+Recommendation: Secondary option if ML Kit is not accurate enough or customization becomes necessary.
+
+F. Tesseract OCR — conventional baseline
+
+Source: Official Tesseract user manual
+
+Strengths: Apache-2.0 open-source OCR engine, long history and configurable text recognition.
+Limitations: requires mobile native integration and reliable preprocessing/cropping; lacks plate detection.
+Recommendation: Benchmark against ML Kit on cropped plates if needed; not the default choice for the React Native app.
+
+5. Expo / React Native implications
+
+The IBDC app already uses native BLE functionality, so a custom Expo development build is appropriate for on-device OCR. Ordinary Expo Go cannot load arbitrary third-party native libraries. Expo explicitly documents this limitation: Expo FAQ and custom native code guide.
+
+Proposed integration approach:
+
+1. Continue receiving photo chunks over BLE and assembling/storing the resulting image as IBDC already does.
+2. Obtain a local image URI after transfer completion and SQLite persistence.
+3. Add a TypeScript TextRecognitionService abstraction that accepts an incident image URI and returns recognized text, bounding regions, and optional confidence values.
+4. For the first implementation, connect a verified static-image ML Kit wrapper or a local Expo native module. Avoid introducing live-camera infrastructure solely to analyze stored photos.
+5. Run OCR asynchronously after image receipt, or on demand from IncidentDetail, rather than blocking BLE writes, image assembly or UI navigation.
+6. Save extracted text separately from the original image, along with the recognition engine, version, analysis timestamp and review status.
+7. Display “Possible plate text”, never a definitive plate match unless the user confirms it. Let the rider edit or reject candidates.
+8. Keep all recognition local and avoid uploading plates, GPS coordinates or images to online recognition services.
+
+Possible TypeScript boundary (illustrative, not a verified library API):
+
+export interface RecognizedTextCandidate {
+  text: string;
+  confidence?: number; // only if the underlying SDK supplies it
+  boundingBox?: { x: number; y: number; width: number; height: number };
+}
+
+export interface TextRecognitionService {
+  recognizeImage(localImageUri: string): Promise<RecognizedTextCandidate[]>;
+}
+
+Use an interface so ML Kit can be replaced by Apple Vision or a specialized ALPR model without rewriting the incident UI or persistence layer.
+
+6. Suggested plate processing pipeline
+
+ESP32 event + JPEG/image chunks
+              |
+              v
+BLE assembly + incident image saved locally
+              |
+              v
+Optional plate localization / crop
+              |
+              v
+OCR (initially ML Kit; later dedicated plate OCR)
+              |
+              v
+Normalize candidate text (uppercase, spacing, punctuation)
+              |
+              v
+Check candidate length/format WITHOUT assuming one state's pattern
+              |
+              v
+Show candidate + original image for user verification
+              |
+              v
+Save reviewed result to incident SQLite record
+
+Do not treat a pattern match as proof the text is a license plate. Characters such as O/0, I/1 and B/8 can be confused. State plate formats vary, and candidate identification should take nearby scene text and bounding geometry into account.
+
+7. Proposed evaluation experiment
+
+Use a reproducible set of at least 50–100 IBDC-like incident photographs, ideally from the actual ESP32 camera, covering:
+
+• Stationary vs. moving vehicles
+• Daylight, dusk and low light
+• Clear vs. blurred plates
+• Close vs. distant vehicles
+• Different plate designs, orientations and partial occlusion
+• Photos containing text unrelated to a license plate
+• Frames with no visible plate (important negative cases)
+
+Manually label a ground-truth plate string where it is actually legible, and label unreadable or no plate otherwise. Do not infer the true string from an external lookup when pixels are insufficient.
+
+Measure:
+
+|Metric                      |What it answers                                            |
+|----------------------------|-----------------------------------------------------------|
+|Exact-plate accuracy        |How often is the entire plate string exactly right?        |
+|Character error rate (CER)  |How frequently are individual characters wrong?            |
+|Plate detection recall      |How often does a visible plate get located? (ALPR stage)   |
+|False positive rate         |How often is an unrelated text string presented as a plate?|
+|Unreadable/no-plate handling|Does the model refrain from guessing?                      |
+|Latency per image           |How long does processing take on actual target phones?     |
+|Memory / bundle impact      |How much RAM and app storage does integration require?     |
+|Offline reliability         |Does the feature work in airplane mode after setup?        |
+
+Compare ML Kit on full images, ML Kit on manually cropped plates, and FastPlateOCR on the same crops. If desired, add FastALPR full-image detection + OCR as a desktop benchmark before attempting mobile conversion. Never compare desktop latency directly against phone latency as if they were equivalent.
+
+Initial acceptance targets (team proposals, not published accuracy claims):
+
+• All recognition works with network disabled.
+• No blocking or loss of BLE image transfers.
+• Every predicted plate remains editable and marked unverified until reviewed.
+• Measure latency and accuracy before setting numeric targets.
+
+8. Suggested implementation phases
+
+Phase A — easiest proof of concept
+
+☐ Collect labeled test photos from the IBDC device.
+☐ Check a maintained static-image ML Kit React Native integration against installed Expo/React Native versions.
+☐ Build an Expo development client, not Expo Go, with the selected native OCR integration.
+☐ Add TextRecognitionService and run OCR on a stored local photo URI.
+☐ Display candidate text on the incident detail screen, with an option to edit/confirm.
+☐ Save result and review status locally in SQLite.
+☐ Record exact-string accuracy, false positives and phone latency.
+
+Phase B — improve plate-specific accuracy
+
+☐ Compare full-image OCR with manually cropped plate OCR.
+☐ Prototype FastPlateOCR on cropped plates; document the exact model and weight license.
+☐ Evaluate whether a lightweight plate detector improves results enough to justify mobile porting.
+☐ Handle unreadable plates explicitly and reject low-quality predictions.
+
+Phase C — optional integrated ALPR
+
+☐ Benchmark FastALPR on representative IBDC images.
+☐ Check runtime and model dependencies for mobile compatibility and licensing.
+☐ Port detector + OCR to a suitable Android/iOS inference runtime if benchmarks justify the effort.
+☐ Re-run the phone-based accuracy, latency, memory and offline tests.
+
+9. Final recommendation
+
+Choose Google ML Kit Text Recognition first, because it is free, runs on-device on both mobile platforms, and best matches the existing React Native/Expo app’s need to analyze stored incident images. Its chief limitation is that it is general-purpose OCR and does not identify a plate region by itself.
+
+Keep FastPlateOCR as the next candidate if the prototype struggles with license plate characters, and FastALPR as the reference for a full detection-plus-recognition pipeline. Apple Vision is useful as an iOS-only comparison or fallback. PaddleOCR and Tesseract are reasonable open-source alternatives but involve additional mobile integration work.
+
+Decision remaining: Run representative IBDC photographs through the candidates; there is not yet evidence that any of these models will meet a particular license-plate accuracy or processing-speed requirement on the ESP32 image resolution and target phones.
+
+10. Primary sources / further reading
+
+1. Google ML Kit overview — https://developers.google.com/ml-kit/guides
+2. Google ML Kit text recognition, Android — https://developers.google.com/ml-kit/vision/text-recognition/v2/android
+3. Google ML Kit text recognition, iOS — https://developers.google.com/ml-kit/vision/text-recognition/v2/ios
+4. Apple Vision text recognition — https://developer.apple.com/documentation/vision/recognizing-text-in-images
+5. FastPlateOCR repository — https://github.com/ankandrew/fast-plate-ocr
+6. FastPlateOCR docs — https://ankandrew.github.io/fast-plate-ocr/latest/
+7. FastPlateOCR PyPI — https://pypi.org/project/fast-plate-ocr/
+8. FastALPR repository — https://github.com/ankandrew/fast-alpr
+9. FastALPR PyPI — https://pypi.org/project/fast-alpr/
+10. PaddleOCR official repository — https://github.com/PaddlePaddle/PaddleOCR
+11. PaddleOCR official license — https://github.com/PaddlePaddle/PaddleOCR/blob/main/LICENSE
+12. Tesseract documentation — https://tesseract-ocr.github.io/tessdoc/
+13. React Native Vision Camera ML Kit plugin — https://github.com/pedrol2b/react-native-vision-camera-mlkit
+14. Expo custom native code — https://docs.expo.dev/workflow/customizing/
+15. Expo FAQ / Expo Go limitations — https://docs.expo.dev/faq/
+
+────────
+
+Research note: Prices, versions, community wrapper compatibility, model weights and licenses can change. Verify exact releases and model artifacts before incorporating them into distributed builds. This document contains research and proposed architecture, not completed benchmarks or a proof of successful integration.
