@@ -1,19 +1,19 @@
-import {printAsync} from "expo-print";
-import {File as ExpoFile} from "expo-file-system";
-import {Asset} from "expo-asset";
-import {getIncidentImagesByIncidentId, getMockImageSource} from "@/database/ImageDao";
+import { printAsync } from "expo-print";
+import { File as ExpoFile } from "expo-file-system";
+import { Asset } from "expo-asset";
+import { getIncidentImagesByIncidentId, getMockImageSource } from "@/database/ImageDao";
 
 /**
  * Exports a ride session and its incidents as a PDF.
  *
- * The PDF is generated from an HTML report and then opened
- * using the device's native print dialog.
+ * The report includes each incident's selected image when available
+ * and opens in the device's native print dialog.
  *
  * @param session The ride session being exported.
  */
 export async function exportRideSessionToPdf(session: any) {
     const formattedDate = session.startDateStamp
-        ? session.startDateStamp.toLocaleString()
+        ? formatTimestamp(session.startDateStamp)
         : "Unknown Date";
 
     const incidents = session.incidents ?? [];
@@ -30,59 +30,57 @@ export async function exportRideSessionToPdf(session: any) {
                 `
                 : "";
 
+            const driverPresent = incident.driver_present == null
+                ? "Unknown"
+                : incident.driver_present
+                    ? "Yes"
+                    : "No";
+
             return `
                 <div class="incident">
                     <h2>Incident ${index + 1}</h2>
 
                     <div class="row">
                         <strong>Time:</strong>
-                        <span>${formatTimestamp(incident.created_time)}</span>
+                        <span>${escapeHtml(formatTimestamp(incident.created_time))}</span>
                     </div>
 
                     <div class="row">
                         <strong>Location:</strong>
                         <span>
-                            ${incident.latitude ?? "N/A"},
-                            ${incident.longitude ?? "N/A"}
+                            ${escapeHtml(incident.latitude ?? "N/A")},
+                            ${escapeHtml(incident.longitude ?? "N/A")}
                         </span>
                     </div>
 
                     <div class="row">
                         <strong>License Plate:</strong>
-                        <span>${incident.license_plate || "Not provided"}</span>
+                        <span>${escapeHtml(incident.license_plate || "Not provided")}</span>
                     </div>
 
                     <div class="row">
                         <strong>Injury Severity:</strong>
-                        <span>${incident.injury_severity || "None"}</span>
+                        <span>${escapeHtml(incident.injury_severity || "None")}</span>
                     </div>
 
                     <div class="row">
                         <strong>Vehicle:</strong>
-                        <span>
-                            ${formatVehicle(incident)}
-                        </span>
+                        <span>${escapeHtml(formatVehicle(incident))}</span>
                     </div>
 
                     <div class="row">
                         <strong>Driver Present:</strong>
-                        <span>
-                            ${incident.driver_present ? "Yes" : "No"}
-                        </span>
+                        <span>${driverPresent}</span>
                     </div>
 
                     <div class="row">
                         <strong>Driver Information:</strong>
-                        <span>
-                            ${incident.driver_information || "None"}
-                        </span>
+                        <span>${escapeHtml(incident.driver_information || "None")}</span>
                     </div>
 
                     <div class="row">
                         <strong>Comments:</strong>
-                        <span>
-                            ${incident.extra_comment || "None"}
-                        </span>
+                        <span>${escapeHtml(incident.extra_comment || "None")}</span>
                     </div>
 
                     ${imageHtml}
@@ -157,7 +155,7 @@ export async function exportRideSessionToPdf(session: any) {
                 <h1>Ride Session Report</h1>
 
                 <div class="session-meta">
-                    <div>${formattedDate}</div>
+                    <div>${escapeHtml(formattedDate)}</div>
 
                     <div>
                         ${incidents.length}
@@ -170,18 +168,40 @@ export async function exportRideSessionToPdf(session: any) {
         </html>
     `;
 
-    await printAsync({html});
+    await printAsync({ html });
+}
+
+/**
+ * Escapes text inserted into the PDF's HTML document.
+ *
+ * @param value Text or value to display.
+ * @returns HTML-safe text.
+ */
+function escapeHtml(value: unknown): string {
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
 }
 
 /**
  * Formats an incident timestamp into a readable local date and time.
+ * Supports Date objects, ISO strings, and Unix timestamps.
  *
  * @param value The timestamp being formatted.
  * @returns A formatted local date and time.
  */
 function formatTimestamp(value: any): string {
-    if (!value) {
+    if (value == null || value === "") {
         return "Unknown";
+    }
+
+    if (value instanceof Date) {
+        return Number.isNaN(value.getTime())
+            ? "Unknown"
+            : value.toLocaleString();
     }
 
     const numericValue = Number(value);
@@ -225,6 +245,7 @@ function formatVehicle(incident: any): string {
 /**
  * Retrieves the selected incident image and converts it
  * into a Base64 data URI for embedding in the PDF.
+ * If the image is missing or unreadable, the report prints without it.
  */
 async function getBestImageDataUri(incident: any): Promise<string | null> {
     if (!incident?.id || !incident.best_image_id) {
@@ -242,7 +263,8 @@ async function getBestImageDataUri(incident: any): Promise<string | null> {
         if (!selected?.file_path) {
             return null;
         }
-        // Handling mock sources. This can be removed when mock images are no longer used.
+
+        // Handling mock sources. Remove when mock images are no longer used.
         const mockSource = getMockImageSource(selected.file_path);
         let uri = selected.file_path;
         let mimeType = /\.png(?:[?#]|$)/i.test(uri)
