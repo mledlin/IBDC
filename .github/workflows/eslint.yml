@@ -15,9 +15,7 @@ jobs:
           node-version: '22.13.0'
 
       - name: Install dependencies
-        working-directory: IBDC-expo
         run: npm install
 
       - name: Run ESLint
-        working-directory: IBDC-expo
         run: npm run lint
