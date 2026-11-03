@@ -18,6 +18,27 @@ jobs:
         working-directory: IBDC-expo
         run: npm ci
 
+      - name: Diagnose dependencies
+        working-directory: IBDC-expo
+        run: |
+          echo "Node version:"
+          node --version
+
+          echo "npm version:"
+          npm --version
+
+          echo "concat-map dependency tree:"
+          npm ls concat-map --all || true
+
+          echo "concat-map resolution:"
+          node -p "require.resolve('concat-map')" || true
+
+          echo "concat-map loading:"
+          node -e "require('concat-map'); console.log('Loaded successfully')" || true
+
+          echo "npm omit setting:"
+          npm config get omit
+
       - name: Run ESLint
         working-directory: IBDC-expo
         run: npm run lint
