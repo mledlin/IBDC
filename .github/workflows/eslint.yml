@@ -16,7 +16,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: IBDC-expo
-        run: npm install
+        run: npm ci
 
       - name: Run ESLint
         working-directory: IBDC-expo
