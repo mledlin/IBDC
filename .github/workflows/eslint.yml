@@ -9,6 +9,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Inspect commited lockfiles
+        working-directory: IBDC-expo
+        run: |
+          echo "Commit:"
+          git rev-parse HEAD
+          echo "Lockfile concat-map entry:"
+          grep -A 5 '"node_modules/concat-map"' package-lock.json || true
+          echo "brace-expansion dependency:"
+          grep -A 12 '"node_modules/brace-expansion"' package-lock.json || true
+        
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
