@@ -4,20 +4,42 @@ import { Asset } from "expo-asset";
 import { getIncidentImagesByIncidentId, getMockImageSource } from "@/database/ImageDao";
 
 /**
- * Exports a ride session and its incidents as a PDF.
- *
- * The report includes each incident's selected image when available
- * and opens in the device's native print dialog.
- *
- * @param session The ride session being exported.
+ * Exports a ride session and all its incidents as a PDF through
+ * the device's native print dialog.
  */
 export async function exportRideSessionToPdf(session: any) {
+    const incidents = session.incidents ?? [];
     const formattedDate = session.startDateStamp
         ? formatTimestamp(session.startDateStamp)
         : "Unknown Date";
 
-    const incidents = session.incidents ?? [];
+    await printIncidentReport(incidents, formattedDate, false);
+}
 
+/**
+ * Exports only the selected incident, including its best image if available.
+ * Called from the Incident Details screen.
+ */
+export async function exportIncidentToPdf(incident: any) {
+    if (!incident?.id) {
+        throw new Error("No incident was selected for export");
+    }
+
+    await printIncidentReport(
+        [incident],
+        formatTimestamp(incident.created_time),
+        true
+    );
+}
+
+/**
+ * Builds the shared HTML report and opens the device's native print dialog.
+ */
+async function printIncidentReport(
+    incidents: any[],
+    formattedDate: string,
+    singleIncident: boolean
+) {
     const incidentRows = (await Promise.all(
         incidents.map(async (incident: any, index: number) => {
             const imageDataUri = await getBestImageDataUri(incident);
@@ -38,7 +60,7 @@ export async function exportRideSessionToPdf(session: any) {
 
             return `
                 <div class="incident">
-                    <h2>Incident ${index + 1}</h2>
+                    <h2>${singleIncident ? "Incident Details" : `Incident ${index + 1}`}</h2>
 
                     <div class="row">
                         <strong>Time:</strong>
@@ -91,11 +113,9 @@ export async function exportRideSessionToPdf(session: any) {
 
     const html = `
         <!DOCTYPE html>
-
         <html>
             <head>
                 <meta charset="UTF-8" />
-
                 <style>
                     body {
                         font-family: Arial, sans-serif;
@@ -152,15 +172,15 @@ export async function exportRideSessionToPdf(session: any) {
             </head>
 
             <body>
-                <h1>Ride Session Report</h1>
+                <h1>${singleIncident ? "Incident Report" : "Ride Session Report"}</h1>
 
                 <div class="session-meta">
                     <div>${escapeHtml(formattedDate)}</div>
-
+                    ${singleIncident ? "" : `
                     <div>
                         ${incidents.length}
                         Incident${incidents.length === 1 ? "" : "s"}
-                    </div>
+                    </div>`}
                 </div>
 
                 ${incidentRows || "<p>No incidents recorded.</p>"}
@@ -171,12 +191,7 @@ export async function exportRideSessionToPdf(session: any) {
     await printAsync({ html });
 }
 
-/**
- * Escapes text inserted into the PDF's HTML document.
- *
- * @param value Text or value to display.
- * @returns HTML-safe text.
- */
+/** Escapes text inserted into the PDF's HTML document. */
 function escapeHtml(value: unknown): string {
     return String(value ?? "")
         .replace(/&/g, "&amp;")
@@ -186,13 +201,7 @@ function escapeHtml(value: unknown): string {
         .replace(/'/g, "&#39;");
 }
 
-/**
- * Formats an incident timestamp into a readable local date and time.
- * Supports Date objects, ISO strings, and Unix timestamps.
- *
- * @param value The timestamp being formatted.
- * @returns A formatted local date and time.
- */
+/** Formats Date objects, ISO strings, and Unix timestamps. */
 function formatTimestamp(value: any): string {
     if (value == null || value === "") {
         return "Unknown";
@@ -205,7 +214,6 @@ function formatTimestamp(value: any): string {
     }
 
     const numericValue = Number(value);
-
     const date = Number.isNaN(numericValue)
         ? new Date(value)
         : new Date(
@@ -221,14 +229,7 @@ function formatTimestamp(value: any): string {
     return date.toLocaleString();
 }
 
-/**
- * Combines available vehicle information into a single display string.
- *
- * Empty vehicle fields are excluded from the final value.
- *
- * @param incident The incident containing vehicle information.
- * @returns The formatted vehicle description.
- */
+/** Combines available vehicle information into one display string. */
 function formatVehicle(incident: any): string {
     const vehicleDetails = [
         incident.vehicle_year,
@@ -243,9 +244,8 @@ function formatVehicle(incident: any): string {
 }
 
 /**
- * Retrieves the selected incident image and converts it
- * into a Base64 data URI for embedding in the PDF.
- * If the image is missing or unreadable, the report prints without it.
+ * Retrieves the incident's selected image and converts it to a Base64 data URI.
+ * Missing or unreadable images do not prevent the report from printing.
  */
 async function getBestImageDataUri(incident: any): Promise<string | null> {
     if (!incident?.id || !incident.best_image_id) {
@@ -254,7 +254,6 @@ async function getBestImageDataUri(incident: any): Promise<string | null> {
 
     try {
         const images = await getIncidentImagesByIncidentId(incident.id);
-
         const selected = images.find(
             (image: any) =>
                 String(image.id) === String(incident.best_image_id)

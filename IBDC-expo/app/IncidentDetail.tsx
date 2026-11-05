@@ -18,6 +18,7 @@ import {
     Switch,
     KeyboardAvoidingView,
     Platform,
+    Alert,
 } from "react-native";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useTheme } from "@/context/ThemeContext";
@@ -31,7 +32,7 @@ import {
     getIncidentImagesByIncidentId,
     getMockImageSource,
 } from "@/database/ImageDao";
-
+import { exportIncidentToPdf } from "@/utils/SessionExport";
 /**
  * Available injury severity values shown in the severity selector.
  */
@@ -44,6 +45,7 @@ const SEVERITY_OPTIONS = ["None", "Minor", "Moderate", "Severe"];
 export default function IncidentDetail() {
     const router = useRouter();
     const { theme } = useTheme();
+    const [isExporting, setIsExporting] = useState(false);
 
     const {
         id,
@@ -70,6 +72,31 @@ export default function IncidentDetail() {
 
     // Null means the placeholder should be displayed.
     const [thumbnailSource, setThumbnailSource] = useState<any>(null);
+
+    /**
+     * Exports the latest saved incident through the native print dialog.
+     */
+    async function handleExportIncident() {
+        if (typeof id !== "string" || isExporting) {
+            return;
+        }
+
+        try {
+            setIsExporting(true);
+            const incident = await getIncidentById(id);
+
+            if (!incident) {
+                throw new Error("Incident not found");
+            }
+
+            await exportIncidentToPdf(incident);
+        } catch (error) {
+            console.error("Failed to export incident", error);
+            Alert.alert("Export Failed", "The incident could not be exported.");
+        } finally {
+            setIsExporting(false);
+        }
+    }
 
     /**
      * Deletes the current incident and returns to the previous screen.
@@ -252,9 +279,31 @@ export default function IncidentDetail() {
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
             >
-                <Text style={[styles.title, { color: theme.colors.text }]}>
-                    Incident Details
-                </Text>
+                <View style={styles.incidentHeader}>
+                    <Text style={[styles.title, { color: theme.colors.text }]}>
+                        Incident Details
+                    </Text>
+                    <TouchableOpacity
+                        accessibilityRole="button"
+                        accessibilityLabel="Export incident as PDF"
+                        disabled={isExporting}
+                        onPress={() => void handleExportIncident()}
+                        activeOpacity={0.8}
+                        style={[
+                            styles.incidentExportButton,
+                            {
+                                backgroundColor: theme.colors.primary,
+                                opacity: isExporting ? 0.5 : 1,
+                            },
+                        ]}
+                    >
+                        <Ionicons
+                            name="download-outline"
+                            size={20}
+                            color={theme.colors.primaryForeground}
+                        />
+                    </TouchableOpacity>
+                </View>
 
                 <View
                     style={[
@@ -701,6 +750,20 @@ const styles = StyleSheet.create({
     thumbnailPlaceholerText: {
         fontSize: 16,
         fontWeight: "600",
+    },
+    incidentHeader: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        paddingRight: 16,
+    },
+    incidentExportButton: {
+        width: 38,
+        height: 38,
+        borderRadius: 10,
+        alignItems: "center",
+        justifyContent: "center",
+        marginTop: 4,
     },
     title: {
         fontSize: 24,
