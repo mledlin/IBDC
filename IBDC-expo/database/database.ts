@@ -144,6 +144,12 @@ async function createTables(database: SQLite.SQLiteDatabase,): Promise<void> {
             NULL
             DEFAULT
             'device',
+            text_detected
+            INTEGER
+            NOT
+            NULL
+            DEFAULT
+            0,
             FOREIGN
             KEY
         (
@@ -210,4 +216,14 @@ async function createTables(database: SQLite.SQLiteDatabase,): Promise<void> {
         CREATE INDEX IF NOT EXISTS idx_incidents_best_image_id
             ON incidents(best_image_id);
     `);
+
+    const imageColumns = await database.getAllAsync<{ name: string }>(
+        "PRAGMA table_info(incident_images)"
+    );
+    if (!imageColumns.some((column) => column.name === "text_detected")) {
+        await database.execAsync(`
+            ALTER TABLE incident_images
+            ADD COLUMN text_detected INTEGER NOT NULL DEFAULT 0;
+        `);
+    }
 }

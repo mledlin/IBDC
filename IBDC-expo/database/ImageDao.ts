@@ -29,6 +29,26 @@ export async function createIncidentImage(
         source
     );
 }
+
+export async function updateIncidentImageTextDetected(
+    imageId: string,
+    detected: boolean
+): Promise<void> {
+    const database = await getDatabase();
+
+    const result = await database.runAsync(
+        `UPDATE incident_images
+         SET text_detected = ?
+         WHERE id = ?`,
+        detected ? 1 : 0,
+        imageId
+    );
+
+    if (result.changes !== 1) {
+        throw new Error(`Incident image ${imageId} was not found.`);
+    }
+}
+
 //Retrieves all incident images from the database.
 export async function getAllIncidentImages() {
     const database = await getDatabase();

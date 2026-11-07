@@ -24,6 +24,7 @@ type PhotoItem = {
     id: string;
     title: string;
     image: ImageSourcePropType;
+    textDetected: boolean;
 }
 /**
  * Renders the image selector for a specific incident.
@@ -63,6 +64,7 @@ export default function ChoosePhoto() {
                         id: String(image.id),
                         title: `Photo ${index + 1}`,
                         image: getMockImageSource(image.file_path) ?? {uri: image.file_path},
+                        textDetected: Boolean(image.text_detected),
                     }));
                 if (isActive) {
                     setPhotoList(mappedImages);
@@ -146,6 +148,28 @@ export default function ChoosePhoto() {
                                     {index + 1} / {photoList.length}
                                 </Text>
                             </View>
+                            {item.textDetected && (
+                                <View
+                                    style={[
+                                        styles.textDetectedBadge,
+                                        {backgroundColor: theme.colors.surface},
+                                    ]}
+                                >
+                                    <Ionicons
+                                        name="text-outline"
+                                        size={14}
+                                        color={theme.colors.primary}
+                                    />
+                                    <Text
+                                        style={[
+                                            styles.textDetectedText,
+                                            {color: theme.colors.text},
+                                        ]}
+                                    >
+                                        Text detected
+                                    </Text>
+                                </View>
+                            )}
                         </View>
                         <View style={[styles.cardFooter, {
                             backgroundColor: theme.colors.surface,
@@ -257,6 +281,21 @@ const styles = StyleSheet.create({
         borderRadius: 999,
         paddingHorizontal: 10,
         paddingVertical: 6,
+    },
+    textDetectedBadge: {
+        position: "absolute",
+        left: 12,
+        bottom: 12,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        paddingHorizontal: 10,
+        paddingVertical: 7,
+        borderRadius: 16,
+    },
+    textDetectedText: {
+        fontSize: 11,
+        fontWeight: "700",
     },
     photoCountText: {
         fontSize: 12,

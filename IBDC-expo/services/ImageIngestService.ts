@@ -4,6 +4,7 @@ import {concatUint8Arrays} from "@/utils/base64";
 import { SessionManager } from "@/hooks/SessionManager";
 import {ImageStorage} from "@/services/ExpoImageStorage";
 import {DAOAccessor} from "./DAOAdapter";
+import type {TextRecognitionService} from "./TextRecognitionService";
 
 
 
@@ -59,16 +60,17 @@ export class ImageIngestService {
     private imageStorage: ImageStorage;
     private daoAccessor: DAOAccessor;
     private sessionManager: SessionManager;
-
+    private textRecognition?: TextRecognitionService;
 
     constructor(communicationService: IBDCCommunicationService, imageStorage: ImageStorage,
-                daoAccess: DAOAccessor) {
+                daoAccess: DAOAccessor, textRecognition?: TextRecognitionService) {
         this.communicationService = communicationService;
         this.communicationService.onEventNotifications(this.handleEventNotification);
         this.communicationService.onImageInfo(this.handleImageInfo);
         this.communicationService.onImageChunk(this.handleImageChunk);
         this.imageStorage = imageStorage;
         this.daoAccessor = daoAccess;
+        this.textRecognition = textRecognition;
 
         // No dependency injection here. This class does not interface hardware.
         this.sessionManager = new SessionManager(this.daoAccessor);
@@ -239,7 +241,39 @@ export class ImageIngestService {
  
         this.pendingEvents.delete(eventId);
 
+        if (this.textRecognition) {
+            void this.detectTextInImages(incidentId, pendingEvent.imagePaths);
+        }
+
         console.log(`ImageIngestService: event ${eventId} saved and acknowleged`)
+    }
+
+    private async detectTextInImages(
+        incidentId: string,
+        imagePaths: Map<number, string>
+    ): Promise<void> {
+        const recognition = this.textRecognition;
+        if (!recognition) {
+            return;
+        }
+
+        await Promise.all(
+            [...imagePaths.entries()].map(async ([imageIndex, imagePath]) => {
+                const imageId = `${incidentId}-image-${imageIndex}`;
+                try {
+                    const detected = await recognition.hasText(imagePath);
+                    await this.daoAccessor.updateIncidentImageTextDetected(
+                        imageId,
+                        detected
+                    );
+                } catch (error) {
+                    console.error(
+                        `ImageIngestService: failed to detect text in image ${imageId}:`,
+                        error
+                    );
+                }
+            })
+        );
     }
 
     public getPendingEventSize() {

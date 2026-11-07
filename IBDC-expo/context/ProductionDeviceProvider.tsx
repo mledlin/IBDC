@@ -8,6 +8,7 @@ import { ImageIngestService } from "@/services/ImageIngestService";
 import { ExpoImageStorage } from "@/services/ExpoImageStorage";
 import { DAOAdapter } from "@/services/DAOAdapter";
 import { SimulatedIBDCImageLoader } from "@/ble/SimulatedIBDCImageLoader"
+import { GoogleMLKitTextRecognitionService } from "@/services/TextRecognitionService";
 
 /**
  * This file is responsible for constructing the components used in the production build. This class also provides the
@@ -27,8 +28,14 @@ const communicationService: IBDCCommunicationService = new IBDCCommunicationServ
 const imageStorage = new ExpoImageStorage();
 const imageLoader = new SimulatedIBDCImageLoader();
 const DAOAccess = new DAOAdapter();
+const textRecognition = new GoogleMLKitTextRecognitionService();
 
-const imageIngestService: ImageIngestService = new ImageIngestService(communicationService, imageStorage, DAOAccess);
+const imageIngestService: ImageIngestService = new ImageIngestService(
+    communicationService,
+    imageStorage,
+    DAOAccess,
+    textRecognition
+);
 
 const simulatedDevice = new SimulatedIBDC(mockBLEAdapter, imageLoader);
 

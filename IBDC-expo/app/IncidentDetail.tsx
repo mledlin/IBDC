@@ -70,6 +70,7 @@ export default function IncidentDetail() {
 
     // Null means the placeholder should be displayed.
     const [thumbnailSource, setThumbnailSource] = useState<any>(null);
+    const [textDetected, setTextDetected] = useState(false);
 
     /**
      * Deletes the current incident and returns to the previous screen.
@@ -148,6 +149,7 @@ export default function IncidentDetail() {
                         (image: any) =>
                             image.id === incident?.best_image_id
                     ) ?? images[0] ?? null;
+                    setTextDetected(Boolean(selectedImage?.text_detected));
 
                     // Reset first so incidents without a selected image show placeholder.
                     //setThumbnailSource(null);
@@ -288,6 +290,29 @@ export default function IncidentDetail() {
                                 ]}
                             >
                                 No Image
+                            </Text>
+                        </View>
+                    )}
+
+                    {textDetected && (
+                        <View
+                            style={[
+                                styles.textDetectedBadge,
+                                { backgroundColor: theme.colors.surface },
+                            ]}
+                        >
+                            <Ionicons
+                                name="text-outline"
+                                size={14}
+                                color={theme.colors.primary}
+                            />
+                            <Text
+                                style={[
+                                    styles.textDetectedText,
+                                    { color: theme.colors.text },
+                                ]}
+                            >
+                                Text detected
                             </Text>
                         </View>
                     )}
@@ -718,6 +743,21 @@ const styles = StyleSheet.create({
     thumbnail: {
         width: "100%",
         height: "100%",
+    },
+    textDetectedBadge: {
+        position: "absolute",
+        left: 12,
+        top: 12,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        paddingHorizontal: 10,
+        paddingVertical: 7,
+        borderRadius: 16,
+    },
+    textDetectedText: {
+        fontSize: 11,
+        fontWeight: "700",
     },
     noImagePlaceholder: {
         width: "100%",

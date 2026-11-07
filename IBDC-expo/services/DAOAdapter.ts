@@ -1,6 +1,6 @@
 import {createSession, DatabaseSessionRow, getAllSessions} from "@/database/SessionDao";
 import { createIncident } from "@/database/IncidentDao";
-import { createIncidentImage} from "@/database/ImageDao";
+import { createIncidentImage, updateIncidentImageTextDetected} from "@/database/ImageDao";
 import type { SessionInfo, SessionPersistence } from "@/hooks/SessionManager"
 
 export type DAOAccessor = {
@@ -25,6 +25,7 @@ export type DAOAccessor = {
                           filePath: string,
                           thumbnail: any,
                           source: string) => Promise<void>,
+    updateIncidentImageTextDetected: (imageId: string, detected: boolean) => Promise<void>,
     getAllSessions(): Promise<SessionInfo[]>
 
 }
@@ -64,6 +65,13 @@ export class DAOAdapter implements DAOAccessor, SessionPersistence {
         await createIncidentImage(id, incidentId, filePath, thumbnail, source)
     }
 
+    public async updateIncidentImageTextDetected(
+        imageId: string,
+        detected: boolean
+    ): Promise<void> {
+        await updateIncidentImageTextDetected(imageId, detected);
+    }
+
     public async getAllSessions(): Promise<SessionInfo[]> {
         const stored_sessions: DatabaseSessionRow[] = await getAllSessions();
 
@@ -74,4 +82,3 @@ export class DAOAdapter implements DAOAccessor, SessionPersistence {
     }
 
 }
-
