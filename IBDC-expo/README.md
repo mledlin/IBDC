@@ -15,7 +15,7 @@ have your phone ready. You may need to enable USB debugging (android)
 
 For Android, you can open the Device Manager on Android Studio as one of many options; it works "out of the box".
 
-For a physical device download the expo go app and use it to scan the QR code that will appear in your terminal.
+For OCR and BLE support, use a custom development build on your device. Expo Go does not include the native modules these features require.
 
 ```bash
 npx expo start
@@ -42,6 +42,8 @@ npx expo install expo-dev-client
 ```Bash
 npx expo install react-native-ble-plx
 ```
+
+The app also uses Google ML Kit Text Recognition to analyze received images on-device. It requires a native development build; it is not available in Expo Go. Rebuild the app after installing native modules.
 
 3. Build the app locally for whichever platform you wish:
 
