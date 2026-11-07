@@ -31,7 +31,6 @@ export class IBDCCommsToAppEndpointProvider {
     // -----------------------------------
 
 
-
     constructor() {
     const  deviceInfo: BleDeviceInfo | null = {
             id: "device",
@@ -57,7 +56,13 @@ export class IBDCCommsToAppEndpointProvider {
     }
 
     public async reconnect() {
-        await this.bleAdapter.connect("device").then(r => {})
+        const  deviceInfo: BleDeviceInfo | null = {
+            id: "device",
+            name: "test_mock"
+        }
+        this.bleAdapter.setDeviceInfo(deviceInfo)
+        this.bleAdapter.connect(deviceInfo.id).then(() => {})
+
     }
 
     // More public methods could be declared here to help with testing

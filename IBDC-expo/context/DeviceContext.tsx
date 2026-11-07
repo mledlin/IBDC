@@ -4,25 +4,19 @@
  * This file defines the shared device data and BLE operations, provides the
  * context wrapper component, and exposes a hook for accessing that context.
  */
-
 import React, {createContext, useContext, useEffect, useRef, useState} from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {BleAdapter, BleDeviceInfo} from "@/ble/BleAdapter";
-import {MockBleAdapter} from "@/ble/MockBleAdapter";
 import {
-    IBDCCommunicationService,
     DeviceStatus as IBDCDeviceStatus,
+    IBDCCommunicationService,
     PendingEventList
 } from "@/services/IBDCCommunicationService";
+import {MockBleAdapter} from "@/ble/MockBleAdapter";
 import {SimulatedIBDC} from "@/ble/SimulatedIBDC";
 import {ImageIngestService} from "@/services/ImageIngestService";
-import { ExpoImageStorage } from "@/services/ExpoImageStorage";
-import { DAOAdapter } from "@/services/DAOAdapter";
-import { SimulatedIBDCImageLoader } from "@/ble/SimulatedIBDCImageLoader"
 
-/** Selects between the hardware BLE adapter and the in-memory mock adapter. */
 export type DeviceMode = 'mock' | 'real';
-/** Connection state exposed for the selected device. */
 export type ConnectedStatus = 'connected' | 'disconnected' | 'pairing';
 
 /**
@@ -47,6 +41,19 @@ export interface DeviceInfo {
   pendingEvents?: number;
   /** Number of images configured per event on the device, when known. */
     imagesPerEventOnDevice?: number;
+}
+
+
+export interface DeviceDependencies {
+  bleAdapter: BleAdapter,
+  communicationService: IBDCCommunicationService,
+  simulatedDevice: SimulatedIBDC;
+  imageIngestService: ImageIngestService
+}
+
+interface DeviceProviderProps {
+  children: React.ReactNode;
+  dependencies: DeviceDependencies,
 }
 
 /** AsyncStorage key used to persist the preferred images-per-event setting. */
@@ -92,21 +99,6 @@ type DeviceContextType = {
  */
 const DeviceContext = createContext<DeviceContextType | undefined>(undefined);
 
-/** Shared mock adapter used by the simulator and selected in mock mode. */
-const mockBLEAdapter = new MockBleAdapter();
-let bleAdapter: BleAdapter = mockBLEAdapter;
-
-/** Shared protocol service used by the context and domain services. */
-const communicationService = new IBDCCommunicationService(bleAdapter);
-
-// Abstractions built around hardware coupling
-const imageStorage = new ExpoImageStorage();
-const imageLoader = new SimulatedIBDCImageLoader();
-const DAOAccess = new DAOAdapter();
-
-const imageIngestService = new ImageIngestService(communicationService, imageStorage, DAOAccess);
-
-const simulatedDevice = new SimulatedIBDC(mockBLEAdapter, imageLoader);
 
 /**
  * Wraps part of the application with shared device state.
@@ -115,9 +107,17 @@ const simulatedDevice = new SimulatedIBDC(mockBLEAdapter, imageLoader);
  * them available to all descendant components.
  *
  * @param children The child components that should have access to device context.
+ * @param dependencies bleAdapter, communicationsService and simulated device dependencies
  * @returns A context provider containing device state and update access.
  */
-export function DeviceProvider({children}: { children: React.ReactNode }) {
+export function DeviceProvider({ children, dependencies }: DeviceProviderProps) {
+
+  let bleAdapter: BleAdapter = dependencies.bleAdapter;
+  const communicationService = dependencies.communicationService;
+  const simulatedDevice = dependencies.simulatedDevice;
+  const imageIngestService = dependencies.imageIngestService;
+
+
     const [device, setDevice] = useState<DeviceInfo | null>(null);
     const [devices, setDevices] = useState<BleDeviceInfo[]>([]);
     const [deviceMode, setMode] = useState<DeviceMode>('mock');
@@ -175,11 +175,11 @@ export function DeviceProvider({children}: { children: React.ReactNode }) {
         if (mode === modeRef.current) {
             return;
         }
-        if (modeRef.current == 'mock') simulatedDevice.stop();
+        if (modeRef.current === 'mock') simulatedDevice.stop();
         await bleAdapter.disconnect();
         //load the native BLE module only when the real device is selected.
         const nextAdapter: BleAdapter = mode === 'mock'
-            ? mockBLEAdapter
+            ? new MockBleAdapter()
             : new (require('@/ble/RealBleAdapter').RealBleAdapter)();
         bleAdapter = nextAdapter;
       subscribeToAdapterDisconnect(nextAdapter);
@@ -218,28 +218,28 @@ export function DeviceProvider({children}: { children: React.ReactNode }) {
 
 
     // DeviceStatus Messages:
-    // keep connceted device state in sync with decoded DeviceStatus pushes.
-    // only update stat is a device is currently set; ignore otherwise
-    //
-    useEffect(() => {
-        const unsubscribe = communicationService.onDeviceStatus((status: IBDCDeviceStatus) => {
-            setDevice(prevDevice => {
-                if (!prevDevice) {
-                    return prevDevice;
-                }
-                return {
-                    ...prevDevice,
-                    battery: status.batteryPercent,
-                    pendingEvents: status.pendingEvents,
-                    imagesPerEventOnDevice: status.imagesPerEventSetting,
-                    storage: {
-                        used: 100 - status.storageAvailablePercent,
-                        total: 100,
-                    },
-                    lastSynced: new Date().toISOString(),
+  // keep connceted device state in sync with decoded DeviceStatus pushes. 
+  // only update stat is a device is currently set; ignore otherwise
+  //
+  useEffect(() => {
+    const unsubscribe = communicationService.onDeviceStatus((status: IBDCDeviceStatus) => {
+      setDevice(prevDevice => {
+        if(!prevDevice){
+          return prevDevice;
+        }
+        return {
+          ...prevDevice,
+          battery: status.batteryPercent,
+          pendingEvents: status.pendingEvents,
+          imagesPerEventOnDevice: status.imagesPerEventSetting,
+          storage: {
+            used: 100 - status.storageAvailablePercent,
+            total: 100,
+          },
+          lastSynced: new Date().toISOString(),
 
-                };
-            });
+        };
+      });
             if (!settingsLoadedRef.current) {
                 return;
             }
