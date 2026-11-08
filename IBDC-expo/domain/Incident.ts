@@ -79,8 +79,11 @@ export function isIncidentComplete(incident: Incident): boolean {
 
     return (
         hasSelectedImage &&
+        //Temp removing coordinates required, until confirmation
+        /*
         validCoordinate(incident.latitude, -90, 90) &&
         validCoordinate(incident.longitude, -180, 180) &&
+        */
         hasValidTimestamp &&
         hasText(incident.license_plate)
     );

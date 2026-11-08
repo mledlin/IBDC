@@ -34,6 +34,7 @@ import {
 } from "@/domain/RideSessionView";
 
 import {deleteSession, getSessionHistoryData} from "@/database/SessionDao";
+import {getMockImageSource} from "@/database/ImageDao";
 import {LinearGradient} from "expo-linear-gradient";
 import {useSafeAreaInsets} from "react-native-safe-area-context";
 import {exportRideSessionToPdf} from "@/utils/SessionExport";
@@ -182,9 +183,11 @@ export default function RideSession() {
      */
     function handleIncidentPress(incident: any) {
         const imageFiles = incident.imageFiles ?? [];
-        const selectedImage =
-            imageFiles.find(
-                (image: any) => image.id === incident.selectedImageId) ?? imageFiles[0] ?? null;
+        const selectedImage = imageFiles.find(
+            (image: any) =>
+                incident.best_image_id != null &&
+                String(image.id) === String(incident.best_image_id)
+        ) ?? null;
 
         router.push({
             pathname: "/IncidentDetail",
@@ -612,11 +615,11 @@ export default function RideSession() {
                                             showsHorizontalScrollIndicator={true}
                                             contentContainerStyle={styles.incidentRow}>
                                             {session.incidents.map((incident: any, incidentIndex: number) => {
-                                                const selectedImage =
-                                                    incident.imageFiles.find(
-                                                        (image: any) =>
-                                                            image.id === incident.selectedImageId
-                                                    ) || null;
+                                                const selectedImage = (incident.imageFiles ?? []).find(
+                                                    (image: any) =>
+                                                        incident.best_image_id != null &&
+                                                        String(image.id) === String(incident.best_image_id)
+                                                ) ?? null;
                                                 const complete = isIncidentComplete(incident);
 
                                                 return (
@@ -629,7 +632,10 @@ export default function RideSession() {
                                                         onPress={() => handleIncidentPress(incident)}>
                                                         {selectedImage ? (
                                                             <Image
-                                                                source={selectedImage.uri}
+                                                                source={
+                                                                    getMockImageSource(selectedImage.file_path) ??
+                                                                    {uri: selectedImage.file_path}
+                                                                }
                                                                 style={styles.incidentImage}
                                                                 resizeMode="cover"
                                                             />
