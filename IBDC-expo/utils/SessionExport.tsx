@@ -1,5 +1,4 @@
-import {printToFileAsync} from "expo-print";
-import {isAvailableAsync, shareAsync} from "expo-sharing";
+import {printAsync} from "expo-print";
 import {isInjurySelection, isSeverityOfPass} from "@/domain/Incident";
 
 /**
@@ -10,24 +9,12 @@ import {isInjurySelection, isSeverityOfPass} from "@/domain/Incident";
  *
  * @param session The ride session being exported.
  */
-export async function exportRideSessionToPdf(session: any) {
+export async function exportRideSessionToPdf(session : any): Promise<void>{
     const html = buildRideSessionHtml(session);
 
-    const {uri} = await printToFileAsync({
+    await printAsync({
         html,
-    });
-
-    const sharingAvailable = await isAvailableAsync();
-
-    if (!sharingAvailable) {
-        throw new Error("Sharing is not available on this device.");
-    }
-
-    await shareAsync(uri, {
-        mimeType: "application/pdf",
-        dialogTitle: "Export Ride Session",
-        UTI: "com.adobe.pdf",
-    });
+    })
 }
 
 export function buildRideSessionHtml(session: any): string {
