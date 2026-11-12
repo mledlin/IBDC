@@ -31,11 +31,21 @@ import {
     getIncidentImagesByIncidentId,
     getMockImageSource,
 } from "@/database/ImageDao";
+import {
+    isInjurySelection,
+    isSeverityOfPass,
+    type InjurySelection,
+    type SeverityOfPass,
+} from "@/domain/Incident";
 
 /**
- * Available injury severity values shown in the severity selector.
+ * Values shown in the injury and severity-of-pass selectors.
  */
-const SEVERITY_OPTIONS = ["None", "Minor", "Moderate", "Severe"];
+const INJURY_OPTIONS: readonly InjurySelection[] = ["Yes", "No"];
+const SEVERITY_OF_PASS_OPTIONS: readonly SeverityOfPass[] = [
+    "Intent",
+    "Unaware",
+];
 
 /**
  * Renders the incident detail screen and keeps the UI synchronized with
@@ -54,7 +64,9 @@ export default function IncidentDetail() {
     } = useLocalSearchParams();
 
     // Editable incident fields loaded from and synced to the database.
-    const [injurySeverity, setInjurySeverity] = useState("None");
+    const [injury, setInjury] = useState<InjurySelection | null>(null);
+    const [severityOfPass, setSeverityOfPass] =
+        useState<SeverityOfPass | null>(null);
     const [driverPresent, setDriverPresent] = useState(false);
     const [driverInfo, setDriverInfo] = useState("");
     const [extraComments, setExtraComments] = useState("");
@@ -95,7 +107,8 @@ export default function IncidentDetail() {
      */
     async function saveIncidentField(updates: {
         license_plate?: string | null;
-        injury_severity?: string | null;
+        injury?: InjurySelection | null;
+        severity_of_pass?: SeverityOfPass | null;
         driver_present?: number;
         driver_information?: string | null;
         extra_comment?: string | null;
@@ -134,7 +147,16 @@ export default function IncidentDetail() {
                         await getIncidentImagesByIncidentId(id);
 
                     setLicensePlateInput(incident?.license_plate ?? "");
-                    setInjurySeverity(incident?.injury_severity ?? "None");
+                    setInjury(
+                        isInjurySelection(incident?.injury)
+                            ? incident.injury
+                            : null,
+                    );
+                    setSeverityOfPass(
+                        isSeverityOfPass(incident?.severity_of_pass)
+                            ? incident.severity_of_pass
+                            : null,
+                    );
                     setDriverPresent(Boolean(incident?.driver_present));
                     setDriverInfo(incident?.driver_information ?? "");
                     setExtraComments(incident?.extra_comment ?? "");
@@ -346,7 +368,7 @@ export default function IncidentDetail() {
                     </View>
                 </View>
 
-                {/* Injury severity selector. */}
+                {/* Injury selector. */}
                 <View style={cardStyle}>
                     <Text
                         style={[
@@ -354,13 +376,67 @@ export default function IncidentDetail() {
                             { color: theme.colors.surfaceText },
                         ]}
                     >
-                        INJURY SEVERITY
+                        INJURY
                     </Text>
 
                     <View style={styles.severityRow}>
-                        {SEVERITY_OPTIONS.map((severity) => {
-                            const selected =
-                                injurySeverity === severity;
+                        {INJURY_OPTIONS.map((option) => {
+                            const selected = injury === option;
+
+                            return (
+                                <TouchableOpacity
+                                    key={option}
+                                    style={[
+                                        styles.severityButton,
+                                        {
+                                            borderColor: selected
+                                                ? theme.colors.primary
+                                                : theme.colors.border,
+                                            backgroundColor: selected
+                                                ? theme.colors.primary
+                                                : "transparent",
+                                        },
+                                    ]}
+                                    onPress={() => {
+                                        setInjury(option);
+                                        void saveIncidentField({
+                                            injury: option,
+                                        });
+                                    }}
+                                    activeOpacity={0.8}
+                                >
+                                    <Text
+                                        style={[
+                                            styles.severityText,
+                                            {
+                                                color: selected
+                                                    ? "#ffffff"
+                                                    : theme.colors.surfaceText,
+                                            },
+                                        ]}
+                                    >
+                                        {option}
+                                    </Text>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
+                </View>
+
+                {/* This selection is independent of the injury selection. */}
+                <View style={cardStyle}>
+                    <Text
+                        style={[
+                            styles.sectionHeader,
+                            { color: theme.colors.surfaceText },
+                        ]}
+                    >
+                        SEVERITY OF PASS
+                    </Text>
+
+                    <View style={styles.severityRow}>
+                        {SEVERITY_OF_PASS_OPTIONS.map((severity) => {
+                            const selected = severityOfPass === severity;
 
                             return (
                                 <TouchableOpacity
@@ -377,9 +453,9 @@ export default function IncidentDetail() {
                                         },
                                     ]}
                                     onPress={() => {
-                                        setInjurySeverity(severity);
+                                        setSeverityOfPass(severity);
                                         void saveIncidentField({
-                                            injury_severity: severity,
+                                            severity_of_pass: severity,
                                         });
                                     }}
                                     activeOpacity={0.8}

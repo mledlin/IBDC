@@ -17,6 +17,17 @@
 
 import type {ImageSourcePropType} from "react-native";
 
+export type InjurySelection = "Yes" | "No";
+export type SeverityOfPass = "Intent" | "Unaware";
+
+export function isInjurySelection(value: unknown): value is InjurySelection {
+    return value === "Yes" || value === "No";
+}
+
+export function isSeverityOfPass(value: unknown): value is SeverityOfPass {
+    return value === "Intent" || value === "Unaware";
+}
+
 export type Incident = {
     id: string;
     session_id: string;
@@ -25,7 +36,8 @@ export type Incident = {
     created_time: string | null;
     license_plate: string | null;
     best_image_id: string | null;
-    injury_severity: string | null;
+    injury: InjurySelection | null;
+    severity_of_pass: SeverityOfPass | null;
     driver_present: number;
     driver_information: string | null;
     extra_comment: string | null;
@@ -76,12 +88,17 @@ export function isIncidentComplete(incident: Incident): boolean {
     const hasValidTimestamp =
         hasText(incident.created_time) &&
         Number.isFinite(Date.parse(incident.created_time));
+    const hasValidSelections =
+        (incident.injury === null || isInjurySelection(incident.injury)) &&
+        (incident.severity_of_pass === null ||
+            isSeverityOfPass(incident.severity_of_pass));
 
     return (
         hasSelectedImage &&
         validCoordinate(incident.latitude, -90, 90) &&
         validCoordinate(incident.longitude, -180, 180) &&
         hasValidTimestamp &&
+        hasValidSelections &&
         hasText(incident.license_plate)
     );
 }

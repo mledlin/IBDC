@@ -86,8 +86,12 @@ async function createTables(database: SQLite.SQLiteDatabase,): Promise<void> {
             TEXT,
             best_image_id
             TEXT,
-            injury_severity
-            TEXT,
+            injury
+            TEXT
+            CHECK (injury IS NULL OR injury IN ('Yes', 'No')),
+            severity_of_pass
+            TEXT
+            CHECK (severity_of_pass IS NULL OR severity_of_pass IN ('Intent', 'Unaware')),
             driver_present
             INTEGER
             NOT
