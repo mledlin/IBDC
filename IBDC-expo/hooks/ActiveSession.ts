@@ -1,41 +1,59 @@
 import { LocationObject, getCurrentPositionAsync } from 'expo-location';
-import { SessionManager } from "./SessionManager";
-
 
 // Use the session manager to get the current session at start up of the program?
 // When does a session start? When the user connects to the application? I guess so, first couple GPS pings will probably
 // be not useful. There can be many false incidents at the beginning of the ride?
+export class ActiveSessionPersistence {
 
-class ActiveSessionPersistence {
-
+    private readonly sessionId: string = ''
     private GPSPings: LocationObject[] = [];
-    private sessionId: string = '';
+    private DEFAULT_GPS_PING_RATE_SECONDS: number = 5;
+    private pingsActive: boolean = false;
 
-
-    //
-    /**
-     * Starts the GPS pings periodically for the current session.
-     * @param ping_rate
-     */
-    public startGPSPings(ping_rate: number){
-
+    constructor(session_id: string, GPS_ping_rate_seconds?: number ) {
+        this.sessionId = session_id;
+        if (GPS_ping_rate_seconds !== undefined) {
+            if (GPS_ping_rate_seconds > 0) {
+                this.DEFAULT_GPS_PING_RATE_SECONDS = GPS_ping_rate_seconds;
+            }
+        }
+        this.pingsActive = true;
     }
 
     /**
-     * Terminate taking the GPS locations
+     * This will start taking GPS readings periodically throughout the ride.
+     * @param GPS_ping_rate
      */
-    public stopGPSPings(): void {
-
+    public async startPing(GPS_ping_rate = this.DEFAULT_GPS_PING_RATE_SECONDS): Promise<void> {
+        while(this.pingsActive) {
+            this.GPSPings.push(await getCurrentPositionAsync())
+        }
     }
 
     /**
-     * Gets the snapshot of pings for this ride
-     * @returns the list of location pings for this session
+     *
      */
-    public getGPSPings(): LocationObject[] | null {
-        return this.GPSPings;
+    public stopPing(): void {
+        this.pingsActive = false;
     }
-    //
+
+    /**
+     * Returns a copy of the GPSPings array at the time of the function call
+     */
+    public getGPSPings(): LocationObject[] {
+        return [...this.GPSPings];
+    }
+
+    /**
+     *
+     */
+    public getSessionId(): string {
+        return this.sessionId;
+    }
+
+
+
+
 
 
 
