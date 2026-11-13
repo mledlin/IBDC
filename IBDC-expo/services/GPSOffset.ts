@@ -1,5 +1,4 @@
 import type { LocationObject } from 'expo-location';
-import type { Coordinates } from "expo-location/next";
 
 /**
  * These const values are arbitrarily chosen as of now 11/5/26. These are used to determine which strategy to use and if
@@ -17,6 +16,11 @@ type GPSNeighbors = {
     prev: LocationObject | null,
     next: LocationObject | null
 };
+
+type Coordinates = {
+    latitude: number;
+    longitude: number;
+}
 
 /**
  * Used to determine what type of GPS location estimation strategy to use
@@ -362,6 +366,4 @@ function determineStrategy(Decision_Node: GPSDecisionNode): STRATEGY {
     }
 
     return STRATEGY.DEFAULT;
-    // More strategies need to be explored here. Depending on velocity, angular acceleration, time since the incident,
-    // different strategies can be employed to get the most accurate GPS position
 }
