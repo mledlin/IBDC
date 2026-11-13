@@ -14,6 +14,7 @@ import {
     getAllSessions,
     deleteAllSessions,
     deleteSessionsOlderThan,
+    getSessionHistoryData,
 } from "@/database/SessionDao";
 
 import {
@@ -32,7 +33,8 @@ import {
     TouchableOpacity,
     Alert, ScrollView,
 } from "react-native";
-
+import {DefaultServerUploadAdapter} from "@/utils/ServerUploadAdapter";
+import {uploadSession} from "@/utils/DataUpload";
 import {useTheme} from "@/context/ThemeContext";
 import {useDevice} from "@/context/DeviceContext"
 import ThemePicker from "@/components/ui/ThemePicker";
@@ -261,7 +263,30 @@ export default function SettingsPage() {
             setMockProgress("");
         }
     };
+    /**
+     * Test for locally prepared session for server upload
+     */
+    const handleTestServerUpload = async () => {
+        try {
+            const sessions = await getSessionHistoryData();
 
+            if(sessions.length === 0){
+                Alert.alert("No Sessions", "No sessions available to upload.");
+                return;
+            }
+            const session = sessions[0];   
+           const result = await uploadSession(session, {
+                endpoint: "http://10.0.2.2:3000/upload",
+           });
+           
+           console.log("Server Upload Result:", result);
+            Alert.alert("Upload Successful", `Session ${result.sessionId} uploaded successfully.`);
+        }
+        catch (error) {
+            console.error("Server upload failed:", error);
+            Alert.alert("Upload Failed", "Session could not be prepared");
+        }
+    };
     const handleClearTestRideData = () => {
         Alert.alert("Clear Test Ride Data?",
             "This will permenetly delete every ride session, incident, and saved incident photo. App settings and paired decices will not be chnaged.",
@@ -530,6 +555,23 @@ export default function SettingsPage() {
                             Switching disconnects the current device. Scan again on Pair Device.
                         </Text>
                     </View>
+                    <TouchableOpacity
+                    style={[
+                        styles.addMockButton,
+                        {backgroundColor: theme.colors.primary,
+                            borderRadius: theme.radii.md,
+                        },
+                    ]}
+                    onPress={handleTestServerUpload}
+                    >
+                        <Text
+                        style = {[
+                            styles.actionButtonText,
+                            {color: theme.colors.primaryForeground},
+                        ]}
+                        >
+                            Test Server Upload </Text>
+                            </TouchableOpacity>
                     <TouchableOpacity
                         style={[
                             styles.addMockButton,

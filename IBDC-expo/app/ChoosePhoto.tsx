@@ -8,11 +8,13 @@
 
 import {router, useLocalSearchParams} from "expo-router";
 import {useEffect, useState} from "react";
-import {getIncidentImagesByIncidentId, getMockImageSource} from "@/database/ImageDao";
+import {getIncidentImagesByIncidentId, getMockImageSource, createIncidentImage} from "@/database/ImageDao";
 import {updateIncidentBestImage} from "@/database/IncidentDao";
-import {Text, View, StyleSheet, FlatList, TouchableOpacity, Image, Dimensions, ImageSourcePropType} from "react-native";
+import {Text, View, StyleSheet, FlatList, TouchableOpacity, Image, Dimensions, ImageSourcePropType, Alert} from "react-native";
 import {useTheme} from "@/context/ThemeContext";
 import {Ionicons} from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
+import { Directory, File, Paths } from "expo-file-system";
 
 const {width} = Dimensions.get("window");
 const CARD_WIDTH = width * 0.78;
@@ -66,6 +68,7 @@ export default function ChoosePhoto() {
                     }));
                 if (isActive) {
                     setPhotoList(mappedImages);
+                    setIsLoading(false);
                 }
             } catch (error) {
                 console.error("failed to load incident images", error);
@@ -102,6 +105,68 @@ export default function ChoosePhoto() {
             console.error("Failed to update best image", error);
 
         }
+    }
+
+    /** 
+    * Open photo library and save selection to incident.
+    */
+    async function handleChooseFromGallery(){
+      if (typeof incident_id !== "string"){
+        return;
+      }
+    
+      try {
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ["images"],
+          allowsEditing: false,
+          quality: 1,
+        });
+    
+        if (result.canceled || !result.assets.length){
+          return;
+        }
+        const selectedImage = result.assets[0];
+        const imageId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    
+        const imageDirectory = new Directory(
+          Paths.document, 
+          "incident_images"
+        );
+    
+        imageDirectory.create({
+          intermediates: true,
+          idempotent: true, 
+        });
+        const sourceFile = new File(selectedImage.uri);
+    
+        const extension =
+          selectedImage.mimeType === "image/png" ? "png" :
+          selectedImage.mimeType === "image/heic" ? "heic" :
+          selectedImage.mimeType === "image/heif" ? "heif" :
+          selectedImage.mimeType === "image/webp" ? "webp" :
+          "jpg";
+        
+          const destinationFile = new File(
+            imageDirectory, 
+           `${imageId}.${extension}`
+          );
+          sourceFile.copy(destinationFile);
+    
+          await createIncidentImage(
+            imageId,
+            incident_id,
+            destinationFile.uri,
+            null,
+            "gallery"
+          );
+    
+          await updateIncidentBestImage(incident_id, imageId);
+          console.log("Gallery Image Saved To: ", destinationFile.uri);
+          router.back();
+      } catch (error) {
+        console.error("Failed to select image: ", error);
+        Alert.alert("Image Selection Failed", "Unable To Save Image");
+      }
     }
 
     return (
@@ -166,6 +231,16 @@ export default function ChoosePhoto() {
                     </TouchableOpacity>
                 )}
             />
+
+            <TouchableOpacity
+                style={[styles.galleryButton, { backgroundColor: theme.colors.primary }]}
+                onPress={() => void handleChooseFromGallery()}
+                activeOpacity={0.85}>
+                <Ionicons name="images-outline" size={20} color={theme.colors.primaryForeground}/>
+                <Text style={[styles.galleryButtonText, { color: theme.colors.primaryForeground }]}>
+                    Choose From Gallery
+                </Text>
+            </TouchableOpacity>
 
             <View style={styles.hintRow}>
                 <Ionicons
@@ -293,6 +368,21 @@ const styles = StyleSheet.create({
     },
     pickBadgeText: {
         fontSize: 13,
+        fontWeight: "700",
+    },
+    galleryButton: {
+        marginHorizontal: 16,
+        marginTop: 8,
+        marginBottom: 12,
+        paddingVertical: 16,
+        borderRadius: 14,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 10,
+    },
+    galleryButtonText: {
+        fontSize: 15,
         fontWeight: "700",
     },
     hintRow: {
