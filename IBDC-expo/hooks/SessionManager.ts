@@ -3,7 +3,6 @@
  * a new session in the database should be created.
  */
 import { ActiveSessionPersistence } from "./ActiveSession";
-import { IBDCCommunicationService } from "@/services/IBDCCommunicationService";
 /**
  * Active Session lifetime management idea.
  * Use the SessionManager class to determine when a new session was created. SessionMmanager triggers the creation
@@ -35,9 +34,36 @@ import { IBDCCommunicationService } from "@/services/IBDCCommunicationService";
  * Steps to completion:
  *  1. Create a class that encapsulates the Active Session information and mutators. (>>)
  *  2. Create and maintain a reference to the current active session upon creation of a session (>>)
- *  3. Pass information to the ActiveSession through listeners the CommunicationService? Yes()
+ *  3. Pass information to the ActiveSession through listeners the CommunicationService? Yes() No(>>)
  *      What outside information does an active session need to operate?
  *      - Information from an incident trigger message
+ *
+ *  4. Different Approach
+ *  A better approach is to create a coordinator that relates SessionManager and the communication service. This coordinator
+ *  can pass relevant information to the Active Session, as well as orchestrating any other triggers that should happen
+ *  to the active session while the app is running. Yes(>>)
+ *
+ *
+ * Running list of possible issues:
+ *  - If an active session is destroyed and replaced with a new one AND active session is responsible for assigning listers
+ *   to the commsService AND during the transition, event notification are being sent, can the Active Session miss a notification?
+ *  - A possible solution is to keep a queue of event notifications in SessionManager to pass to the Active Session.
+ *    This listener can register once upon setup of the sessionmanager and listen throughout the lifetime of the runtime.
+ *    Question: Should the SessionManager be responsible for signing up to the event notification message, or another
+ *    module?
+ *    Consider the fact that a queue implementation combined with a way to register and un-register listeners are
+ *    required. Should a SessionManager object be responsible for:
+ *      - Determining which session incoming data belongs to
+ *      - Create and maintain the lifecycle of ActiveSessions
+ *      - Register with the communications service and maintain a queue of received event notifications?
+ *      - Writing a new created session to the database.
+ *
+ *   This class is a Manager, but of what exactly? Right now, it manages the lifecycle of active sessions and determines
+ *   whether sessions should be appended to or created. These have good reason to be paired together. I'm not convinced
+ *   that adding the responsibility of maintaining communications with a peripheral device should be SessionManagers job.
+ *
+ *   Solution: Create a class that encapsulates the SessionManager. This class will have a well-defined relationship with
+ *   SessionManager 1-1 and listens to event notifications from the comms service and provides them to SessionManager.
  *
  */
 
@@ -56,10 +82,10 @@ export interface SessionPersistence {
 }
 
 export class SessionManager {
-
-    static #commsService: IBDCCommunicationService;
     private persistence: SessionPersistence;
     private sessionOperation: Promise<void> = Promise.resolve();
+
+    // An active session is not created until a user pair's the phone.
     private activeSession: ActiveSessionPersistence | null = null;
 
 
@@ -106,7 +132,7 @@ export class SessionManager {
     private async persistNewSession(startTime: Date): Promise<string> {
         const sessionId = `session-${startTime.getTime()}-${Math.random().toString(36).slice(2, 10)}`;
         await this.persistence.createSession(sessionId, startTime.toISOString());
-        this.activeSession = new ActiveSessionPersistence(sessionId, SessionManager.#commsService);
+        this.activeSession = new ActiveSessionPersistence(sessionId);
         return sessionId;
     }
 
@@ -125,21 +151,16 @@ export class SessionManager {
         }
     }
 
-    public getActiveSessionPersistence(): ActiveSessionPersistence | null {
-          return this.activeSession;
-    }
-
     /**
-     * This function allows the static class variable commsService to be initialized at most once.
-     * @param commsService
+     * This could be null if the phone has not been connected to the device yet.
      */
-    public static linkCommunicationService(commsService: IBDCCommunicationService): void {
-        if (commsService !== null) {
-            SessionManager.#commsService ??= commsService;
+    public getActiveSessionPersistence(): ActiveSessionPersistence | null {
+        if (this.activeSession !== null) {
+            return this.activeSession;
         }
         else {
-            console.log("Comms service has already been initialized.")
+            console.warn("No active session persistence is registered in the SessionManager");
+            return null;
         }
-
     }
 }

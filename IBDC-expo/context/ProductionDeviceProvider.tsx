@@ -24,12 +24,12 @@ const bleAdapter: BleAdapter = mockBLEAdapter;
 // Sits between bleAdapter and this context (and any other domain services),
 const communicationService: IBDCCommunicationService = new IBDCCommunicationService(bleAdapter);
 
-SessionManager.linkCommunicationService(communicationService);
 
 // Abstractions built around hardware coupling.
 const imageStorage = new ExpoImageStorage();
 const imageLoader = new SimulatedIBDCImageLoader();
 const DAOAccess = new DAOAdapter();
+new SessionManager(DAOAccess)
 
 const imageIngestService: ImageIngestService = new ImageIngestService(communicationService, imageStorage, DAOAccess);
 

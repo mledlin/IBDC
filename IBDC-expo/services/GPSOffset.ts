@@ -366,6 +366,4 @@ function determineStrategy(Decision_Node: GPSDecisionNode): STRATEGY {
     }
 
     return STRATEGY.DEFAULT;
-    // More strategies need to be explored here. Depending on velocity, angular acceleration, time since the incident,
-    // different strategies can be employed to get the most accurate GPS position
 }
