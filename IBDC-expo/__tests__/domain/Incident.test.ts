@@ -112,7 +112,8 @@ describe("Incident status", () => {
 
     test("Incident without optional fields is reported as complete", () => {
         const incident = makeIncident({
-            injury_severity: null,
+            injury: null,
+            severity_of_pass: null,
             driver_present: 0,
             driver_information: null,
             extra_comment: null,
@@ -126,6 +127,21 @@ describe("Incident status", () => {
             isIncidentComplete(incident);
 
         expect(result).toBe(true);
+    });
+
+    test("Rejects invalid stored injury and severity-of-pass selections", () => {
+        expect(
+            isIncidentComplete(
+                makeIncident({injury: "Maybe" as "Yes" | "No"}),
+            ),
+        ).toBe(false);
+        expect(
+            isIncidentComplete(
+                makeIncident({
+                    severity_of_pass: "Severe" as "Intent" | "Unaware",
+                }),
+            ),
+        ).toBe(false);
     });
 
     test("Rejects a selected image that does not belong to the incident", () => {
