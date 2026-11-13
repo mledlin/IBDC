@@ -3,8 +3,7 @@
  * a new session in the database should be created.
  */
 import { ActiveSessionPersistence } from "./ActiveSession";
-
-
+import { IBDCCommunicationService } from "@/services/IBDCCommunicationService";
 /**
  * Active Session lifetime management idea.
  * Use the SessionManager class to determine when a new session was created. SessionMmanager triggers the creation
@@ -58,6 +57,7 @@ export interface SessionPersistence {
 
 export class SessionManager {
 
+    static #commsService: IBDCCommunicationService;
     private persistence: SessionPersistence;
     private sessionOperation: Promise<void> = Promise.resolve();
     private activeSession: ActiveSessionPersistence | null = null;
@@ -106,7 +106,7 @@ export class SessionManager {
     private async persistNewSession(startTime: Date): Promise<string> {
         const sessionId = `session-${startTime.getTime()}-${Math.random().toString(36).slice(2, 10)}`;
         await this.persistence.createSession(sessionId, startTime.toISOString());
-        this.activeSession = new ActiveSessionPersistence(sessionId);
+        this.activeSession = new ActiveSessionPersistence(sessionId, SessionManager.#commsService);
         return sessionId;
     }
 
@@ -127,5 +127,19 @@ export class SessionManager {
 
     public getActiveSessionPersistence(): ActiveSessionPersistence | null {
           return this.activeSession;
+    }
+
+    /**
+     * This function allows the static class variable commsService to be initialized at most once.
+     * @param commsService
+     */
+    public static linkCommunicationService(commsService: IBDCCommunicationService): void {
+        if (commsService !== null) {
+            SessionManager.#commsService ??= commsService;
+        }
+        else {
+            console.log("Comms service has already been initialized.")
+        }
+
     }
 }

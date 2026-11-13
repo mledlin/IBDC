@@ -8,6 +8,7 @@ import { ImageIngestService } from "@/services/ImageIngestService";
 import { ExpoImageStorage } from "@/services/ExpoImageStorage";
 import { DAOAdapter } from "@/services/DAOAdapter";
 import { SimulatedIBDCImageLoader } from "@/ble/SimulatedIBDCImageLoader"
+import { SessionManager } from '@/hooks/SessionManager';
 
 /**
  * This file is responsible for constructing the components used in the production build. This class also provides the
@@ -22,6 +23,8 @@ const bleAdapter: BleAdapter = mockBLEAdapter;
 
 // Sits between bleAdapter and this context (and any other domain services),
 const communicationService: IBDCCommunicationService = new IBDCCommunicationService(bleAdapter);
+
+SessionManager.linkCommunicationService(communicationService);
 
 // Abstractions built around hardware coupling.
 const imageStorage = new ExpoImageStorage();
