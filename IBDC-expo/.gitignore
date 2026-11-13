@@ -50,3 +50,5 @@ app-example
 /IBDC-expo/coverage/
 coverage/
 
+# Large video files added by unthinking developer...
+Documents/_Fall Docs/Demo_Video/*.mp4

@@ -1,6 +1,6 @@
 import {isIncidentComplete, type Incident} from "./Incident";
 
-export const DEFAULT_SESSIONS_PER_PAGE = 5;
+export const DEFAULT_SESSIONS_PER_PAGE = 10;
 
 export type RideSessionLike = {
     incidents: Incident[];
