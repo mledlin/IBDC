@@ -274,9 +274,30 @@ export default function IncidentDetail() {
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
             >
-                <Text style={[styles.title, { color: theme.colors.text }]}>
-                    Incident Details
-                </Text>
+                <View style={styles.titleRow}>
+                    <Text style={[styles.title, { color: theme.colors.text }]}>
+                        Incident Details
+                    </Text>
+
+                    <TouchableOpacity
+                        style={[
+                            styles.exportButton,
+                            {
+                                backgroundColor: theme.colors.primary,
+                                borderColor: theme.colors.primary,
+                            },
+                        ]}
+                        disabled
+                        activeOpacity={0.8}
+                        accessibilityLabel="Export incident PDF"
+                    >
+                        <Ionicons
+                            name="open-outline"
+                            size={17}
+                            color={theme.colors.primaryForeground}
+                        />
+                    </TouchableOpacity>
+                </View>
 
                 <View
                     style={[
@@ -778,12 +799,27 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: "600",
     },
-    title: {
-        fontSize: 24,
-        fontWeight: "700",
+    titleRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
         paddingHorizontal: 16,
         paddingTop: 16,
         paddingBottom: 12,
+    },
+    title: {
+        fontSize: 24,
+        fontWeight: "700",
+        flexShrink: 1,
+    },
+    exportButton: {
+        width: 34,
+        height: 34,
+        borderWidth: 1,
+        borderRadius: 10,
+        alignItems: "center",
+        justifyContent: "center",
+        marginLeft: 8,
     },
     photoContainer: {
         position: "relative",
