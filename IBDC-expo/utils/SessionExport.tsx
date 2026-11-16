@@ -1,4 +1,3 @@
-
 import {printAsync} from "expo-print";
 import {File} from "expo-file-system";
 import {getIncidentImagesByIncidentId} from "@/database/ImageDao";
@@ -74,6 +73,22 @@ export async function exportRideSessionToPdf(session: any): Promise<void> {
     await printAsync({
         html,
     });
+}
+
+/**
+ * Exports one incident, including its selected best image, as a PDF.
+ *
+ * @param incident The incident being exported.
+ */
+export async function exportIncidentToPdf(incident: any): Promise<void> {
+    if (!incident?.id) {
+        throw new Error("Invalid incident provided for export.");
+    }
+
+    const bestImageDataUri = await getBestImageDataUri(incident);
+    const html = buildIncidentHtml({...incident, bestImageDataUri});
+
+    await printAsync({html});
 }
 
 export function buildRideSessionHtml(session: any): string {
@@ -237,6 +252,110 @@ export function buildRideSessionHtml(session: any): string {
     `;
 
     return html;
+}
+
+/**
+ * Builds the HTML for a report containing one incident.
+ *
+ * @param incident The incident being exported.
+ */
+export function buildIncidentHtml(incident: any): string {
+    const formattedDate = formatTimestamp(incident.created_time);
+
+    return `
+        <!DOCTYPE html>
+        <html>
+            <head>
+                <meta charset="UTF-8" />
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        padding: 32px;
+                        color: #1f2937;
+                    }
+                    h1 {
+                        margin-bottom: 4px;
+                    }
+                    .incident-meta {
+                        color: #6b7280;
+                        margin-bottom: 28px;
+                    }
+                    .incident {
+                        border: 1px solid #d1d5db;
+                        border-radius: 10px;
+                        padding: 18px;
+                        page-break-inside: avoid;
+                    }
+                    .incident-image {
+                        margin: 16px 0;
+                        text-align: center;
+                    }
+                    .incident-image img {
+                        max-width: 100%;
+                        max-height: 300px;
+                        object-fit: contain;
+                        border-radius: 8px;
+                    }
+                    .row {
+                        margin: 8px 0;
+                    }
+                    .row strong {
+                        display: inline-block;
+                        width: 150px;
+                    }
+                </style>
+            </head>
+            <body>
+                <h1>Incident Report</h1>
+                <div class="incident-meta">${formattedDate}</div>
+
+                <div class="incident">
+                    ${incident.bestImageDataUri ? `
+                        <div class="incident-image">
+                            <img src="${incident.bestImageDataUri}" alt="Incident Image" />
+                        </div>
+                    ` : ""}
+
+                    <div class="row">
+                        <strong>Time:</strong>
+                        <span>${formattedDate}</span>
+                    </div>
+                    <div class="row">
+                        <strong>Location:</strong>
+                        <span>${incident.latitude ?? "N/A"}, ${incident.longitude ?? "N/A"}</span>
+                    </div>
+                    <div class="row">
+                        <strong>License Plate:</strong>
+                        <span>${incident.license_plate || "Not provided"}</span>
+                    </div>
+                    <div class="row">
+                        <strong>Injury (Yes/No):</strong>
+                        <span>${isInjurySelection(incident.injury) ? incident.injury : "Not provided"}</span>
+                    </div>
+                    <div class="row">
+                        <strong>Severity of Pass (Intent/Unaware):</strong>
+                        <span>${isSeverityOfPass(incident.severity_of_pass) ? incident.severity_of_pass : "Not provided"}</span>
+                    </div>
+                    <div class="row">
+                        <strong>Vehicle:</strong>
+                        <span>${formatVehicle(incident)}</span>
+                    </div>
+                    <div class="row">
+                        <strong>Driver Present:</strong>
+                        <span>${incident.driver_present ? "Yes" : "No"}</span>
+                    </div>
+                    <div class="row">
+                        <strong>Driver Information:</strong>
+                        <span>${incident.driver_information || "None"}</span>
+                    </div>
+                    <div class="row">
+                        <strong>Comments:</strong>
+                        <span>${incident.extra_comment || "None"}</span>
+                    </div>
+                </div>
+            </body>
+        </html>
+    `;
 }
 
 /**
