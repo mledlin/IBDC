@@ -13,6 +13,7 @@ import {BleDeviceInfo} from "@/ble/BleAdapter";
 import {useDevice} from "@/context/DeviceContext";
 import {useRouter} from "expo-router";
 import {useTheme} from "@/context/ThemeContext";
+import {useAsyncStorage} from "@/hooks/useAsyncStorage";
 
 
 /**
