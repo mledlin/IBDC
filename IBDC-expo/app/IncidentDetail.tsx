@@ -519,7 +519,7 @@ export default function IncidentDetail() {
                                     license_plate: text,
                                 });
                             }}
-                            placeholder="ABC-1234"
+                            placeholder="e.g., ABC-1234"
                             placeholderTextColor={
                                 theme.colors.textSecondary
                             }
@@ -547,7 +547,7 @@ export default function IncidentDetail() {
                                         vehicle_make: text,
                                     });
                                 }}
-                                placeholder="Toyota"
+                                placeholder="e.g., Toyota"
                                 placeholderTextColor={
                                     theme.colors.textSecondary
                                 }
@@ -573,7 +573,7 @@ export default function IncidentDetail() {
                                         vehicle_model: text,
                                     });
                                 }}
-                                placeholder="Corolla"
+                                placeholder="e.g., Corolla"
                                 placeholderTextColor={
                                     theme.colors.textSecondary
                                 }
@@ -601,7 +601,7 @@ export default function IncidentDetail() {
                                         vehicle_color: text,
                                     });
                                 }}
-                                placeholder="White"
+                                placeholder="e.g., White"
                                 placeholderTextColor={
                                     theme.colors.textSecondary
                                 }
@@ -627,7 +627,7 @@ export default function IncidentDetail() {
                                         vehicle_year: text,
                                     });
                                 }}
-                                placeholder="2022"
+                                placeholder="e.g., 2022"
                                 placeholderTextColor={
                                     theme.colors.textSecondary
                                 }
@@ -695,8 +695,8 @@ export default function IncidentDetail() {
                         }}
                         placeholder={
                             driverPresent
-                                ? "Enter driver information..."
-                                : "No driver present"
+                                ? "e.g., driver wearing a blue jacket"
+                                : "e.g., no driver present"
                         }
                         placeholderTextColor={theme.colors.textSecondary}
                         multiline
@@ -732,7 +732,7 @@ export default function IncidentDetail() {
                                 extra_comment: text,
                             });
                         }}
-                        placeholder="Any additional observations..."
+                        placeholder="e.g., rear bumper damage; vehicle headed east"
                         placeholderTextColor={theme.colors.textSecondary}
                         multiline
                     />
