@@ -35,6 +35,7 @@ import {
 
 import {useTheme} from "@/context/ThemeContext";
 import {useDevice} from "@/context/DeviceContext"
+import {useRouter} from "expo-router";
 import ThemePicker from "@/components/ui/ThemePicker";
 import {useSafeAreaInsets} from "react-native-safe-area-context";
 
@@ -49,6 +50,7 @@ import {useSafeAreaInsets} from "react-native-safe-area-context";
  */
 export default function SettingsPage() {
     const {theme} = useTheme();
+    const router = useRouter();
     const {deviceMode, setDeviceMode, desiredImagesPerEvent, setImagesPerEvent} = useDevice();
     const [isClearingTestData, setIsClearingTestData] = useState(false);
     const [isSwitchingDevice, setIsSwitchingDevice] = useState(false);
@@ -371,6 +373,41 @@ export default function SettingsPage() {
                 <Text style={[styles.sectionLabel, {color: theme.colors.text}]}>APPEARANCE</Text>
                 <ThemePicker/>
 
+                <Text style={[styles.sectionLabel, {color: theme.colors.text}]}>
+                    GETTING STARTED
+                </Text>
+                <View style={[
+                    styles.retentionSection,
+                    {
+                        backgroundColor: theme.colors.background,
+                        borderColor: theme.colors.border,
+                        borderRadius: theme.radii.md,
+                    },
+                ]}>
+                    <Text style={[styles.retentionLabel, {color: theme.colors.text}]}>
+                        App Tutorial
+                    </Text>
+                    <Text style={[styles.settingDescription, {color: theme.colors.textSecondary}]}>
+                        Review how to connect, find incidents, and export reports.
+                    </Text>
+                    <TouchableOpacity
+                        style={[
+                            styles.addMockButton,
+                            {
+                                backgroundColor: theme.colors.primary,
+                                borderRadius: theme.radii.md,
+                            },
+                        ]}
+                        onPress={() => router.push("/Tutorial")}
+                    >
+                        <Text style={[
+                            styles.actionButtonText,
+                            {color: theme.colors.primaryForeground},
+                        ]}>
+                            Replay Tutorial
+                        </Text>
+                    </TouchableOpacity>
+                </View>
 
                 <View style={[
                     styles.retentionSection,
