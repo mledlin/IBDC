@@ -18,10 +18,12 @@ import {
     Switch,
     KeyboardAvoidingView,
     Platform,
+    Alert,
 } from "react-native";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useTheme } from "@/context/ThemeContext";
 import { Ionicons } from "@expo/vector-icons";
+import { exportIncidentToPdf } from "@/utils/SessionExport";
 import {
     deleteIncident,
     getIncidentById,
@@ -82,6 +84,34 @@ export default function IncidentDetail() {
 
     // Null means the placeholder should be displayed.
     const [thumbnailSource, setThumbnailSource] = useState<any>(null);
+    const [isExporting, setIsExporting] = useState(false);
+
+    /**
+     * Exports the selected incident as a PDF.
+     */
+    async function handleExportIncident() {
+        if (typeof id !== "string" || isExporting) {
+            return;
+        }
+
+        setIsExporting(true);
+
+        try {
+            const incident = await getIncidentById(id);
+
+            if (!incident) {
+                Alert.alert("Export Failed", "Incident not found.");
+                return;
+            }
+
+            await exportIncidentToPdf(incident);
+        } catch (error) {
+            console.error("Failed to export incident", error);
+            Alert.alert("Export Failed", "Could not export incident PDF.");
+        } finally {
+            setIsExporting(false);
+        }
+    }
 
     /**
      * Deletes the current incident and returns to the previous screen.
@@ -287,7 +317,8 @@ export default function IncidentDetail() {
                                 borderColor: theme.colors.primary,
                             },
                         ]}
-                        disabled
+                        onPress={() => void handleExportIncident()}
+                        disabled={isExporting}
                         activeOpacity={0.8}
                         accessibilityLabel="Export incident PDF"
                     >
