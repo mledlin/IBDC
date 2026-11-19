@@ -6,10 +6,11 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
  * @param key
  * @param initialValue values to load into the store
  */
-export function useAsyncStorage (key: string, initialValue: string) {
-    const [storedValue, setStoredValue] = useState(initialValue);
+export function useAsyncStorage (key: string, initialValue?: any) {
+    const [data, setData] = useState(JSON.stringify(initialValue));
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
+    console.log("Initial value passed to asyncStorage: " + initialValue + "\n");
 
     // 1. System-prompted retrieve (runs automatically on mount), only re-runs when key value changes
     useEffect(() => {
@@ -18,8 +19,8 @@ export function useAsyncStorage (key: string, initialValue: string) {
         const loadStoredValue = async () => {
             try {
                 const item: string | null = await AsyncStorage.getItem(key);
-                if (isMounted && item !== null) {
-                    setStoredValue(JSON.parse(item));
+                if (isMounted && initialValue !== null) {
+                    setData(JSON.stringify(initialValue));
                 }
             }
             catch (error: any) {
@@ -37,15 +38,15 @@ export function useAsyncStorage (key: string, initialValue: string) {
         }
     }, [key])
 
-    const setValue = useCallback(async (value: string | Function) => {
+    const setValue = useCallback(async (value: any | Function) => {
         try {
             setError(null);
 
             // Allow value to be a function just like standard useState
-            const valueToStore: string  = value instanceof Function ? value(storedValue) : value;
+            const valueToStore: string  = value instanceof Function ? value(data) : value;
 
             // Update React state immediately so the UI feels instant
-            setStoredValue(valueToStore);
+            setData(valueToStore);
 
             // Persist to AsyncStorage in the background
             await AsyncStorage.setItem(key, JSON.stringify(valueToStore));
@@ -54,12 +55,14 @@ export function useAsyncStorage (key: string, initialValue: string) {
                 setError(err);
             }
 
-        },[key, storedValue]);
+        },[key, data]);
+    console.log("Data stored in useAsyncStorage: " + data);
 
     return {
-        storedValue: storedValue,
+        data: data,
         error: error,
-        isLoading: isLoading
+        isLoading: isLoading,
+        setValue: setValue
     }
 }
 
