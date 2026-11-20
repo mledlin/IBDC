@@ -26,13 +26,14 @@ export function makeIncident(
         created_time: "2026-09-09T12:00:00.000Z",
         license_plate: "ABC123",
         best_image_id: `${id}-image-1`,
-        injury_severity: null,
+        injury: "Yes",
+        severity_of_pass: "Intent",
         driver_present: 0,
         driver_information: null,
         extra_comment: "Test comment",
         vehicle_make: null,
         vehicle_model: null,
-        vehicle_color: null,
+        vehicle_color: "White",
         vehicle_year: null,
         imageFiles: [
             {
@@ -54,7 +55,7 @@ export function makeIncident(
 export function makeIncompleteIncident(id: string): Incident {
     return makeIncident({
         id,
-        latitude: null,
+        vehicle_color: null,
     });
 }
 

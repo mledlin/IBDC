@@ -214,7 +214,8 @@ export class ImageIngestService {
             null, // longitude
             null, // licensePlate
             bestImageId,
-            null, // injurySeverity
+            null, // injury
+            null, // severityOfPass
             0, // driverPresent
             null, // driverInformation
             null, // extraComment

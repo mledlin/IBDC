@@ -1,7 +1,7 @@
 // database/IncidentDao.ts
 
 import { getDatabase } from "./database";
-import { Incident } from "../domain/Incident"
+import type {InjurySelection, SeverityOfPass} from "../domain/Incident";
 
 //Retrieves incidents, with newest first
 export async function getAllIncidents() {
@@ -21,7 +21,8 @@ export async function createIncident(
     longitude: number | null,
     licensePlate: string | null,
     bestImageId: string | null,
-    injurySeverity: string | null,
+    injury: InjurySelection | null,
+    severityOfPass: SeverityOfPass | null,
     driverPresent: number,
     driverInformation: string | null,
     extraComment: string | null,
@@ -41,7 +42,8 @@ export async function createIncident(
             longitude,
             license_plate,
             best_image_id,
-            injury_severity,
+            injury,
+            severity_of_pass,
             driver_present,
             driver_information,
             extra_comment,
@@ -50,14 +52,15 @@ export async function createIncident(
             vehicle_color,
             vehicle_year,
             created_time
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         id,
         sessionId,
         latitude,
         longitude,
         licensePlate,
         bestImageId,
-        injurySeverity,
+        injury,
+        severityOfPass,
         driverPresent,
         driverInformation,
         extraComment,
@@ -110,7 +113,8 @@ export async function updateIncidentDetails(
     incidentId: string,
     updates: {
         license_plate?: string | null;
-        injury_severity?: string | null;
+        injury?: InjurySelection | null;
+        severity_of_pass?: SeverityOfPass | null;
         driver_present?: number;
         driver_information?: string | null;
         extra_comment?: string | null;

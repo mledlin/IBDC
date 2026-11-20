@@ -1,5 +1,6 @@
 import {printToFileAsync} from "expo-print";
 import {isAvailableAsync, shareAsync} from "expo-sharing";
+import {isInjurySelection, isSeverityOfPass} from "@/domain/Incident";
 
 /**
  * Exports a ride session and its incidents as a PDF.
@@ -10,6 +11,26 @@ import {isAvailableAsync, shareAsync} from "expo-sharing";
  * @param session The ride session being exported.
  */
 export async function exportRideSessionToPdf(session: any) {
+    const html = buildRideSessionHtml(session);
+
+    const {uri} = await printToFileAsync({
+        html,
+    });
+
+    const sharingAvailable = await isAvailableAsync();
+
+    if (!sharingAvailable) {
+        throw new Error("Sharing is not available on this device.");
+    }
+
+    await shareAsync(uri, {
+        mimeType: "application/pdf",
+        dialogTitle: "Export Ride Session",
+        UTI: "com.adobe.pdf",
+    });
+}
+
+export function buildRideSessionHtml(session: any): string {
     const formattedDate = session.startDateStamp
         ? session.startDateStamp.toLocaleString()
         : "Unknown Date";
@@ -39,8 +60,17 @@ export async function exportRideSessionToPdf(session: any) {
                     </div>
 
                     <div class="row">
-                        <strong>Injury Severity:</strong>
-                        <span>${incident.injury_severity || "None"}</span>
+                        <strong>Injury (Yes/No):</strong>
+                        <span>${isInjurySelection(incident.injury)
+                            ? incident.injury
+                            : "Not provided"}</span>
+                    </div>
+
+                    <div class="row">
+                        <strong>Severity of Pass (Intent/Unaware):</strong>
+                        <span>${isSeverityOfPass(incident.severity_of_pass)
+                            ? incident.severity_of_pass
+                            : "Not provided"}</span>
                     </div>
 
                     <div class="row">
@@ -138,22 +168,7 @@ export async function exportRideSessionToPdf(session: any) {
             </body>
         </html>
     `;
-
-    const {uri} = await printToFileAsync({
-        html,
-    });
-
-    const sharingAvailable = await isAvailableAsync();
-
-    if (!sharingAvailable) {
-        throw new Error("Sharing is not available on this device.");
-    }
-
-    await shareAsync(uri, {
-        mimeType: "application/pdf",
-        dialogTitle: "Export Ride Session",
-        UTI: "com.adobe.pdf",
-    });
+    return html;
 }
 
 /**

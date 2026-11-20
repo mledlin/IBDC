@@ -33,11 +33,14 @@ const MOCK_PLATES = [
     "ASU3232",
 ];
 
-const MOCK_SEVERITIES = [
-    "minor",
-    "moderate",
-    "major",
+const MOCK_INJURIES: readonly ("Yes" | "No" | null)[] = [
+    null,
+    "Yes",
+    "No",
 ];
+const MOCK_SEVERITIES_OF_PASS: readonly (
+    "Intent" | "Unaware" | null
+)[] = [null, "Intent", "Unaware"];
 
 const MOCK_DRIVER_INFO = [
     "Unknown",
@@ -111,7 +114,8 @@ export type MockIncidentRecord = {
     longitude: number | null;
     licensePlate: string | null;
     bestImageId: string | null;
-    injurySeverity: string | null;
+    injury: "Yes" | "No" | null;
+    severityOfPass: "Intent" | "Unaware" | null;
     driverPresent: number;
     driverInformation: string | null;
     extraComment: string | null;
@@ -280,9 +284,14 @@ export function createMockDataSet(
                     random,
                 ),
             bestImageId,
-            injurySeverity:
+            injury:
                 pickRandom(
-                    MOCK_SEVERITIES,
+                    MOCK_INJURIES,
+                    random,
+                ),
+            severityOfPass:
+                pickRandom(
+                    MOCK_SEVERITIES_OF_PASS,
                     random,
                 ),
             driverPresent:

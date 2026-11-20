@@ -16,76 +16,6 @@ describe("Incident status", () => {
         expect(result).toBe(true);
     });
 
-    test("Incident with no images is reported as incomplete", () => {
-        const incident = makeIncident({
-            imageFiles: [],
-        });
-
-        const result =
-            isIncidentComplete(incident);
-
-        expect(result).toBe(false);
-    });
-
-    test("Incident without selected best image is reported as incomplete", () => {
-        const incident = makeIncident({
-            best_image_id: null,
-        });
-
-        const result =
-            isIncidentComplete(incident);
-
-        expect(result).toBe(false);
-    });
-
-    test("Incident missing latitude or longitude is reported as incomplete", () => {
-        const missingLatitude =
-            makeIncident({
-                latitude: null,
-            });
-
-        const missingLongitude =
-            makeIncident({
-                longitude: null,
-            });
-
-        expect(
-            isIncidentComplete(
-                missingLatitude,
-            ),
-        ).toBe(false);
-
-        expect(
-            isIncidentComplete(
-                missingLongitude,
-            ),
-        ).toBe(false);
-    });
-
-    test("Incident missing creation time is reported as incomplete", () => {
-        const nullCreationTime =
-            makeIncident({
-                created_time: null,
-            });
-
-        const emptyCreationTime =
-            makeIncident({
-                created_time: "",
-            });
-
-        expect(
-            isIncidentComplete(
-                nullCreationTime,
-            ),
-        ).toBe(false);
-
-        expect(
-            isIncidentComplete(
-                emptyCreationTime,
-            ),
-        ).toBe(false);
-    });
-
     test("Incident with a blank license plate is reported as incomplete", () => {
         const emptyLicensePlate =
             makeIncident({
@@ -110,15 +40,33 @@ describe("Incident status", () => {
         ).toBe(false);
     });
 
+    test("Incident with a blank vehicle color is reported as incomplete", () => {
+        expect(
+            isIncidentComplete(makeIncident({vehicle_color: ""})),
+        ).toBe(false);
+
+        expect(
+            isIncidentComplete(makeIncident({vehicle_color: "   "})),
+        ).toBe(false);
+    });
+
+    test("Incident without injury or severity selections is reported as incomplete", () => {
+        expect(
+            isIncidentComplete(makeIncident({injury: null})),
+        ).toBe(false);
+
+        expect(
+            isIncidentComplete(makeIncident({severity_of_pass: null})),
+        ).toBe(false);
+    });
+
     test("Incident without optional fields is reported as complete", () => {
         const incident = makeIncident({
-            injury_severity: null,
             driver_present: 0,
             driver_information: null,
             extra_comment: null,
             vehicle_make: null,
             vehicle_model: null,
-            vehicle_color: null,
             vehicle_year: null,
         });
 
@@ -128,25 +76,30 @@ describe("Incident status", () => {
         expect(result).toBe(true);
     });
 
-    test("Rejects a selected image that does not belong to the incident", () => {
+    test("Image, location, and timestamp are not required for completion", () => {
         const incident = makeIncident({
-            best_image_id: "missing-image",
+            best_image_id: null,
+            imageFiles: [],
+            latitude: null,
+            longitude: null,
+            created_time: null,
         });
 
-        expect(isIncidentComplete(incident)).toBe(false);
+        expect(isIncidentComplete(incident)).toBe(true);
     });
 
-    test("Rejects invalid coords and timestamps", () => {
+    test("Rejects invalid stored injury and severity-of-pass selections", () => {
         expect(
-            isIncidentComplete(makeIncident({ latitude: NaN })),
+            isIncidentComplete(
+                makeIncident({injury: "Maybe" as "Yes" | "No"}),
+            ),
         ).toBe(false);
-
         expect(
-            isIncidentComplete(makeIncident({ longitude: 181 })),
-        ).toBe(false);
-
-        expect(
-            isIncidentComplete(makeIncident({ created_time: "invalid" })),
+            isIncidentComplete(
+                makeIncident({
+                    severity_of_pass: "Severe" as "Intent" | "Unaware",
+                }),
+            ),
         ).toBe(false);
     });
 });

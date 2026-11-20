@@ -17,6 +17,17 @@
 
 import type {ImageSourcePropType} from "react-native";
 
+export type InjurySelection = "Yes" | "No";
+export type SeverityOfPass = "Intent" | "Unaware";
+
+export function isInjurySelection(value: unknown): value is InjurySelection {
+    return value === "Yes" || value === "No";
+}
+
+export function isSeverityOfPass(value: unknown): value is SeverityOfPass {
+    return value === "Intent" || value === "Unaware";
+}
+
 export type Incident = {
     id: string;
     session_id: string;
@@ -25,7 +36,8 @@ export type Incident = {
     created_time: string | null;
     license_plate: string | null;
     best_image_id: string | null;
-    injury_severity: string | null;
+    injury: InjurySelection | null;
+    severity_of_pass: SeverityOfPass | null;
     driver_present: number;
     driver_information: string | null;
     extra_comment: string | null;
@@ -50,38 +62,15 @@ export type IncidentImage = {
     uri: ImageSourcePropType;
 };
 
-// This is a potential check to verify an incident is ready to be published as a PDF or by
-// other means. All required data should be filled in to be true. Added checks to ensure selected image exists.
+// Required incident details used to determine whether the incident needs review.
 export function isIncidentComplete(incident: Incident): boolean {
     const hasText = (value: unknown): value is string =>
         typeof value === "string" && value.trim().length > 0;
 
-    const validCoordinate = (
-        value: unknown,
-        minimum: number,
-        maximum: number,
-    ): boolean =>
-        typeof value === "number" &&
-        Number.isFinite(value) &&
-        value >= minimum &&
-        value <= maximum;
-
-    const hasSelectedImage =
-        hasText(incident.best_image_id) &&
-        Array.isArray(incident.imageFiles) &&
-        incident.imageFiles.some(
-            (image) => image.id === incident.best_image_id,
-        );
-
-    const hasValidTimestamp =
-        hasText(incident.created_time) &&
-        Number.isFinite(Date.parse(incident.created_time));
-
     return (
-        hasSelectedImage &&
-        validCoordinate(incident.latitude, -90, 90) &&
-        validCoordinate(incident.longitude, -180, 180) &&
-        hasValidTimestamp &&
-        hasText(incident.license_plate)
+        isInjurySelection(incident.injury) &&
+        isSeverityOfPass(incident.severity_of_pass) &&
+        hasText(incident.license_plate) &&
+        hasText(incident.vehicle_color)
     );
 }
