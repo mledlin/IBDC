@@ -1,6 +1,7 @@
-import React from "react";
-import { Modal, View, Text, FlatList, Pressable, StyleSheet, } from "react-native";
+import React, {useState} from "react";
+import {Modal, View, Text, FlatList, Pressable, StyleSheet, TextInput} from "react-native";
 import {BleDeviceInfo} from "@/ble/BleAdapter";
+import useSavedDeviceNames  from "@/hooks/useSavedDeviceNames"
 
 type BluetoothDeviceModalProps = {
     visible: boolean; 
@@ -9,7 +10,12 @@ type BluetoothDeviceModalProps = {
     onSelectDevice: (device: BleDeviceInfo) => void;
 }
 
+const SAVED_DEVICE_NAMES_KEY: string = "key-1";
+
 export default function BluetoothDeviceModal({ visible, devices, onClose, onSelectDevice,}: BluetoothDeviceModalProps ){
+    const {savedDevices, saveDeviceName, isLoading, error} = useSavedDeviceNames(SAVED_DEVICE_NAMES_KEY);
+    const [editingDeviceId, setEditingDeviceId] = useState<string | null>(null);
+
     return (
         <Modal
         visible={visible}
@@ -26,14 +32,28 @@ export default function BluetoothDeviceModal({ visible, devices, onClose, onSele
                     <FlatList
                     data = {devices}
                     keyExtractor={(item)=> item.id}
-                    renderItem={({ item }) => (
+                    renderItem={({ item, index }) => (
+                        <View>
                         <Pressable
                         style={styles.deviceItem}
                         onPress={() => onSelectDevice(item)}
                         >
-                            <Text style={styles.deviceName}>{item.name || "Unknown Device"}</Text>
-                            <Text style={styles.deviceId}>{item.id}</Text>
+                            <Text style={styles.deviceName}>
+                                {savedDevices.find(item => devices[index].id === item.id)?.name
+                                    ?? (devices[index].id)}
+                            </Text>
+                            <Text style={styles.deviceId}>
+                                {item.id}
+                            </Text>
                         </Pressable>
+                            <Pressable style={styles.renameButton}
+                                onPress={() => {
+
+                                }}
+                            >
+                                <Text>Set device name</Text>
+                            </Pressable>
+                        </View>
                     )}
                     />
                 )}
@@ -45,6 +65,7 @@ export default function BluetoothDeviceModal({ visible, devices, onClose, onSele
         </Modal>
     )
 }
+
 
 const styles = StyleSheet.create({
     overlay:{
@@ -104,5 +125,13 @@ const styles = StyleSheet.create({
         color: "#6b7280",
         marginTop: 2,
     },
+    renameButton: {
+        paddingVertical: 3,
+        borderWidth: 1,
+        borderColor: '#fd5',
+        fontSize: 12,
+        alignSelf: "flex-start",
+        backgroundColor: "#",
+    }
    
 })

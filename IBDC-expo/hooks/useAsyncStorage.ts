@@ -12,7 +12,7 @@ export function useAsyncStorage (key: string, initialValue?: any) {
     const [error, setError] = useState(null);
     console.log("Initial value passed to asyncStorage: " + initialValue + "\n");
 
-    // 1. System-prompted retrieve (runs automatically on mount), only re-runs when key value changes
+    // 1. System-prompted retrieve (runs automatically on mount) only re-runs when key value changes
     useEffect(() => {
         let isMounted: boolean = true;
 
