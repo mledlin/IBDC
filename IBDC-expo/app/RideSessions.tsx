@@ -62,6 +62,9 @@ export default function RideSession() {
     );
 
     const [allSessions, setAllSessions] = useState<any[]>([]);
+    const [exportSessionId, setExportSessionId] = useState<string | null>(null);
+    const [selectedIncidentIds, setSelectedIncidentIds] = useState<string[]>([]);
+    const [isExporting, setIsExporting] = useState(false);
 
     const {
         currentPage,
@@ -202,19 +205,62 @@ export default function RideSession() {
     }
 
     /**
-     * Exports selected ride session as a PDF.
-     *
-     * @param session The ride session selected for export.
+     * Enables inline incident selection for the chosen ride session.
+     */
+    function handleStartExport(session: any) {
+        if (isExporting) return;
+        if (exportSessionId === String(session.id)) {
+            handleCancelExport();
+            return;
+        }
+        setExportSessionId(String(session.id));
+        setSelectedIncidentIds([]);
+    }
+
+    function handleCancelExport() {
+        if (isExporting) return;
+        setExportSessionId(null);
+        setSelectedIncidentIds([]);
+    }
+
+    function handleToggleIncident(incidentId: string) {
+        setSelectedIncidentIds((current) =>
+            current.includes(incidentId)
+                ? current.filter((id) => id !== incidentId)
+                : [...current, incidentId]
+        );
+    }
+
+    function handleToggleSelectAll(session: any) {
+        const ids = session.incidents.map((incident: any) => String(incident.id));
+        const allSelected = ids.every((id: string) => selectedIncidentIds.includes(id));
+        setSelectedIncidentIds(allSelected ? [] : ids);
+    }
+
+    /**
+     * Exports only the incidents selected on this session card.
      */
     async function handleExportSession(session: any) {
+        if (isExporting || selectedIncidentIds.length === 0) return;
+
+        setIsExporting(true);
         try {
-            await exportRideSessionToPdf(session);
-        } catch (error) {
-            console.error("Failed to export ride session", error);
-            Alert.alert(
-                "Export Failed",
-                "The ride sesssion could not be exported at this time."
+            const selected = session.incidents.filter((incident: any) =>
+                selectedIncidentIds.includes(String(incident.id))
             );
+            if (selected.length === 0) return;
+
+            await exportRideSessionToPdf({
+                ...session,
+                incidents: selected,
+            });
+            setExportSessionId(null);
+            setSelectedIncidentIds([]);
+        } catch (error) {
+            console.error("Failed to export selected incidents", error);
+            Alert.alert("Export Failed", "The selected incidents could not be exported.");
+        } finally {
+            setIsExporting(false);
         }
     }
 
@@ -506,6 +552,11 @@ export default function RideSession() {
 
                         const incidentCount = session.incidents.length;
                         const actionRequired = sessionHasActionRequired(session);
+                        const isSelecting = exportSessionId === String(session.id);
+                        const selectedCount = session.incidents.filter((incident: any) =>
+                            selectedIncidentIds.includes(String(incident.id))
+                        ).length;
+                        const allSelected = incidentCount > 0 && selectedCount === incidentCount;
 
                         return (
                             <View key={startIndex + index} style={[styles.sessionCard, {
@@ -534,11 +585,13 @@ export default function RideSession() {
                                                     borderColor: theme.colors.border,
                                                 },
                                             ]}
-                                            onPress={() => handleExportSession(session)}
+                                            onPress={() => handleStartExport(session)}
+                                            disabled={isExporting || incidentCount === 0}
+                                            accessibilityLabel={isSelecting ? "Cancel incident selection" : "Select incidents to export"}
                                             activeOpacity={0.8}
                                         >
                                             <Ionicons
-                                                name="open-outline"
+                                                name={isSelecting ? "close-outline" : "open-outline"}
                                                 size={17}
                                                 color={theme.colors.text}
                                             />
@@ -563,6 +616,52 @@ export default function RideSession() {
                                         )}
                                     </View>
                                 </View>
+                                {isSelecting && (
+                                    <View style={[styles.exportSelectionPanel, {borderColor: theme.colors.border}]}>
+                                        <View style={styles.exportSelectionHeader}>
+                                            <Text style={[styles.exportSelectionText, {color: theme.colors.surfaceText}]}>
+                                                Tap incident cards to select ({selectedCount}/{incidentCount})
+                                            </Text>
+                                            <TouchableOpacity
+                                                onPress={() => handleToggleSelectAll(session)}
+                                                disabled={isExporting}
+                                                accessibilityRole="checkbox"
+                                                accessibilityState={{checked: allSelected}}
+                                                style={styles.selectAllAction}
+                                            >
+                                                <Ionicons
+                                                    name={allSelected ? "checkbox" : "square-outline"}
+                                                    size={20}
+                                                    color={theme.colors.primary}
+                                                />
+                                                <Text style={{color: theme.colors.surfaceText, fontWeight: "700"}}>
+                                                    Select All
+                                                </Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                        <View style={styles.exportSelectionActions}>
+                                            <TouchableOpacity
+                                                style={[styles.exportActionButton, {borderColor: theme.colors.border}]}
+                                                onPress={handleCancelExport}
+                                                disabled={isExporting}
+                                            >
+                                                <Text style={{color: theme.colors.surfaceText}}>Cancel</Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity
+                                                style={[styles.exportActionButton, {
+                                                    backgroundColor: selectedCount > 0 ? theme.colors.primary : theme.colors.border,
+                                                    borderColor: selectedCount > 0 ? theme.colors.primary : theme.colors.border,
+                                                }]}
+                                                onPress={() => void handleExportSession(session)}
+                                                disabled={selectedCount === 0 || isExporting}
+                                            >
+                                                <Text style={{color: selectedCount > 0 ? theme.colors.primaryForeground : theme.colors.textSecondary, fontWeight: "700"}}>
+                                                    {isExporting ? "Exporting..." : `Export Selected (${selectedCount})`}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+                                )}
                                 {session.incidents.length === 0 ? (
                                     <View style={styles.noIncidentContainer}>
                                         <View style={styles.noIncidentMessage}>
@@ -612,8 +711,9 @@ export default function RideSession() {
                                             showsHorizontalScrollIndicator={true}
                                             contentContainerStyle={styles.incidentRow}>
                                             {session.incidents.map((incident: any, incidentIndex: number) => {
+                                                const isIncidentSelected = isSelecting && selectedIncidentIds.includes(String(incident.id));
                                                 const selectedImage =
-                                                    incident.imageFiles.find(
+                                                    (incident.imageFiles ?? []).find(
                                                         (image: any) =>
                                                             image.id === incident.selectedImageId
                                                     ) || null;
@@ -624,9 +724,25 @@ export default function RideSession() {
                                                         key={incidentIndex}
                                                         style={[styles.incidentCard, {
                                                             backgroundColor: theme.colors.background,
-                                                            borderColor: theme.colors.border
+                                                            borderColor: isIncidentSelected ? theme.colors.primary : theme.colors.border,
+                                                            borderWidth: isIncidentSelected ? 3 : 1,
                                                         },]}
-                                                        onPress={() => handleIncidentPress(incident)}>
+                                                        accessibilityRole={isSelecting ? "checkbox" : "button"}
+                                                        accessibilityState={isSelecting ? {checked: isIncidentSelected} : undefined}
+                                                        onPress={() => isSelecting
+                                                            ? handleToggleIncident(String(incident.id))
+                                                            : handleIncidentPress(incident)}>
+                                                        {isSelecting && (
+                                                            <View style={[styles.incidentSelectionBadge, {
+                                                                backgroundColor: isIncidentSelected ? theme.colors.primary : theme.colors.surface,
+                                                            }]}>
+                                                                <Ionicons
+                                                                    name={isIncidentSelected ? "checkmark" : "square-outline"}
+                                                                    size={20}
+                                                                    color={isIncidentSelected ? theme.colors.primaryForeground : theme.colors.surfaceText}
+                                                                />
+                                                            </View>
+                                                        )}
                                                         {selectedImage ? (
                                                             <Image
                                                                 source={selectedImage.uri}
@@ -828,6 +944,54 @@ const styles = StyleSheet.create({
         marginLeft: 10,
     },
 
+    exportSelectionPanel: {
+        width: "100%",
+        borderTopWidth: 1,
+        paddingTop: 12,
+        paddingBottom: 12,
+        gap: 12,
+    },
+    exportSelectionHeader: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 12,
+    },
+    exportSelectionText: {
+        flex: 1,
+        fontSize: 12,
+        fontWeight: "600",
+    },
+    selectAllAction: {
+        flexDirection: "row",
+        gap: 6,
+        alignItems: "center",
+        paddingVertical: 6,
+    },
+    exportSelectionActions: {
+        flexDirection: "row",
+        gap: 10,
+        justifyContent: "flex-end",
+    },
+    exportActionButton: {
+        minHeight: 40,
+        paddingHorizontal: 12,
+        borderWidth: 1,
+        borderRadius: 10,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    incidentSelectionBadge: {
+        position: "absolute",
+        top: 8,
+        left: 8,
+        zIndex: 2,
+        width: 30,
+        height: 30,
+        borderRadius: 8,
+        justifyContent: "center",
+        alignItems: "center",
+    },
     sessionExportButton: {
         width: 34,
         height: 34,
