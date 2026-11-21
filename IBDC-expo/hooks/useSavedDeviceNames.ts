@@ -10,7 +10,7 @@ export default function useSavedDeviceNames(key: string) {
 
     const saveDeviceName = useCallback(
         async (uuid: string, name: string) => {
-
+            console.log("useSavedDeviceNames:saveDeviceName - params {uuid} {name}", uuid, name);
             // Search existing devices to see if it already exists
             const existingDevice = savedDevices.find(
                 device => device.id === uuid
@@ -29,7 +29,7 @@ export default function useSavedDeviceNames(key: string) {
             } else { // Add the new device to the existing array and copy saved contents into the it
                 updatedDevices = [
                     ...savedDevices,
-                    { id: uuid, name }
+                    { id: uuid, name: name }
                 ];
             }
             await setValue(updatedDevices);

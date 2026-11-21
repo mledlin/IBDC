@@ -7,56 +7,74 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
  * @param initialValue values to load into the store
  */
 export function useAsyncStorage (key: string, initialValue?: any) {
-    const [data, setData] = useState(JSON.stringify(initialValue));
+    const [data, setData] = useState<string | null>(initialValue === undefined ? null : JSON.stringify(initialValue));
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
-    console.log("Initial value passed to asyncStorage: " + initialValue + "\n");
+    //console.log("Initial value passed to asyncStorage: " + initialValue + "\n");
 
     // 1. System-prompted retrieve (runs automatically on mount) only re-runs when key value changes
     useEffect(() => {
-        let isMounted: boolean = true;
+        let isMounted = true;
 
         const loadStoredValue = async () => {
             try {
-                const item: string | null = await AsyncStorage.getItem(key);
-                if (isMounted && initialValue !== null) {
+                setIsLoading(true);
+
+                const storedValue = await AsyncStorage.getItem(key);
+
+                if (!isMounted) return;
+
+                if (storedValue !== null) {
+                    setData(storedValue);
+                } else if (initialValue !== undefined) {
                     setData(JSON.stringify(initialValue));
+                } else {
+                    setData(null);
                 }
-            }
-            catch (error: any) {
-                setError(error);
-            }
-            finally {
+            } catch (err: any) {
+                if (isMounted) {
+                    setError(err);
+                }
+            } finally {
                 if (isMounted) {
                     setIsLoading(false);
                 }
             }
         };
-        loadStoredValue();
+
+        void loadStoredValue();
+
         return () => {
             isMounted = false;
-        }
-    }, [key])
+        };
+    }, [key, initialValue]);
 
-    const setValue = useCallback(async (value: any | Function) => {
+    const setValue = useCallback(async (value: any) => {
+        console.log("useAsyncStorage:setValue - params {key} {value}", key, value);
         try {
             setError(null);
 
+            // Silent failing? No, the value won't be saved but that won't fail any other component.
+            if (value === undefined) {
+                console.error("useAsyncStorage:setValue - params_constraint can't be undefined");
+                return new Promise<void> ((resolve) => {})
+            }
+
             // Allow value to be a function just like standard useState
-            const valueToStore: string  = value instanceof Function ? value(data) : value;
+            const valueToStore: string  = JSON.stringify(value);
 
             // Update React state immediately so the UI feels instant
             setData(valueToStore);
+            console.log("useAsyncStorage:setValue - local_var {valueToStore} ",  valueToStore);
 
-            // Persist to AsyncStorage in the background
-            await AsyncStorage.setItem(key, JSON.stringify(valueToStore));
+            // Persist to AsyncStorage
+            await AsyncStorage.setItem(key, valueToStore);
+
         }
         catch (err: any) {
                 setError(err);
             }
-
-        },[key, data]);
-    console.log("Data stored in useAsyncStorage: " + data);
+        }, [key]);
 
     return {
         data: data,
