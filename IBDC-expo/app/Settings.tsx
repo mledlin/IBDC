@@ -33,7 +33,7 @@ import {
     TouchableOpacity,
     Alert, ScrollView,
 } from "react-native";
-import {DefaultServerUploadAdapter} from "@/utils/ServerUploadAdapter";
+import {SERVER_CONFIG} from "@/utils/ServerConfig";
 import {uploadSession} from "@/utils/DataUpload";
 import {useTheme} from "@/context/ThemeContext";
 import {useDevice} from "@/context/DeviceContext"
@@ -55,6 +55,10 @@ export default function SettingsPage() {
     const [isClearingTestData, setIsClearingTestData] = useState(false);
     const [isSwitchingDevice, setIsSwitchingDevice] = useState(false);
     const [isGeneratingMockData, setIsGeneratingMockData] = useState(false);
+    const [isUploadingSession, setIsUploadingSession] = useState(false);
+    const [selectedUploadSessionId, setSelectedUploadSessionId] = useState<string | null>(null);
+    const [uploadSessionChoices, setUploadSessionChoices] = useState<Array<{id: string; incidentCount: number}>>([]);
+    const [showUploadSessionChoices, setShowUploadSessionChoices] = useState(false);
     const [mockProgress, setMockProgress] = useState("");
     const mockGenerationInProgress = useRef(false);
     const [isUpdatingImagesPerEvent, setIsUpdatingImagesPerEvent,] = useState(false);
@@ -264,27 +268,68 @@ export default function SettingsPage() {
         }
     };
     /**
-     * Test for locally prepared session for server upload
+     * Loads the stored sessions for manual selection during integration testing.
      */
-    const handleTestServerUpload = async () => {
+    const handleChooseUploadSession = async () => {
+        try {
+            const sessions = await getSessionHistoryData();
+            setUploadSessionChoices(sessions.map(session => ({
+                id: session.id,
+                incidentCount: session.incidents?.length ?? 0,
+            })));
+            setShowUploadSessionChoices(true);
+            if (sessions.length === 0) {
+                Alert.alert("No Sessions", "No sessions available to upload.");
+            }
+        } catch (error) {
+            console.error("Failed to load upload sessions:", error);
+            Alert.alert("Load Failed", error instanceof Error ? error.message : String(error));
+        }
+    };
+
+    /**
+     * Uploads a chosen session, or the newest session when no ID is supplied.
+     */
+    const handleTestServerUpload = async (sessionId: string | null) => {
+        if (isUploadingSession) return;
+        setIsUploadingSession(true);
         try {
             const sessions = await getSessionHistoryData();
 
-            if(sessions.length === 0){
+            if (sessions.length === 0) {
                 Alert.alert("No Sessions", "No sessions available to upload.");
                 return;
             }
-            const session = sessions[0];   
-           const result = await uploadSession(session, {
-                endpoint: "http://10.0.2.2:3000/upload",
-           });
-           
-           console.log("Server Upload Result:", result);
-            Alert.alert("Upload Successful", `Session ${result.sessionId} uploaded successfully.`);
-        }
-        catch (error) {
+
+            const session = sessionId
+                ? sessions.find(item => item.id === sessionId)
+                : sessions[0];
+
+            if (!session) {
+                Alert.alert("Session Not Found", "The selected session is no longer available. Choose another session.");
+                return;
+            }
+
+            console.log("Server upload starting:", {
+                sessionId: session.id,
+                incidentCount: session.incidents?.length ?? 0,
+                endpoint: SERVER_CONFIG.endpoint,
+            });
+
+            const result = await uploadSession(session, {
+                endpoint: SERVER_CONFIG.endpoint,
+            });
+
+            console.log("Server Upload Result:", result);
+            Alert.alert(
+                "Upload Successful",
+                `Session: ${result.sessionId}\nHTTP Status: ${result.status}\nResponse: ${JSON.stringify(result.responseBody ?? "No response body")}`,
+            );
+        } catch (error) {
             console.error("Server upload failed:", error);
-            Alert.alert("Upload Failed", "Session could not be prepared");
+            Alert.alert("Upload Failed", error instanceof Error ? error.message : String(error));
+        } finally {
+            setIsUploadingSession(false);
         }
     };
     const handleClearTestRideData = () => {
@@ -555,23 +600,54 @@ export default function SettingsPage() {
                             Switching disconnects the current device. Scan again on Pair Device.
                         </Text>
                     </View>
+                    <Text style={[styles.settingDescription, {color: theme.colors.textSecondary}]}>
+                        Server: {SERVER_CONFIG.endpoint}
+                    </Text>
                     <TouchableOpacity
-                    style={[
-                        styles.addMockButton,
-                        {backgroundColor: theme.colors.primary,
+                        style={[styles.addMockButton, {
+                            backgroundColor: theme.colors.primary,
                             borderRadius: theme.radii.md,
-                        },
-                    ]}
-                    onPress={handleTestServerUpload}
+                            opacity: isUploadingSession ? 0.6 : 1,
+                        }]}
+                        onPress={() => void handleChooseUploadSession()}
+                        disabled={isUploadingSession}
                     >
-                        <Text
-                        style = {[
-                            styles.actionButtonText,
-                            {color: theme.colors.primaryForeground},
-                        ]}
-                        >
-                            Test Server Upload </Text>
+                        <Text style={[styles.actionButtonText, {color: theme.colors.primaryForeground}]}>
+                            {isUploadingSession ? "Uploading Session..." : "Choose Session to Upload"}
+                        </Text>
+                    </TouchableOpacity>
+                    {showUploadSessionChoices && (
+                        <View style={{marginTop: 8}}>
+                            <TouchableOpacity onPress={() => {
+                                setSelectedUploadSessionId(null);
+                                setShowUploadSessionChoices(false);
+                                void handleTestServerUpload(null);
+                            }} style={{paddingVertical: 10}}>
+                                <Text style={{color: theme.colors.text}}>
+                                    {selectedUploadSessionId === null ? "● " : "○ "}Latest session (default)
+                                </Text>
                             </TouchableOpacity>
+                            {uploadSessionChoices.map(session => (
+                                <TouchableOpacity
+                                    key={session.id}
+                                    style={{paddingVertical: 10}}
+                                    onPress={() => {
+                                        setSelectedUploadSessionId(session.id);
+                                        setShowUploadSessionChoices(false);
+                                        void handleTestServerUpload(session.id);
+                                    }}
+                                >
+                                    <Text style={{color: theme.colors.text}}>
+                                        {selectedUploadSessionId === session.id ? "● " : "○ "}
+                                        {session.id} ({session.incidentCount} incidents)
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    )}
+                    <Text style={[styles.settingDescription, {color: theme.colors.textSecondary}]}>
+                        Selected: {selectedUploadSessionId ?? "Latest session"}
+                    </Text>
                     <TouchableOpacity
                         style={[
                             styles.addMockButton,

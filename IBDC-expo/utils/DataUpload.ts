@@ -1,5 +1,8 @@
+
 import { getSessionHistoryData } from "@/database/SessionDao";
 import { convertImage } from "@/utils/ImageConverter";
+import { SERVER_CONFIG } from "@/utils/ServerConfig";
+import { File } from "expo-file-system";
 import {
     DefaultServerUploadAdapter,
     LocalRideSession,
@@ -46,59 +49,98 @@ export async function uploadSession(
             "metadata",
             JSON.stringify(adaptedSession.payload),
         );
+
         for (const file of adaptedSession.files) {
             const convertedUri = await convertImage(file.uri);
+
+            const imageFile = new File(convertedUri);
+
+            if (!imageFile.exists) {
+                throw new Error(
+                    `Image file does not exist: ${convertedUri}`
+                );
+            }
+
             formData.append(
                 file.fieldName,
-                {
-                    uri: convertedUri,
-                    name: file.name.replace(/\.[^.]+$/, "") + ".jpg",
-                    type: "image/jpeg",
-                } as any,
+                imageFile
             );
         }
-    
+
+        // Allow Expo to generate the multipart boundary.
+        Object.keys(headers).forEach((key) => {
+            if (key.toLowerCase() === "content-type") {
+                delete headers[key];
+            }
+        });
 
         body = formData;
     } else {
         headers["Content-Type"] = "application/json";
         body = JSON.stringify(adaptedSession.payload);
     }
+
     //console.log("Request Headers:", headers);
     //console.log(
     //"Request Body Type:",
     //body instanceof FormData ? "FormData" : "JSON"
     //);
-    const response = await fetch(config.endpoint, {
-        method: "POST",
-        headers,
-        body,
-    });
 
-    let responseBody: unknown;
+    /**
+     * Abort the request if the server does not respond
+     * within the configured timeout.
+     */
+    const controller = new AbortController();
 
-    const contentType = response.headers.get("content-type") ?? "";
+    const timeout = setTimeout(() => {
+        controller.abort();
+    }, SERVER_CONFIG.timeoutMs);
 
-    if (contentType.includes("application/json")) {
-        responseBody = await response.json();
-    } else {
-        const text = await response.text();
-        responseBody = text || undefined;
+    let response: Response;
+
+    try {
+        response = await fetch(config.endpoint, {
+            method: "POST",
+            headers,
+            body,
+            signal: controller.signal,
+        });
+
+        let responseBody: unknown;
+
+        const contentType = response.headers.get("content-type") ?? "";
+
+        if (contentType.includes("application/json")) {
+            responseBody = await response.json();
+        } else {
+            const text = await response.text();
+            responseBody = text || undefined;
+        }
+
+        if (!response.ok) {
+            throw new Error(
+                `Failed to upload session ${session.id}. Status: ${response.status}. ` +
+                `Response: ${JSON.stringify(responseBody)}`,
+            );
+        }
+
+        return {
+            ok: true,
+            status: response.status,
+            sessionId: session.id,
+            responseBody,
+        };
+    } catch (error) {
+        if (controller.signal.aborted) {
+            throw new Error(
+                `Upload timed out after ${SERVER_CONFIG.timeoutMs / 1000} seconds.`,
+            );
+        }
+
+        throw error;
+    } finally {
+        clearTimeout(timeout);
     }
-
-    if (!response.ok) {
-        throw new Error(
-            `Failed to upload session ${session.id}. Status: ${response.status}. ` +
-            `Response: ${JSON.stringify(responseBody)}`,
-        );
-    }
-
-    return {
-        ok: true,
-        status: response.status,
-        sessionId: session.id,
-        responseBody,
-    };
 }
 
 /**
