@@ -1,71 +1,81 @@
-import { LocationObject, getCurrentPositionAsync } from 'expo-location';
+import { nearestCoordinates, SAMPLE_INTERVAL_MS } from "@/services/GPSOffset";
+import type { Coordinates, GPSFix } from "@/services/GPSOffset";
 
-// Use the session manager to get the current session at start up of the program?
-// When does a session start? When the user connects to the application? I guess so, first couple GPS pings will probably
-// be not useful. There can be many false incidents at the beginning of the ride?
+export interface LocationSource {
+    requestPermission(): Promise<boolean>;
+    read(): Promise<GPSFix>;
+}
 
+/** One instance owns the fixes and timer for one connected ride. */
 export class ActiveSessionPersistence {
+    private readonly samples: GPSFix[] = [];
+    private timer?: ReturnType<typeof setInterval>;
+    private stopped = false;
+    private sampling = false;
+    private readonly permission: Promise<boolean>;
+    readonly startedAt: number;
+    private readonly source: LocationSource;
 
-    private readonly sessionId: string = ''
-    private GPSPings: LocationObject[] = [];
-    private DEFAULT_GPS_PING_RATE_SECONDS: number = 5;
-    private pingsActive: boolean = false;
+    constructor(startedAt: number, source: LocationSource) {
+        this.startedAt = startedAt;
+        this.source = source;
+        this.permission = source.requestPermission().catch(() => false);
+        void this.permission.then(granted => {
+            if (!granted || this.stopped) return;
+            void this.sample();
+            this.timer = setInterval(() => void this.sample(), SAMPLE_INTERVAL_MS);
+        });
+    }
 
-    constructor(session_id: string,  GPS_ping_rate_seconds?: number) {
-        this.sessionId = session_id;
-        if (GPS_ping_rate_seconds !== undefined) {
-            if (GPS_ping_rate_seconds > 0) {
-                this.DEFAULT_GPS_PING_RATE_SECONDS = GPS_ping_rate_seconds;
-            }
+    private async read(): Promise<GPSFix | null> {
+        try {
+            const { timestamp, coords: { latitude, longitude } } = await this.source.read();
+            if (this.stopped || !Number.isFinite(timestamp) || timestamp < this.startedAt ||
+                !Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+            return { timestamp, coords: { latitude, longitude } };
+        } catch {
+            return null;
         }
-        this.pingsActive = true;
     }
 
-    /**
-     * This will start taking GPS readings periodically throughout the ride. This should be re-implemented as a listener.
-     * @param GPS_ping_rate
-     */
-    public async startPing(GPS_ping_rate = this.DEFAULT_GPS_PING_RATE_SECONDS): Promise<void> {
-        while(this.pingsActive) {
-            this.GPSPings.push(await getCurrentPositionAsync())
+    private async sample(): Promise<void> {
+        if (this.sampling) return;
+        this.sampling = true;
+        try {
+            const fix = await this.read();
+            const last = this.samples[this.samples.length - 1];
+            if (fix && (!last || fix.timestamp > last.timestamp)) this.samples.push(fix);
+        } finally {
+            this.sampling = false;
         }
     }
 
-    /**
-     *
-     */
-    public stopPing(): void {
-        this.pingsActive = false;
+    async incidentLocation(receivedAt: number, offsetMs: number): Promise<Coordinates | null> {
+        const target = receivedAt - offsetMs;
+        if (this.stopped || target < this.startedAt) return null;
+        if (offsetMs > 0) return nearestCoordinates(this.samples, target);
+
+        // Bound the wait for permission and a dedicated fix so transfer ack can proceed.
+        let timeout: ReturnType<typeof setTimeout> | undefined;
+        let expired = false;
+        try {
+            const deadline = new Promise<null>(resolve => {
+                timeout = setTimeout(() => { expired = true; resolve(null); }, 10000);
+            });
+            const freshFix = this.permission.then(async granted => {
+                if (!granted || this.stopped || expired) return null;
+                const fix = await this.read();
+                return fix && fix.timestamp >= receivedAt ? fix.coords : null;
+            });
+            return await Promise.race([freshFix, deadline]);
+        } finally {
+            clearTimeout(timeout);
+        }
     }
 
-    /**
-     * Returns a copy of the GPSPings array at the time of the function call
-     */
-    public getGPSPings(): LocationObject[] {
-        return [...this.GPSPings];
+    stop(): void {
+        this.stopped = true;
+        clearInterval(this.timer);
+        this.samples.length = 0;
     }
-
-    /**
-     *
-     */
-    public getSessionId(): string {
-        return this.sessionId;
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }
