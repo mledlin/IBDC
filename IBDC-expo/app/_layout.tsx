@@ -96,6 +96,12 @@ function AppStack() {
             {/* Main screen for the app */}
             <Stack.Screen name="MainScreen" options={{ title: "" }} />
 
+            {/* First-run walkthrough, also available from Settings */}
+            <Stack.Screen
+                name="Tutorial"
+                options={{title: "", headerShown: false, gestureEnabled: false}}
+            />
+
             {/* Screen to view details for a selected incident */}
             <Stack.Screen name="IncidentDetail" options={{ title: "" }} />
 
