@@ -33,7 +33,7 @@ interface EventOverrides {
 interface SimulatedPendingEvent {
     eventId: number, 
     distanceCm: number, 
-    timeOffsetMs: number, 
+    detectedAt: number,
     imageCount: number, 
 
     imageFormat: 
@@ -180,7 +180,7 @@ export class SimulatedIBDC {
         const event: SimulatedPendingEvent = {
             eventId, 
             distanceCm, 
-            timeOffsetMs, 
+            detectedAt: Date.now() - timeOffsetMs,
             imageCount, 
             imageFormat, 
             images,
@@ -193,7 +193,7 @@ export class SimulatedIBDC {
     /** Sends an event notification for a pending event to the connected app. */
     private sendEventNotification(event: SimulatedPendingEvent): void{
         console.log(`SimulatedIBDC: sending EventNotification for evetn ${event.eventId}`);
-        this.adapter.simulateIncomingData("eventNotification", {eventId: event.eventId, distanceCm: event.distanceCm, timeOffsetMs: event.timeOffsetMs, imageCount: event.imageCount, imageFormat: event.imageFormat, });
+        this.adapter.simulateIncomingData("eventNotification", {eventId: event.eventId, distanceCm: event.distanceCm, timeOffsetMs: Math.min(0xffffffff, Math.max(0, Date.now() - event.detectedAt)), imageCount: event.imageCount, imageFormat: event.imageFormat, });
     }
     /**
      * Decodes app-to-device messages and dispatches each supported request.

@@ -12,7 +12,6 @@ import {
     IBDCCommunicationService,
     PendingEventList
 } from "@/services/IBDCCommunicationService";
-import {MockBleAdapter} from "@/ble/MockBleAdapter";
 import {SimulatedIBDC} from "@/ble/SimulatedIBDC";
 import {ImageIngestService} from "@/services/ImageIngestService";
 
@@ -112,7 +111,9 @@ const DeviceContext = createContext<DeviceContextType | undefined>(undefined);
  */
 export function DeviceProvider({ children, dependencies }: DeviceProviderProps) {
 
-  let bleAdapter: BleAdapter = dependencies.bleAdapter;
+  const adapterRef = useRef(dependencies.bleAdapter);
+  const connectedId = useRef<string | null>(null);
+  const bleAdapter = adapterRef.current;
   const communicationService = dependencies.communicationService;
   const simulatedDevice = dependencies.simulatedDevice;
   const imageIngestService = dependencies.imageIngestService;
@@ -131,6 +132,10 @@ export function DeviceProvider({ children, dependencies }: DeviceProviderProps) 
   function subscribeToAdapterDisconnect(adapter: BleAdapter): void {
     disconnectListenerRef.current?.();
     disconnectListenerRef.current = adapter.onDisconnected((deviceId) => {
+      if (connectedId.current === deviceId && adapterRef.current === adapter) {
+        connectedId.current = null;
+        imageIngestService.endConnectionSession();
+      }
       setDevice((currentDevice) => {
         if (!currentDevice || currentDevice.id !== deviceId) {
           return currentDevice;
@@ -142,7 +147,11 @@ export function DeviceProvider({ children, dependencies }: DeviceProviderProps) 
 
   useEffect(() => {
     subscribeToAdapterDisconnect(bleAdapter);
-    return () => disconnectListenerRef.current?.();
+    return () => {
+      disconnectListenerRef.current?.();
+      connectedId.current = null;
+      imageIngestService.endConnectionSession();
+    };
   }, []);
 
     useEffect(() => {
@@ -177,11 +186,13 @@ export function DeviceProvider({ children, dependencies }: DeviceProviderProps) 
         }
         if (modeRef.current === 'mock') simulatedDevice.stop();
         await bleAdapter.disconnect();
+        imageIngestService.endConnectionSession();
+        connectedId.current = null;
         //load the native BLE module only when the real device is selected.
         const nextAdapter: BleAdapter = mode === 'mock'
-            ? new MockBleAdapter()
+            ? dependencies.bleAdapter
             : new (require('@/ble/RealBleAdapter').RealBleAdapter)();
-        bleAdapter = nextAdapter;
+        adapterRef.current = nextAdapter;
       subscribeToAdapterDisconnect(nextAdapter);
         communicationService.setAdapter(nextAdapter);
         modeRef.current = mode;
@@ -325,6 +336,7 @@ export function DeviceProvider({ children, dependencies }: DeviceProviderProps) 
             throw new Error(`Device with ID ${deviceId} not found in scanned devices.`);
         }
         await bleAdapter.connect(deviceId);
+        connectedId.current = deviceId;
     try {
       await imageIngestService.createConnectionSession(new Date());
     } catch (error) {
@@ -335,6 +347,7 @@ export function DeviceProvider({ children, dependencies }: DeviceProviderProps) 
       }
       throw error;
     }
+        if (connectedId.current !== deviceId || adapterRef.current !== bleAdapter) return;
         // Simulated device state only exist in mock mode.
         const initalState = modeRef.current === "mock" ? simulatedDevice.getState() : undefined;
 
@@ -374,6 +387,8 @@ export function DeviceProvider({ children, dependencies }: DeviceProviderProps) 
   async function disconnect(): Promise<void> {
         if (modeRef.current === 'mock') simulatedDevice.stop();
         await bleAdapter.disconnect();
+        imageIngestService.endConnectionSession();
+        connectedId.current = null;
     }
 
   /**

@@ -4,6 +4,8 @@ import {concatUint8Arrays} from "@/utils/base64";
 import { SessionManager } from "@/hooks/SessionManager";
 import {ImageStorage} from "@/services/ExpoImageStorage";
 import {DAOAccessor} from "./DAOAdapter";
+import { ActiveSessionPersistence, type LocationSource } from "../hooks/ActiveSession";
+import type { Coordinates } from "./GPSOffset";
 
 
 
@@ -25,6 +27,9 @@ interface PendingEvent {
     imageCount: number;
     /** ISO timestamp at which the event was detected. */
     detectedAt: string;
+    location: Promise<Coordinates | null>;
+    sessionId?: Promise<string>;
+    finalizing: boolean;
     /** Images that are still being received or assembled, keyed by image index. */
     images: Map<number, PendingImage>;
     /** Paths of completed image files, keyed by image index. */
@@ -59,10 +64,11 @@ export class ImageIngestService {
     private imageStorage: ImageStorage;
     private daoAccessor: DAOAccessor;
     private sessionManager: SessionManager;
+    private ride?: { gps?: ActiveSessionPersistence; sessionId: Promise<string>; startedAt: number };
 
 
     constructor(communicationService: IBDCCommunicationService, imageStorage: ImageStorage,
-                daoAccess: DAOAccessor) {
+                daoAccess: DAOAccessor, private readonly locationSource?: LocationSource) {
         this.communicationService = communicationService;
         this.communicationService.onEventNotifications(this.handleEventNotification);
         this.communicationService.onImageInfo(this.handleImageInfo);
@@ -80,7 +86,25 @@ export class ImageIngestService {
      * @returns The identifier of the resulting session.
      */
     public async createConnectionSession(connectionTime: Date): Promise<string> {
-        return this.sessionManager.createSession(connectionTime);
+        this.endConnectionSession();
+        const startedAt = connectionTime.getTime();
+        const ride = {
+            gps: this.locationSource && new ActiveSessionPersistence(startedAt, this.locationSource),
+            sessionId: this.sessionManager.createSession(connectionTime),
+            startedAt,
+        };
+        this.ride = ride;
+        try {
+            return await ride.sessionId;
+        } catch (error) {
+            if (this.ride === ride) this.endConnectionSession();
+            throw error;
+        }
+    }
+
+    public endConnectionSession(): void {
+        this.ride?.gps?.stop();
+        this.ride = undefined;
     }
 
     /** Starts tracking an event notification and requests its image transfer. */
@@ -91,16 +115,27 @@ export class ImageIngestService {
             return;
         }
         const receivedAt = Date.now();
-        const detectedAt = new Date(receivedAt - event.timeOffsetMs).toISOString();
+        const detectedTime = receivedAt - event.timeOffsetMs;
+        const detectedAt = new Date(detectedTime).toISOString();
+        const ride = this.ride && detectedTime >= this.ride.startedAt ? this.ride : undefined;
         console.log(
             "ImageIngestService: EventNotification", event.eventId, "images:", event.imageCount
         );
-        this.pendingEvents.set(event.eventId, {
+        const pending: PendingEvent = {
             imageCount: event.imageCount,
             detectedAt,
+            sessionId: ride?.sessionId,
+            location: ride?.gps?.incidentLocation(receivedAt, event.timeOffsetMs) ?? Promise.resolve(null),
+            finalizing: false,
             images: new Map(),
             imagePaths: new Map(),
-        });
+        };
+        this.pendingEvents.set(event.eventId, pending);
+        if (event.imageCount === 0) {
+            void this.finalizeIncident(event.eventId, pending).catch(error =>
+                console.error("ImageIngestService: failed to save incident", error));
+            return;
+        }
 
         this.communicationService.requestImageTransfer(event.eventId, 0, 0).catch((error) => {
             console.log(`ImageIngestService: failed to request images for event ${event.eventId}:`, error)
@@ -198,20 +233,30 @@ export class ImageIngestService {
      * and removes its completed transfer state.
      */
     private async finalizeIncident(eventId: number, pendingEvent: PendingEvent): Promise<void> {
-        console.log("Finalizing Incident", eventId);
+        if (pendingEvent.finalizing) return;
+        pendingEvent.finalizing = true;
+        try {
+            await this.saveIncident(eventId, pendingEvent);
+        } finally {
+            pendingEvent.finalizing = false;
+        }
+    }
+
+    private async saveIncident(eventId: number, pendingEvent: PendingEvent): Promise<void> {
         const occurrenceTime = new Date(pendingEvent.detectedAt);
-        const sessionId = await this.sessionManager.getOrCreateSession(occurrenceTime);
+        const sessionId = await (pendingEvent.sessionId ?? this.sessionManager.getOrCreateSession(occurrenceTime));
+        const coordinates = await pendingEvent.location;
         const incidentId = `incident-${eventId}-${Date.now()}`;
 
         //Best image just gets set to the first image, will need to find a better way later.
         const firstImageIndex = Math.min(...pendingEvent.imagePaths.keys());
-        const bestImageId = `${incidentId}-image-${firstImageIndex}`; 
+        const bestImageId = pendingEvent.imageCount ? `${incidentId}-image-${firstImageIndex}` : null;
 
         await this.daoAccessor.createIncident(
             incidentId,
             sessionId,
-            null, // latitude - not yet available from device/GPS
-            null, // longitude
+            coordinates?.latitude ?? null,
+            coordinates?.longitude ?? null,
             null, // licensePlate
             bestImageId,
             null, // injury
