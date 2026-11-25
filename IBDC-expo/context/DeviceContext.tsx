@@ -149,16 +149,16 @@ export function DeviceProvider({ children, dependencies }: DeviceProviderProps) 
     /** Loads the saved image-count preference before device status synchronization. */
         async function loadDeviceSettings() {
             try {
-                const stroedValue = await AsyncStorage.getItem(IMAGES_PER_EVENT_KEY);
-                if (stroedValue !== null) {
-                    const parsedValue = Number(stroedValue);
+                const storedValue = await AsyncStorage.getItem(IMAGES_PER_EVENT_KEY);
+                if (storedValue !== null) {
+                    const parsedValue = Number(storedValue);
                     if (Number.isInteger(parsedValue) && parsedValue > 0) {
                         setDesiredImagesPerEvent(parsedValue);
                         desiredImagesPerEventRef.current = parsedValue;
                     }
                 }
             } catch (error) {
-                console.error("DeviceContext: failed to load images-per-evetn setting:", error);
+                console.error("DeviceContext: failed to load images-per-event setting:", error);
             } finally {
                 settingsLoadedRef.current = true;
             }
@@ -197,7 +197,7 @@ export function DeviceProvider({ children, dependencies }: DeviceProviderProps) 
    */
     async function setImagesPerEvent(count: number): Promise<void> {
         if (!Number.isInteger(count) || count < 1) {
-            throw new Error("Images per Evetn must at least be 1");
+            throw new Error("Images per event must be at least 1");
         }
         setDesiredImagesPerEvent(count);
         desiredImagesPerEventRef.current = count;
@@ -218,7 +218,7 @@ export function DeviceProvider({ children, dependencies }: DeviceProviderProps) 
 
 
     // DeviceStatus Messages:
-  // keep connceted device state in sync with decoded DeviceStatus pushes. 
+  // Keep connected device state in sync with decoded DeviceStatus pushes.
   // only update stat is a device is currently set; ignore otherwise
   //
   useEffect(() => {
@@ -265,11 +265,11 @@ export function DeviceProvider({ children, dependencies }: DeviceProviderProps) 
     /**
      * Pending-event recovery:
      * Handle the PendingEventList Returned by the IBDC device at connection/ reconnection.
-     * Each Id represents an event that the deivce believes has not
-     * yet been completely acknowleged by the application.
+     * Each ID represents an event that the device believes has not
+     * yet been completely acknowledged by the application.
      * We will request EventNotification metadata for each one,
-     * Then ImageIngestService will recieve the resulting
-     * EventNotification and continure through the normal image transfer pipeline.
+     * Then ImageIngestService will receive the resulting
+     * EventNotification and continue through the normal image transfer pipeline.
      */
   /**
    * Requests notification metadata for each unacknowledged event reported by
@@ -286,10 +286,10 @@ export function DeviceProvider({ children, dependencies }: DeviceProviderProps) 
         // This may be something we can optimize later if the other team has the hardware support multiple simultaneous transfers.
         for (const eventId of eventIds) {
             try {
-                console.log(`DeviceContest: requesting pennding event ${eventId}`);
+                console.log(`DeviceContext: requesting pending event ${eventId}`);
                 await communicationService.requestEventInfo(eventId);
             } catch (error) {
-                console.error(`DeviceContext: failed to request pending evetn ${eventId}:`, error);
+                console.error(`DeviceContext: failed to request pending event ${eventId}:`, error);
             }
         }
     }
@@ -320,7 +320,7 @@ export function DeviceProvider({ children, dependencies }: DeviceProviderProps) 
    * @throws If the device was not found or connection/session setup fails.
      */
     async function connect(deviceId: string): Promise<void> {
-        const selectedDevice = devices.find((canidate) => canidate.id === deviceId);
+        const selectedDevice = devices.find((candidate) => candidate.id === deviceId);
         if (!selectedDevice) {
             throw new Error(`Device with ID ${deviceId} not found in scanned devices.`);
         }
@@ -336,22 +336,22 @@ export function DeviceProvider({ children, dependencies }: DeviceProviderProps) 
       throw error;
     }
         // Simulated device state only exist in mock mode.
-        const initalState = modeRef.current === "mock" ? simulatedDevice.getState() : undefined;
+        const initialState = modeRef.current === "mock" ? simulatedDevice.getState() : undefined;
 
         setDevice({
             id: deviceId,
             name: selectedDevice.name || "Unknown IBDC Device",
             status: 'connected',
             //Temporary mock values for battery, storage, firmwareVersion, and lastSynced. eventually these will be retrieved from the device itself.
-            battery: initalState?.batteryPercent ?? 0,
+            battery: initialState?.batteryPercent ?? 0,
             storage: {
-                used: initalState ? 100 - initalState.storageAvailablePercent : 0,
+                used: initialState ? 100 - initialState.storageAvailablePercent : 0,
                 total: 100
             },
-            firmwareVersion: initalState?.firmwareVersionLabel ?? "Unknown",
+            firmwareVersion: initialState?.firmwareVersionLabel ?? "Unknown",
             lastSynced: new Date().toISOString(),
-            pendingEvents: initalState?.pendingEventCount,
-            imagesPerEventOnDevice: initalState?.imagesPerEventSetting,
+            pendingEvents: initialState?.pendingEventCount,
+            imagesPerEventOnDevice: initialState?.imagesPerEventSetting,
         });
 
         if (modeRef.current === 'mock') {

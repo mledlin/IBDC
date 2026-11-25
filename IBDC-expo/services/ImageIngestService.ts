@@ -1,4 +1,4 @@
-// Bridges incomming BLE event/image messages to on-disk files and database rows
+// Bridges incoming BLE event/image messages to on-disk files and database rows
 import {EventNotification, IBDCCommunicationService, ImageChunk, ImageInfo} from "./IBDCCommunicationService";
 import {concatUint8Arrays} from "@/utils/base64";
 import { SessionManager } from "@/hooks/SessionManager";
@@ -85,9 +85,9 @@ export class ImageIngestService {
 
     /** Starts tracking an event notification and requests its image transfer. */
     private handleEventNotification = (event: EventNotification) => {
-        // Protects against recieving the same EventNotification more thatn once while the event is alrealdy being downloaded
+        // Protects against receiving the same EventNotification more than once while the event is already being downloaded
         if (this.pendingEvents.has(event.eventId)){
-            console.warn(`ImageIngestService: event ${event.eventId} is already being processed, ignoring ducplicate EventNotification.`);
+            console.warn(`ImageIngestService: event ${event.eventId} is already being processed, ignoring duplicate EventNotification.`);
             return;
         }
         const receivedAt = Date.now();
@@ -240,7 +240,7 @@ export class ImageIngestService {
  
         this.pendingEvents.delete(eventId);
 
-        console.log(`ImageIngestService: event ${eventId} saved and acknowleged`)
+        console.log(`ImageIngestService: event ${eventId} saved and acknowledged`)
     }
 
     public getPendingEventSize() {

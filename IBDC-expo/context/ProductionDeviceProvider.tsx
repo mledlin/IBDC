@@ -15,7 +15,7 @@ import { SimulatedIBDCImageLoader } from "@/ble/SimulatedIBDCImageLoader"
  */
 
 //!!real adapter will be used in production, mock adapter is for testing and development
-// kept as concrete MockBleRefrence because SimulatedIBDC needs simulateIncomming(),
+// kept as a concrete MockBleReference because SimulatedIBDC needs simulateIncoming(),
 // which isn't a part of the BleAdapter interface or the real implementation.
 const mockBLEAdapter = new MockBleAdapter();
 const bleAdapter: BleAdapter = mockBLEAdapter;

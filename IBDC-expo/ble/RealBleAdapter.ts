@@ -75,7 +75,7 @@ export class RealBleAdapter implements BleAdapter {
             scanGranted && connectedGranted
         );
     }
-    // for Andorid ll and below, BLE scanning requied location permission on these Android versions.
+    // Android 11 and below require location permission for BLE scanning on these Android versions.
     const locationPermission = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION);
     return (locationPermission === PermissionsAndroid.RESULTS.GRANTED);
     }
@@ -191,11 +191,11 @@ export class RealBleAdapter implements BleAdapter {
             console.log("IBDC services and characteristics discovered.")
             //listen for unexpected disconnections.
             this.setUpDisconnectListener();
-            //subscribe to TX so the phone can revice messages from the IBDC deivce. 
+            // Subscribe to TX so the phone can receive messages from the IBDC device.
             this.subscribeToTx();
             console.log("IBDC device fully connected:", deviceId);
         } catch (error) { 
-            console.error("Failed to connect to IBDC deivce:", error);
+            console.error("Failed to connect to IBDC device:", error);
             try{
                 if(this.connectedDevice){
                     await this.manager.cancelDeviceConnection(
@@ -205,13 +205,13 @@ export class RealBleAdapter implements BleAdapter {
             }catch(error) {
                 console.warn("Failed to clean up BLE connection:", error);
             }
-            this.cleanUpCOnnectionState();
+            this.cleanUpConnectionState();
             throw error;
         }
     }
 
     /** Removes active subscriptions and clears the connected-device reference. */
-    private cleanUpCOnnectionState(): void {
+    private cleanUpConnectionState(): void {
         this.notificationSubscription?.remove();
         this.notificationSubscription = null; 
         this.disconnectSubscription?.remove();
@@ -248,9 +248,9 @@ export class RealBleAdapter implements BleAdapter {
                 if(error) {
                     console.warn("IBDC device disconnected.", error);
                 } else {
-                    console.log("IBDC deivce disconnected:", device?.id ?? deviceId);
+                    console.log("IBDC device disconnected:", device?.id ?? deviceId);
                 }
-                this.cleanUpCOnnectionState();
+                this.cleanUpConnectionState();
                 this.notifyDisconnected(deviceId);
             }
         );
@@ -270,7 +270,7 @@ export class RealBleAdapter implements BleAdapter {
             return;
         }
         const deviceId = this.connectedDevice.id;
-        console.log("Disconnecting from IBDC deivce:", deviceId);
+        console.log("Disconnecting from IBDC device:", deviceId);
         //stop listening for TX notifications.
         this.notificationSubscription?.remove();
         this.notificationSubscription = null; 
@@ -284,7 +284,7 @@ export class RealBleAdapter implements BleAdapter {
             console.error ("BLE disconnect error:", error);
             throw error;
         } finally {
-            this.cleanUpCOnnectionState();
+            this.cleanUpConnectionState();
             this.notifyDisconnected(deviceId);
         }
     }
@@ -298,12 +298,12 @@ export class RealBleAdapter implements BleAdapter {
      */
     async sendData(data: Uint8Array): Promise<void> {
        if(!this.connectedDevice) {
-        throw new Error("Cannot send BLE data: no IBDC deivice connected.");
+        throw new Error("Cannot send BLE data: no IBDC device connected.");
        }
        const base64String = Buffer.from(data).toString("base64");
        try {
         await this.connectedDevice.writeCharacteristicWithResponseForService(SERVICE_UUID, RX_UUID, base64String);
-        console.log(`Sent ${data.length} BLE bytes to IBCD deivce.`);
+        console.log(`Sent ${data.length} BLE bytes to IBDC device.`);
        } catch (error){
         console.error("Failed to send BLE data:", error);
         throw error;
@@ -355,7 +355,7 @@ export class RealBleAdapter implements BleAdapter {
                 console.log(`Received ${bytes.length} BLE bytes`);
 
                 if (!this.receiveCallback){
-                    console.warn("Recieved BLE data, but no OnDataReceived listener is registered.");
+                    console.warn("Received BLE data, but no OnDataReceived listener is registered.");
                     return;
                 }
 

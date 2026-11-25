@@ -8,7 +8,7 @@ export class MockBleAdapter implements BleAdapter {
 
     private connectedDeviceId: string | null = null;
 
-    private recieveCallback: ((data: Uint8Array) => void) | null = null;
+    private receiveCallback: ((data: Uint8Array) => void) | null = null;
 
     private disconnectListeners = new Set<(deviceId: string) => void>();
 
@@ -39,7 +39,7 @@ export class MockBleAdapter implements BleAdapter {
      */
     async scan(): Promise<BleDeviceInfo[]> {
         if(! this.deviceInfo){
-            console.warn("MockBleAdapeter: scan() called but no simulated device has registerd its identity yet.")
+            console.warn("MockBleAdapter: scan() called but no simulated device has registered its identity yet.")
             return[];
         }
         return[this.deviceInfo];
@@ -79,7 +79,7 @@ export class MockBleAdapter implements BleAdapter {
             throw new Error("Not connected to a BLE device.");
         }
         // Simulate sending data (in a real implementation, this would interact with the actual BLE device)
-        console.log("MockAdapter: app sent datat to simulated device");
+        console.log("MockAdapter: app sent data to simulated device");
         if (!this.deviceReceiveCallback){
             console.error("MockBLEAdapter: No deviceReceiveCallback registered")
             return;
@@ -92,7 +92,7 @@ export class MockBleAdapter implements BleAdapter {
      * @param callback Handler invoked with simulated device-to-app bytes.
      */
     onDataReceived(callback: (data: Uint8Array) => void): void {
-        this.recieveCallback = callback;
+        this.receiveCallback = callback;
     }
 
     /**
@@ -142,14 +142,14 @@ export class MockBleAdapter implements BleAdapter {
             return;
         }
 
-        if (!this.recieveCallback) {
+        if (!this.receiveCallback) {
             console.warn("No callback registered to handle incoming data.");
             return;
         }
 
         const encoded = ProtobufService.encode("DeviceToApp", {[payloadField]: data})
 
-        this.recieveCallback(encoded);
+        this.receiveCallback(encoded);
     }
 
 }

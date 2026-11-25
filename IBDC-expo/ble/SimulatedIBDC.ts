@@ -192,7 +192,7 @@ export class SimulatedIBDC {
 
     /** Sends an event notification for a pending event to the connected app. */
     private sendEventNotification(event: SimulatedPendingEvent): void{
-        console.log(`SimulatedIBDC: sending EventNotification for evetn ${event.eventId}`);
+        console.log(`SimulatedIBDC: sending EventNotification for event ${event.eventId}`);
         this.adapter.simulateIncomingData("eventNotification", {eventId: event.eventId, distanceCm: event.distanceCm, timeOffsetMs: event.timeOffsetMs, imageCount: event.imageCount, imageFormat: event.imageFormat, });
     }
     /**
@@ -224,7 +224,7 @@ export class SimulatedIBDC {
             }
             case "eventTransferAck": {
                 const ack = decoded.eventTransferAck as { eventId: number };
-                console.log(`SimulatedIBDC: EventTransferAck recieved for event ${ack.eventId}`);
+                console.log(`SimulatedIBDC: EventTransferAck received for event ${ack.eventId}`);
                 if(!this.pendingEvents.has(ack.eventId)){console.warn(`SimulatedIBDC: ACK received for unknown event ${ack.eventId}`); break;}
                 this.pendingEvents.delete(ack.eventId);
                 this.updatePendingEventCount();

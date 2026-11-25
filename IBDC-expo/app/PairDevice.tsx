@@ -51,7 +51,7 @@ export default function PairDevice() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const {devices, scan, connect} = useDevice();
-    const [modalVisible, setModalVisable] = useState(false);
+    const [modalVisible, setModalVisible] = useState(false);
     const [isScanning, setIsScanning] = useState(false);
 
     /**
@@ -61,7 +61,7 @@ export default function PairDevice() {
         try {
             setIsScanning(true);
             await scan();
-            setModalVisable(true);
+            setModalVisible(true);
         } catch (error) {
             console.error("Error scanning for devices:", error);
         } finally {
@@ -79,7 +79,7 @@ export default function PairDevice() {
     const handleSelectDevice = async (device: BleDeviceInfo) => {
         try {
             await connect(device.id);
-            setModalVisable(false);
+            setModalVisible(false);
             router.back();
         } catch (error) {
             //add actual error handling here. For now, just log the error to the console.
@@ -111,8 +111,8 @@ export default function PairDevice() {
                     <Text style={[styles.title, {color: theme.colors.surfaceTextSecondary}]}>Connect your IBDC
                         device</Text>
                     <Text style={[styles.subtitle, {color: theme.colors.surfaceTextSecondary}]}>
-                        Turn on Bluetooth, make sure your device is nearby, and tab the button
-                        beloww to search for available devices.
+                        Turn on Bluetooth, make sure your device is nearby, and tap the button
+                        below to search for available devices.
                     </Text>
 
                     <View style={styles.infoBox}>
@@ -137,14 +137,14 @@ export default function PairDevice() {
                 <BluetoothDeviceModal
                     visible={modalVisible}
                     devices={devices}
-                    onClose={() => setModalVisable(false)}
+                    onClose={() => setModalVisible(false)}
                     onSelectDevice={handleSelectDevice}
                 />
             </ScrollView>
         </View>
     );
 }
-//this is where styles are defined. This is a stlye sheet and it is the most common way to 
+// This is where styles are defined. This is a StyleSheet and it is the most common way to
 //make styles in react native. 
 const styles = StyleSheet.create({
     screen: {
