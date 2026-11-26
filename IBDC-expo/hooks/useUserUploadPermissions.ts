@@ -2,6 +2,7 @@ import { useAsyncStorage } from "@/hooks/useAsyncStorage";
 import { useEffect, useState, useCallback } from "react";
 
 
+
 const UPLOAD_PERMISSION_KEY = "uploadPermission";
 
 /**
@@ -13,39 +14,38 @@ const UPLOAD_PERMISSION_KEY = "uploadPermission";
  */
 
 type PermissionInfo = {
-    permission: boolean,
-    lastPopUp: Date;
+    permission: boolean
 }
 
 // Prompts the user to enable updating permission to the Rob Dollar Foundation Analytic Server
 export default function useUserUploadPermissions() {
-    const {data, error, isLoading, setValue} =  useAsyncStorage(UPLOAD_PERMISSION_KEY);
-    const [permission, setPermission] = useState(false);
-    const [popUp, setPopUp] = useState(new Date);
+    const {data, error, isLoading, setValue} = useAsyncStorage(UPLOAD_PERMISSION_KEY);
+    const [permission, setPermission] = useState<PermissionInfo>((): PermissionInfo => {
+        return data === null ? {permission: false} : JSON.parse(data) as PermissionInfo;
+    });
 
-    // Runs once on mount
+    // This should run once on mount. Set initial or stored values and supply them to its callers.
     useEffect(() => {
-        const setInitData = async () => {
-            if (data === null) { // This should run the first time the user runs the app
-                const initPermission: PermissionInfo = {permission: permission, lastPopUp: popUp};
-                await setValue(initPermission);
-            } else { // Retrieve saved data
-                try {
-                    const savedData: PermissionInfo = (JSON.parse(data) as PermissionInfo);
-                    setPermission(savedData.permission);
-                    setPopUp(savedData.lastPopUp);
-                } catch (error) {
-                    console.error(error);
-                    console.log("useUserUploadPermissions:useEffect - parsing incorrect object shape");
-                }
-            }
+        if (isLoading) {
+            console.log("useUserUploadPermissions:useEffect - useAsyncStorage === isLoading");
+            return;
         }
-        setInitData();
-    })
+        console.log("Temp-Debug permission value: ", permission);
+    },[isLoading, permission]);
 
-    const togglePermission = async () => {
+    const updatePermission =  useCallback(async () => {
+        await setValue(!permission);
+        setPermission({permission: !permission.permission});
+    }, [setValue, permission]);
 
+    return {
+        permission: permission,
+        error: error,
+        isLoading: isLoading,
+        updatePermission
     }
 }
+
+
 
 

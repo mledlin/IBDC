@@ -33,6 +33,7 @@ import {
     TouchableOpacity,
     Alert, ScrollView,
 } from "react-native";
+import useUserUploadPermissions from "@/hooks/useUserUploadPermissions";
 import {DefaultServerUploadAdapter} from "@/utils/ServerUploadAdapter";
 import {uploadSession} from "@/utils/DataUpload";
 import {useTheme} from "@/context/ThemeContext";
@@ -48,7 +49,9 @@ import {useSafeAreaInsets} from "react-native-safe-area-context";
  * mock sessions and incidents to the local database.
  *
  * @returns The settings screen UI.
+ *
  */
+
 export default function SettingsPage() {
     const {theme} = useTheme();
     const {deviceMode, setDeviceMode, desiredImagesPerEvent, setImagesPerEvent} = useDevice();
@@ -59,6 +62,9 @@ export default function SettingsPage() {
     const mockGenerationInProgress = useRef(false);
     const [isUpdatingImagesPerEvent, setIsUpdatingImagesPerEvent,] = useState(false);
     const insets = useSafeAreaInsets();
+    const {permission, error, isLoading, updatePermission} = useUserUploadPermissions();
+
+
     /**
      * Available age thresholds for bulk deleting older stored data.
      */
@@ -321,6 +327,38 @@ export default function SettingsPage() {
         );
     };
 
+    function renderPermissionsToggle () {
+        return (
+            <View style={[
+                styles.retentionSection,
+                {
+                    backgroundColor: theme.colors.background,
+                    borderColor: theme.colors.border,
+                    borderRadius: theme.radii.md,
+                },
+            ]}>
+                <View style={styles.settingsToggle}>
+            <Switch
+                style={{flexDirection: 'row'}}
+                value = {permission.permission}
+                thumbColor={theme.colors.primary}
+            onValueChange={async () => {
+                await updatePermission();
+                console.log("Current permission after update: ", permission.permission + "\n");
+            }}>
+            </Switch>
+                <Text style={[styles.settingLabel, {color: theme.colors.text}]}>
+                    Upload Permission: {permission.permission.toString().toUpperCase()}
+                </Text>
+                </View>
+                <Text style={{color: theme.colors.textSecondary, marginBottom: 16}}>
+                    Permits incident information uploads to the a data analytic server.
+                </Text>
+
+        </View>
+        )
+    }
+
     return (
         <View
             style={[
@@ -505,7 +543,7 @@ export default function SettingsPage() {
                         </Text>
                     </TouchableOpacity>
                 </View>
-
+                {renderPermissionsToggle()}
 
                 <View style={[
                     styles.debugSection,
@@ -548,8 +586,8 @@ export default function SettingsPage() {
                                 }}
                                 thumbColor={theme.colors.primary}
                             />
-                            <Text
-                                style={[styles.settingLabel, {color: theme.colors.text}]}>{deviceMode === 'real' ? 'Real IBDC device' : 'Simulated IBDC device'}</Text>
+                            <Text style={[styles.settingLabel, {color: theme.colors.text}]}>
+                                {deviceMode === 'real' ? 'Real IBDC device' : 'Simulated IBDC device'}</Text>
                         </View>
                         <Text style={{color: theme.colors.textSecondary, marginBottom: 16}}>
                             Switching disconnects the current device. Scan again on Pair Device.
@@ -643,7 +681,6 @@ export default function SettingsPage() {
                         </Text>
                     </TouchableOpacity>
                 </View>
-
             </ScrollView>
         </View>
     );
