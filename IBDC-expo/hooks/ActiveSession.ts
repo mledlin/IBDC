@@ -4,12 +4,14 @@ import type { Coordinates, GPSFix } from "@/services/GPSOffset";
 export interface LocationSource {
     requestPermission(): Promise<boolean>;
     read(): Promise<GPSFix>;
+    subscribe?(onFix: (fix: GPSFix) => void, onStarted: () => void): () => void;
 }
 
 /** One instance owns the fixes and timer for one connected ride. */
 export class ActiveSessionPersistence {
     private readonly samples: GPSFix[] = [];
     private timer?: ReturnType<typeof setInterval>;
+    private unsubscribe?: () => void;
     private stopped = false;
     private sampling = false;
     private readonly permission: Promise<boolean>;
@@ -24,6 +26,7 @@ export class ActiveSessionPersistence {
             if (!granted || this.stopped) return;
             void this.sample();
             this.timer = setInterval(() => void this.sample(), SAMPLE_INTERVAL_MS);
+            this.unsubscribe = source.subscribe?.(fix => this.record(fix), () => clearInterval(this.timer));
         });
     }
 
@@ -43,11 +46,20 @@ export class ActiveSessionPersistence {
         this.sampling = true;
         try {
             const fix = await this.read();
-            const last = this.samples[this.samples.length - 1];
-            if (fix && (!last || fix.timestamp > last.timestamp)) this.samples.push(fix);
+            if (fix) this.record(fix);
         } finally {
             this.sampling = false;
         }
+    }
+
+    private record({ timestamp, coords: { latitude, longitude } }: GPSFix): void {
+        if (this.stopped || !Number.isFinite(timestamp) || timestamp < this.startedAt ||
+            !Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+        // Native background updates can arrive in batches behind a foreground read.
+        let index = this.samples.length;
+        while (index > 0 && this.samples[index - 1].timestamp > timestamp) index--;
+        if (this.samples[index - 1]?.timestamp === timestamp) return;
+        this.samples.splice(index, 0, { timestamp, coords: { latitude, longitude } });
     }
 
     async incidentLocation(receivedAt: number, offsetMs: number): Promise<Coordinates | null> {
@@ -75,6 +87,7 @@ export class ActiveSessionPersistence {
 
     stop(): void {
         this.stopped = true;
+        this.unsubscribe?.();
         clearInterval(this.timer);
         this.samples.length = 0;
     }

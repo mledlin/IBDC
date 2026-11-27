@@ -67,7 +67,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         [
             "expo-location", // This has to do with the expo-location library and it's required permissions
             {
-                locationAlwaysAndWhenInUsePermission: "Allow IBDC to use your location.",
+                locationAlwaysAndWhenInUsePermission: "Allow IBDC to record incident locations during a ride, including when your screen is locked.",
+                locationWhenInUsePermission: "Allow IBDC to record incident locations during a ride.",
+                isIosBackgroundLocationEnabled: true,
+                isAndroidForegroundServiceEnabled: true,
                 androidGoogleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY,
                 iosGoogleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY
             },
@@ -75,6 +78,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         "expo-sqlite", 
         [
             "react-native-ble-plx",
+            { modes: ["central"] },
         ],
         "expo-web-browser",
         "expo-font",
