@@ -328,7 +328,7 @@ export default function SettingsPage() {
     };
 
     function renderPermissionsToggle () {
-        return (
+        return permission === undefined ? null:(
             <View style={[
                 styles.retentionSection,
                 {
@@ -344,7 +344,7 @@ export default function SettingsPage() {
                 thumbColor={theme.colors.primary}
             onValueChange={async () => {
                 await updatePermission();
-                console.log("Current permission after update: ", permission.permission + "\n");
+                //console.log("Current permission after update: ", permission.permission + "\n");
             }}>
             </Switch>
                 <Text style={[styles.settingLabel, {color: theme.colors.text}]}>
