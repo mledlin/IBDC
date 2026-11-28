@@ -50,7 +50,7 @@ export function useAsyncStorage (key: string, initialValue?: any) {
     }, [key, initialValue]);
 
     const setValue = useCallback(async (value: any) => {
-        console.log("useAsyncStorage:setValue - params {key} {value}", key, value);
+        //console.log("useAsyncStorage:setValue - params {key} {value}", key, value);
         try {
             setError(null);
 
@@ -65,7 +65,7 @@ export function useAsyncStorage (key: string, initialValue?: any) {
 
             // Update React state immediately so the UI feels instant
             setData(valueToStore);
-            console.log("useAsyncStorage:setValue - local_var {valueToStore} ",  valueToStore);
+            //console.log("useAsyncStorage:setValue - local_var {valueToStore} ",  valueToStore);
 
             // Persist to AsyncStorage
             await AsyncStorage.setItem(key, valueToStore);
